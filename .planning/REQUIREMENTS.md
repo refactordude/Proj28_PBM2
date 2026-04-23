@@ -8,13 +8,13 @@
 ### Foundation
 
 - [ ] **FOUND-01**: User signs in with shared team credentials via `streamlit-authenticator`; unauthenticated visitors see only the login page
-- [ ] **FOUND-02**: `config/auth.yaml` is excluded from git via `.gitignore`; only `config/auth.example.yaml` is tracked
+- [x] **FOUND-02**: `config/auth.yaml` is excluded from git via `.gitignore`; only `config/auth.example.yaml` is tracked
 - [ ] **FOUND-03**: App fails to start with a clear error message if the `streamlit-authenticator` cookie key is left at the demo value `change-this-secret-in-production`
-- [ ] **FOUND-04**: App loads DB and LLM configuration from `config/settings.yaml` (overridable via `SETTINGS_PATH`) and reads `OPENAI_API_KEY` from `.env` via `python-dotenv`
-- [ ] **FOUND-05**: App uses `st.navigation` + `st.Page` routing; page list is gated by authentication state
-- [ ] **FOUND-06**: The SQLAlchemy engine is a `@st.cache_resource` singleton with `pool_pre_ping=True` and `pool_recycle=3600`
+- [x] **FOUND-04**: App loads DB and LLM configuration from `config/settings.yaml` (overridable via `SETTINGS_PATH`) and reads `OPENAI_API_KEY` from `.env` via `python-dotenv`
+- [x] **FOUND-05**: App uses `st.navigation` + `st.Page` routing; page list is gated by authentication state
+- [x] **FOUND-06**: The SQLAlchemy engine is a `@st.cache_resource` singleton with `pool_pre_ping=True` and `pool_recycle=3600`
 - [ ] **FOUND-07**: All DB query results are cached with `@st.cache_data(ttl=300)` keyed on immutable arguments (tuples, not lists)
-- [ ] **FOUND-08**: `requirements.txt` pins `sqlalchemy>=2.0,<2.1` and adds `pydantic-ai>=1.0,<2.0`
+- [x] **FOUND-08**: `requirements.txt` pins `sqlalchemy>=2.0,<2.1` and adds `pydantic-ai>=1.0,<2.0`
 
 ### Data Layer
 
@@ -63,7 +63,7 @@
 
 ### Safety
 
-- [ ] **SAFE-01**: DB connection uses a read-only MySQL user; every session attempts `SET SESSION TRANSACTION READ ONLY` (non-fatal if unsupported)
+- [x] **SAFE-01**: DB connection uses a read-only MySQL user; every session attempts `SET SESSION TRANSACTION READ ONLY` (non-fatal if unsupported)
 - [ ] **SAFE-02**: Agent-generated SQL is validated with `sqlparse` — only a single `SELECT` statement referencing a table in `allowed_tables` is executed; INSERT / UPDATE / DELETE / DROP / CALL / multi-statement queries are rejected
 - [ ] **SAFE-03**: Agent-generated SQL has a `LIMIT` injected if one is missing (cap = `AgentConfig.row_cap`)
 - [ ] **SAFE-04**: Agent loop enforces `max_steps=5` as a hard step counter and `timeout_s=30` as a wall-clock timeout; exceeding either aborts cleanly with a user-visible message
@@ -125,13 +125,13 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Complete |
 | FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
+| FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Pending |
-| FOUND-08 | Phase 1 | Pending |
+| FOUND-08 | Phase 1 | Complete |
 | DATA-01 | Phase 1 | Pending |
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 1 | Pending |
@@ -162,7 +162,7 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | NL-08 | Phase 2 | Pending |
 | NL-09 | Phase 2 | Pending |
 | NL-10 | Phase 2 | Pending |
-| SAFE-01 | Phase 1 | Pending |
+| SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 2 | Pending |
 | SAFE-03 | Phase 2 | Pending |
 | SAFE-04 | Phase 2 | Pending |
