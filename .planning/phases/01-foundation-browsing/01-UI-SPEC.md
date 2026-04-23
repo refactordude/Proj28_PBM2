@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: false
 preset: none
 created: 2026-04-23
+revised: 2026-04-23
 ---
 
 # Phase 1 — UI Design Contract
@@ -81,20 +82,21 @@ Exceptions:
 
 Streamlit renders all text through its built-in heading/body hierarchy. The following roles map to Streamlit's native text primitives:
 
-| Role | Streamlit Primitive | Approx Size | Weight | Line Height | Usage |
-|------|---------------------|-------------|--------|-------------|-------|
-| Body | `st.write()` / `st.caption()` for small | 14–16px (browser default) | 400 (regular) | 1.5 | Data cell text, helper copy, description paragraphs |
-| Label | `st.label` (widget labels via `label=` param) | 14px | 600 (semibold) | 1.4 | Widget labels, column headers in tables |
-| Heading | `st.subheader()` | ~20px | 600 (semibold) | 1.2 | Section titles: "Browse", "Settings", tab section headings |
-| Display | `st.title()` or `st.header()` | ~28px | 700 (bold) | 1.1 | Page-level title only (used once per page) |
+| Role | Streamlit Primitive | Size | Weight | Line Height |
+|------|---------------------|------|--------|-------------|
+| Caption | `st.caption()` | 12px | 400 | 1.4 |
+| Body / Label | `st.write()` / widget `label=` | 14px | 400 body / 600 label | 1.5 |
+| Heading | `st.subheader()` | ~20px | 600 | 1.2 |
+| Display | `st.title()` / `st.header()` | ~28px | 600 | 1.1 |
 
 <!-- ASSUMED: exact pixel sizes follow Streamlit's default Markdown-based typographic scale;
      no custom CSS injection required for Phase 1 -->
 
 Rules:
-- Use at most 2 weight levels per screen: regular (400) for body/data, semibold (600) for labels and subheadings.
+- Use exactly 2 weight levels across all screens: regular (400) for caption and body, semibold (600) for labels, headings, and display. Do NOT use bold (700) anywhere.
+- Size differential alone creates sufficient hierarchy between Heading (~20px) and Display (~28px); weight distinction is unnecessary at those sizes.
 - `st.title()` appears once per page at most — do not use it for section headings.
-- `st.caption()` (12px, muted) is reserved for: row-count indicator ("showing N of M platforms"), column-cap warning, export filename hint.
+- `st.caption()` (12px, weight 400) is reserved for: row-count indicator ("showing N of M platforms"), column-cap warning, export filename hint. Do not use `st.caption()` for widget labels or functional copy.
 - Do NOT use `st.markdown("## ...")` as a substitute for `st.subheader()` — keep primitives consistent for the checker.
 
 ---
@@ -111,7 +113,7 @@ Streamlit theme colors drive the 60/30/10 split:
 | Destructive | `#d62728` (Plotly red / `st.error` red) | Used only in: connection test fail badge (inline ❌ text styled via `st.error()`), Settings page delete-entry confirm dialog warning text |
 
 Accent reserved for:
-1. The single "primary" call-to-action button per page/tab (Apply Filters on Browse, Save on Settings, Download in export dialog)
+1. The single "primary" call-to-action button per page/tab (Apply Filters on Browse, Save Connection on Settings, Download in export dialog)
 2. Active tab indicator (Streamlit renders this automatically from `primaryColor`)
 3. Plotly chart first data series fill/stroke
 4. URL-copy success flash (one-time `st.success` toast)
@@ -165,6 +167,8 @@ is the simplest approach without custom components -->
 
 ## Browse Page Contract
 
+**Primary focal point:** pivot grid (`st.dataframe`) in the Pivot tab, occupying the full main panel.
+
 ### Tab Structure (from D-02, D-13)
 
 Three tabs rendered with `st.tabs(["Pivot", "Detail", "Chart"])`. All tabs read from the same
@@ -191,6 +195,8 @@ Three tabs rendered with `st.tabs(["Pivot", "Detail", "Chart"])`. All tabs read 
 
 **Error state:**
 - `st.error("Could not load data. Check your database connection in Settings. ({short error})")`
+
+**Apply Filters CTA:** Streamlit reruns on widget change (implicit apply). If an explicit button is rendered for any reason, the label MUST be `"Apply Filters"` (not `"Apply"`).
 
 ### Detail Tab
 
@@ -220,6 +226,8 @@ Chart: `st.plotly_chart(fig, use_container_width=True)`
 
 ## Settings Page Contract
 
+**Primary focal point:** first expanded DB connection form.
+
 ### Layout (from D-09 to D-12)
 
 Single-column layout. Two collapsible `st.expander` sections:
@@ -240,7 +248,7 @@ st.subheader("{entry name}")           ← e.g. "prod_db" or "ollama_local"
                 st.text_input("Password / API Key", type="password") for credentials
   Right col (1): st.button("Test", key="test_{entry_name}")
                  [pass/fail badge rendered below Test button after click]
-[st.button("Save", type="primary")]    ← one Save per entry (not per section)
+[st.button("Save Connection", type="primary")]    ← one Save Connection per entry (not per section)
 [st.button("Delete", type="secondary")]
 ```
 
@@ -259,10 +267,11 @@ Add new entry: `st.button("+ Add Database", type="secondary")` / `st.button("+ A
 - Cache clear: `st.cache_resource.clear()` then `st.cache_data.clear()` immediately after `save_settings()`.
 
 **Delete confirmation:**
-- `st.dialog` titled "Delete connection?" with body "This will remove {name} from settings.yaml. This cannot be undone." and two buttons: `st.button("Delete", type="primary")` (red — use `st.button` with `type="primary"` inside the dialog; this is the only place a "primary" style button triggers a destructive action) and `st.button("Cancel", type="secondary")`.
+- `st.dialog` titled "Delete connection?" with body "This will remove {name} from settings.yaml. This cannot be undone." and two buttons: `st.button("Delete", type="primary")` (red — use `st.button` with `type="primary"` inside the dialog; this is the only place a "primary" style button triggers a destructive action) and `st.button("Keep Connection", type="secondary")`.
 <!-- NOTE: Streamlit does not natively support a "danger" button variant in 1.56.0;
      use st.button(type="primary") inside the delete dialog where the primary action IS destructive,
-     and rely on the dialog title + body copy to communicate the destructive intent clearly. -->
+     and rely on the dialog title + body copy to communicate the destructive intent clearly.
+     "Keep Connection" (not "Cancel") tells the user what NOT clicking Delete preserves. -->
 
 ---
 
@@ -279,7 +288,7 @@ Filename: st.text_input("Filename", value="pbm2_{tab}_{ISO-timestamp}")
 Scope:    st.radio("Scope", ["Current view (pivot)", "Raw long-form rows"], index=0)
 
 st.button("Download", type="primary")  → triggers st.download_button flow
-st.button("Cancel", type="secondary")  → closes dialog
+st.button("Close", type="secondary")   → closes dialog (non-destructive; no confirmation needed)
 ```
 
 Filename sanitization: strip characters outside `[A-Za-z0-9_\-.]`; collapse repeated underscores;
@@ -315,8 +324,8 @@ Shown above the pivot grid / detail table — not inside the grid.
 
 | Element | Copy |
 |---------|------|
-| Primary CTA — Browse apply | "Apply Filters" (implicit — Streamlit reruns on widget change; if explicit button needed: "Apply") |
-| Primary CTA — Settings save | "Save" |
+| Primary CTA — Browse apply | "Apply Filters" (implicit — Streamlit reruns on widget change; if explicit button needed: "Apply Filters") |
+| Primary CTA — Settings save | "Save Connection" |
 | Primary CTA — Export download | "Download" |
 | Empty state — no selection | "Select platforms and parameters in the sidebar to build the pivot grid." |
 | Empty state — Detail no platform | "Select exactly one platform in the sidebar to see its full parameter detail." |
@@ -332,6 +341,8 @@ Shown above the pivot grid / detail table — not inside the grid.
 | Save + cache clear success | "Saved. Caches refreshed." |
 | Delete confirmation title | "Delete connection?" |
 | Delete confirmation body | "This will remove {name} from settings.yaml. This cannot be undone." |
+| Delete confirmation cancel button | "Keep Connection" |
+| Export dialog cancel button | "Close" |
 | LLM selector Phase 2 hint | "LLM backend selection takes effect in Phase 2 (Ask page)." |
 | Export dialog filename hint | "File will be saved to your Downloads folder." |
 | Shareable URL copy success | "Link copied to clipboard." |
@@ -410,4 +421,5 @@ All `<!-- ASSUMED -->` decisions in this document, collected for checker review:
 
 *Phase: 01-foundation-browsing*
 *UI contract authored: 2026-04-23*
+*UI contract revised: 2026-04-23 (blocking fixes: typography collapsed to 4 sizes / 2 weights; CTA labels made specific; focal points and Apply Filters fallback added)*
 *Consumed by: gsd-ui-checker, gsd-planner, gsd-executor, gsd-ui-auditor*
