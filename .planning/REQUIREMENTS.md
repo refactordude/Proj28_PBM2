@@ -13,7 +13,7 @@
 - [x] **FOUND-04**: App loads DB and LLM configuration from `config/settings.yaml` (overridable via `SETTINGS_PATH`) and reads `OPENAI_API_KEY` from `.env` via `python-dotenv`
 - [x] **FOUND-05**: App uses `st.navigation` + `st.Page` routing; page list is gated by authentication state
 - [x] **FOUND-06**: The SQLAlchemy engine is a `@st.cache_resource` singleton with `pool_pre_ping=True` and `pool_recycle=3600`
-- [ ] **FOUND-07**: All DB query results are cached with `@st.cache_data(ttl=300)` keyed on immutable arguments (tuples, not lists)
+- [x] **FOUND-07**: All DB query results are cached with `@st.cache_data(ttl=300)` keyed on immutable arguments (tuples, not lists)
 - [x] **FOUND-08**: `requirements.txt` pins `sqlalchemy>=2.0,<2.1` and adds `pydantic-ai>=1.0,<2.0`
 
 ### Data Layer
@@ -22,9 +22,9 @@
 - [x] **DATA-02**: The `result_normalizer` classifies any `Result` value into one of `{HEX, DECIMAL, CSV, WHITESPACE_BLOB, COMPOUND, IDENTIFIER, ERROR, MISSING}` without coercing the value — coercion happens lazily per-query
 - [x] **DATA-03**: The `result_normalizer` can split LUN-prefixed `Item` values (`N_fieldname` for `N ∈ {0..7}`) into a LUN-index column and a field-name column on demand
 - [x] **DATA-04**: The `result_normalizer` can split DME `_local`/`_peer` suffixes and unpack compound `local=...,peer=...` values on demand
-- [ ] **DATA-05**: `ufs_service` fetches rows with `WHERE PLATFORM_ID IN (...)` and/or `WHERE (InfoCategory, Item) IN (...)` applied server-side; the full `ufs_data` table is never loaded into pandas
-- [ ] **DATA-06**: `ufs_service.pivot_to_wide` produces a wide-form DataFrame with `aggfunc="first"` and logs a warning when duplicate `(PLATFORM_ID, InfoCategory, Item)` cells are detected
-- [ ] **DATA-07**: Every `ufs_service` query honors a 200-row cap (matching `AgentConfig.row_cap`) and surfaces the cap as a visible message when reached
+- [x] **DATA-05**: `ufs_service` fetches rows with `WHERE PLATFORM_ID IN (...)` and/or `WHERE (InfoCategory, Item) IN (...)` applied server-side; the full `ufs_data` table is never loaded into pandas
+- [x] **DATA-06**: `ufs_service.pivot_to_wide` produces a wide-form DataFrame with `aggfunc="first"` and logs a warning when duplicate `(PLATFORM_ID, InfoCategory, Item)` cells are detected
+- [x] **DATA-07**: Every `ufs_service` query honors a 200-row cap (matching `AgentConfig.row_cap`) and surfaces the cap as a visible message when reached
 
 ### Browsing
 
@@ -130,15 +130,15 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Complete |
 | FOUND-06 | Phase 1 | Complete |
-| FOUND-07 | Phase 1 | Pending |
+| FOUND-07 | Phase 1 | Complete |
 | FOUND-08 | Phase 1 | Complete |
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
 | DATA-04 | Phase 1 | Complete |
-| DATA-05 | Phase 1 | Pending |
-| DATA-06 | Phase 1 | Pending |
-| DATA-07 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Complete |
+| DATA-06 | Phase 1 | Complete |
+| DATA-07 | Phase 1 | Complete |
 | BROWSE-01 | Phase 1 | Pending |
 | BROWSE-02 | Phase 1 | Pending |
 | BROWSE-03 | Phase 1 | Pending |
