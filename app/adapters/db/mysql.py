@@ -5,6 +5,7 @@ readonly=true인 경우 세션을 read-only transaction으로 강제한다.
 """
 from __future__ import annotations
 
+import logging
 from urllib.parse import quote_plus
 
 import pandas as pd
@@ -13,6 +14,8 @@ from sqlalchemy.engine import Engine
 
 from app.adapters.db.base import DBAdapter
 from app.core.config import DatabaseConfig
+
+logger = logging.getLogger(__name__)
 
 
 class MySQLAdapter(DBAdapter):
@@ -54,7 +57,8 @@ class MySQLAdapter(DBAdapter):
         for t in target:
             try:
                 pk_cols = set(inspector.get_pk_constraint(t).get("constrained_columns") or [])
-            except Exception:
+            except Exception as exc:
+                logger.debug("get_pk_constraint failed for table %s: %s", t, exc)
                 pk_cols = set()
             cols = []
             for col in inspector.get_columns(t):
