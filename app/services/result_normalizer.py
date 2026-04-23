@@ -296,8 +296,11 @@ def try_numeric(series: pd.Series) -> pd.Series:
     converted to pd.NA; no exception propagates to the caller.
     """
     def _coerce(val: Any) -> Any:
-        if pd.isna(val):
-            return pd.NA
+        try:
+            if pd.isna(val):
+                return pd.NA
+        except (TypeError, ValueError):
+            pass  # array-like val — pd.isna raises; fall through to string coercion
         s = str(val).strip()
         if _HEX_RE.match(s):
             try:
