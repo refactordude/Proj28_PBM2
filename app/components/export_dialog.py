@@ -45,8 +45,11 @@ def _sanitize_filename(name: Optional[str]) -> str:
     """
     if name is None:
         return "ufs_export"
-    # Step 2: Remove '..' occurrences (defense against ../ path traversal)
-    s = name.replace("..", "")
+    # Step 2: Remove path traversal sequences and path separators explicitly.
+    # Removing '/' and '\' here is belt-and-suspenders: the charset clamp (step 3)
+    # would also catch them, but removing them first makes the defence independent
+    # of step ordering — a future reorder cannot accidentally reintroduce traversal.
+    s = name.replace("..", "").replace("/", "").replace("\\", "")
     # Step 3: Remap any character outside the allowed set to '_'
     s = re.sub(r"[^A-Za-z0-9_\-.]", "_", s)
     # Step 4: Collapse repeated underscores
