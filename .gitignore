@@ -1,0 +1,27 @@
+# Config files containing secrets (per D-11: settings.yaml holds plaintext passwords/api_keys)
+config/settings.yaml
+config/auth.yaml
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
