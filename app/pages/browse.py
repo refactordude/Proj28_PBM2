@@ -536,16 +536,17 @@ _sync_state_to_url(selected_platforms, selected_params, swap_axes, active_tab)
 pivot_tab, detail_tab, chart_tab = st.tabs(["Pivot", "Detail", "Chart"])
 
 with pivot_tab:
-    st.session_state["browse.tab"] = "Pivot"
+    # WR-05: do NOT write browse.tab here — all three with-blocks run on every
+    # rerun, so unconditional assignment always overwrites to the last block's value.
+    # browse.tab is set once by _load_state_from_url (URL round-trip) and is never
+    # overwritten here; it persists across reruns via session_state.
     adapter = _get_db_adapter(active_db_name)
     _render_pivot_tab(adapter, selected_platforms, selected_params)
 
 with detail_tab:
-    st.session_state["browse.tab"] = "Detail"
     adapter = _get_db_adapter(active_db_name)
     _render_detail_tab(adapter, selected_platforms, selected_params)
 
 with chart_tab:
-    st.session_state["browse.tab"] = "Chart"
     adapter = _get_db_adapter(active_db_name)
     _render_chart_tab(adapter, selected_platforms, selected_params, swap_axes)
