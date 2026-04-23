@@ -151,7 +151,7 @@ def _render_sidebar_filters(db_name: str) -> tuple[list[str], list[str]]:
 
     # Platform multiselect (BROWSE-01)
     try:
-        platforms_all = list_platforms(adapter)
+        platforms_all = list_platforms(adapter, db_name=db_name)
     except Exception as exc:
         st.sidebar.error(
             "Could not load platforms. Check your database connection in Settings."
@@ -170,7 +170,7 @@ def _render_sidebar_filters(db_name: str) -> tuple[list[str], list[str]]:
 
     # Parameter catalog multiselect (BROWSE-02, BROWSE-03, D-06, D-08)
     try:
-        params_all = list_parameters(adapter)
+        params_all = list_parameters(adapter, db_name=db_name)
     except Exception as exc:
         st.sidebar.error(
             "Could not load parameters. Check your database connection in Settings."
@@ -238,7 +238,10 @@ def _render_pivot_tab(adapter, platforms: list[str], params_labels: list[str]) -
     # Query (with loading state per BROWSE-07)
     try:
         with st.spinner("Fetching data..."):
-            df_long, row_capped = fetch_cells(adapter, platforms_t, infocategories, items)
+            df_long, row_capped = fetch_cells(
+                adapter, platforms_t, infocategories, items,
+                db_name=adapter.config.name,
+            )
     except Exception as exc:
         st.error("Could not load data. Check your database connection in Settings.")
         with st.expander("Error detail"):
@@ -344,7 +347,10 @@ def _render_detail_tab(adapter, platforms: list[str], params_labels: list[str]) 
 
     try:
         with st.spinner("Fetching data..."):
-            df_long, row_capped = fetch_cells(adapter, platforms_t, infocategories, items)
+            df_long, row_capped = fetch_cells(
+                adapter, platforms_t, infocategories, items,
+                db_name=adapter.config.name,
+            )
     except Exception as exc:
         st.error("Could not load data. Check your database connection in Settings.")
         with st.expander("Error detail"):
@@ -401,7 +407,10 @@ def _render_chart_tab(adapter, platforms: list[str], params_labels: list[str], s
 
     try:
         with st.spinner("Fetching data..."):
-            df_long, row_capped = fetch_cells(adapter, platforms_t, infocategories, items)
+            df_long, row_capped = fetch_cells(
+                adapter, platforms_t, infocategories, items,
+                db_name=adapter.config.name,
+            )
     except Exception as exc:
         st.error("Could not load data. Check your database connection in Settings.")
         with st.expander("Error detail"):

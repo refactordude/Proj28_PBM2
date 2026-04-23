@@ -63,11 +63,13 @@ def _safe_table(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 @st.cache_data(ttl=300, show_spinner=False)
-def list_platforms(_db: DBAdapter) -> list[str]:
+def list_platforms(_db: DBAdapter, db_name: str = "") -> list[str]:
     """Return sorted distinct PLATFORM_ID values.
 
     The underscore prefix on _db disables Streamlit cache hashing of the adapter
-    (FOUND-07). Cached for 300 seconds — platform list changes only on new ingestion.
+    (FOUND-07). db_name is included in the cache key so that two sessions using
+    different databases never share catalog data (T-03-04 / Pitfall-8).
+    Cached for 300 seconds — platform list changes only on new ingestion.
     """
     tbl = _safe_table(_TABLE)
     with _db._get_engine().connect() as conn:
@@ -79,10 +81,12 @@ def list_platforms(_db: DBAdapter) -> list[str]:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def list_parameters(_db: DBAdapter) -> list[dict]:
+def list_parameters(_db: DBAdapter, db_name: str = "") -> list[dict]:
     """Return sorted distinct (InfoCategory, Item) rows as a list of dicts.
 
     Each dict has keys 'InfoCategory' and 'Item'. Sorted by (InfoCategory, Item).
+    db_name is included in the cache key so that two sessions using different
+    databases never share catalog data (T-03-04 / Pitfall-8).
     Cached for 300 seconds — parameter catalog is stable between ingestions.
     """
     tbl = _safe_table(_TABLE)
@@ -108,6 +112,7 @@ def fetch_cells(
     infocategories: tuple[str, ...],
     items: tuple[str, ...],
     row_cap: int = 200,
+    db_name: str = "",
 ) -> tuple[pd.DataFrame, bool]:
     """Fetch long-form EAV rows filtered by platforms and items.
 
@@ -117,6 +122,8 @@ def fetch_cells(
         infocategories: Tuple of InfoCategory values. Empty -> no category filter applied.
         items: Tuple of Item values to include. Empty -> (empty DF, False).
         row_cap: Maximum rows to return (default 200, matching AgentConfig.row_cap).
+        db_name: Database identity string included in the cache key so sessions using
+            different databases never share cached cell data (T-03-04 / Pitfall-8).
 
     Returns:
         (df, capped):
