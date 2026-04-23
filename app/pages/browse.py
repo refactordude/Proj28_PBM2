@@ -23,6 +23,7 @@ from app.services.ufs_service import (
     pivot_to_wide,
 )
 from app.services.result_normalizer import try_numeric
+from app.components.export_dialog import render_export_dialog
 
 logger = logging.getLogger(__name__)
 
@@ -255,8 +256,29 @@ def _render_pivot_tab(adapter, platforms: list[str], params_labels: list[str]) -
             "Result capped at 200 rows. Narrow your platform or parameter selection to see all data."
         )
 
+    # Export button (always rendered at top; reads previous-rerun stash for enabled state)
+    prior_wide = st.session_state.get("pivot.df_wide")
+    prior_long = st.session_state.get("pivot.df_long")
+    has_exportable = (
+        (prior_wide is not None and not prior_wide.empty)
+        or (prior_long is not None and not prior_long.empty)
+    )
+    with ctrl_export:
+        if st.button(
+            "Export",
+            key="pivot_export",
+            type="secondary",
+            disabled=not has_exportable,
+            help="Select platforms and parameters first" if not has_exportable else None,
+        ):
+            render_export_dialog(prior_wide, prior_long)
+
     # Pivot to wide (D-07)
     df_wide, col_capped = pivot_to_wide(df_long, swap_axes=swap_axes, col_cap=30)
+
+    # Stash the currently-visible view for the next rerun's Export dialog (D-15)
+    st.session_state["pivot.df_wide"] = df_wide
+    st.session_state["pivot.df_long"] = df_long
 
     # Row-count indicator (BROWSE-06)
     # Default orientation: rows = platforms, columns = parameters.
@@ -278,10 +300,6 @@ def _render_pivot_tab(adapter, platforms: list[str], params_labels: list[str]) -
         st.warning(
             f"Showing first 30 of {len(params_labels)} parameters. Narrow your selection to see all."
         )
-
-    # ctrl_export slot — Plan 07: Export... button goes here
-    with ctrl_export:
-        st.empty()  # Plan 07: Export... button goes here
 
     # Pivot grid (UI-SPEC: TextColumn for every result column — heterogeneous values)
     # NEVER use NumberColumn globally (PROJECT.md constraint: same Item may be hex on
