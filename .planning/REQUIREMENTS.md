@@ -33,9 +33,9 @@
 - [ ] **BROWSE-03**: User can search parameters by substring across both `InfoCategory` and `Item` via a type-ahead search bar
 - [ ] **BROWSE-04**: User sees a wide-form pivot grid (platforms × parameters), sortable by any column; the grid defaults to a single `InfoCategory` and caps displayed columns at ~30 with a visible warning when exceeded
 - [ ] **BROWSE-05**: User can open a single-platform detail view that lists `(InfoCategory, Item, Result)` rows grouped by `InfoCategory`
-- [ ] **BROWSE-06**: User sees a row-count indicator (“showing N of M platforms / K of L parameters”) on every result view
+- [ ] **BROWSE-06**: User sees a row-count indicator ("showing N of M platforms / K of L parameters") on every result view
 - [ ] **BROWSE-07**: User sees plain-English loading, empty, and error states for every query
-- [ ] **BROWSE-08**: User’s filter selections persist across widget interactions via `st.session_state`
+- [ ] **BROWSE-08**: User's filter selections persist across widget interactions via `st.session_state`
 - [ ] **BROWSE-09**: User can copy a shareable URL that reproduces the current filter state via `st.query_params`
 
 ### Visualization
@@ -53,7 +53,7 @@
 - [ ] **NL-01**: User types a natural-language question and receives both a result table and a plain-text LLM summary
 - [ ] **NL-02**: User sees the LLM-generated SQL in a collapsed expander on every NL result
 - [ ] **NL-03**: User can click **Regenerate** to re-run the same NL question with a fresh LLM call
-- [ ] **NL-04**: User’s NL questions and answers are preserved for the session in a history panel
+- [ ] **NL-04**: User's NL questions and answers are preserved for the session in a history panel
 - [ ] **NL-05**: Before running a query, the agent proposes candidate `(InfoCategory, Item)` parameters drawn from the actual DB and asks the user to confirm or adjust before SQL is executed
 - [ ] **NL-06**: The agent correctly handles the three core question shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
 - [ ] **NL-07**: User can switch the LLM backend between OpenAI and Ollama from the sidebar; the choice takes effect on the next NL query
@@ -104,7 +104,7 @@ Deferred to a future release. Tracked but not in the current roadmap.
 - Platform comparison presets — trigger: users repeatedly re-selecting the same cohort
 - Saved parameter sets — trigger: users describing "my regular view"
 - Cross-session query history — requires server-side persistence
-- “Similar platforms” suggestion — requires similarity computation over the pivot matrix
+- "Similar platforms" suggestion — requires similarity computation over the pivot matrix
 - Confidence / quality indicator for NL results — requires reliable LLM self-evaluation
 
 ## Out of Scope
@@ -122,65 +122,65 @@ Deferred to a future release. Tracked but not in the current roadmap.
 
 ## Traceability
 
-Filled in during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | — | Pending |
-| FOUND-02 | — | Pending |
-| FOUND-03 | — | Pending |
-| FOUND-04 | — | Pending |
-| FOUND-05 | — | Pending |
-| FOUND-06 | — | Pending |
-| FOUND-07 | — | Pending |
-| FOUND-08 | — | Pending |
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
-| DATA-05 | — | Pending |
-| DATA-06 | — | Pending |
-| DATA-07 | — | Pending |
-| BROWSE-01 | — | Pending |
-| BROWSE-02 | — | Pending |
-| BROWSE-03 | — | Pending |
-| BROWSE-04 | — | Pending |
-| BROWSE-05 | — | Pending |
-| BROWSE-06 | — | Pending |
-| BROWSE-07 | — | Pending |
-| BROWSE-08 | — | Pending |
-| BROWSE-09 | — | Pending |
-| VIZ-01 | — | Pending |
-| VIZ-02 | — | Pending |
-| EXPORT-01 | — | Pending |
-| EXPORT-02 | — | Pending |
-| NL-01 | — | Pending |
-| NL-02 | — | Pending |
-| NL-03 | — | Pending |
-| NL-04 | — | Pending |
-| NL-05 | — | Pending |
-| NL-06 | — | Pending |
-| NL-07 | — | Pending |
-| NL-08 | — | Pending |
-| NL-09 | — | Pending |
-| NL-10 | — | Pending |
-| SAFE-01 | — | Pending |
-| SAFE-02 | — | Pending |
-| SAFE-03 | — | Pending |
-| SAFE-04 | — | Pending |
-| SAFE-05 | — | Pending |
-| SAFE-06 | — | Pending |
-| SETUP-01 | — | Pending |
-| SETUP-02 | — | Pending |
-| SETUP-03 | — | Pending |
-| ONBD-01 | — | Pending |
-| ONBD-02 | — | Pending |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Pending |
+| FOUND-07 | Phase 1 | Pending |
+| FOUND-08 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| DATA-06 | Phase 1 | Pending |
+| DATA-07 | Phase 1 | Pending |
+| BROWSE-01 | Phase 1 | Pending |
+| BROWSE-02 | Phase 1 | Pending |
+| BROWSE-03 | Phase 1 | Pending |
+| BROWSE-04 | Phase 1 | Pending |
+| BROWSE-05 | Phase 1 | Pending |
+| BROWSE-06 | Phase 1 | Pending |
+| BROWSE-07 | Phase 1 | Pending |
+| BROWSE-08 | Phase 1 | Pending |
+| BROWSE-09 | Phase 1 | Pending |
+| VIZ-01 | Phase 1 | Pending |
+| VIZ-02 | Phase 1 | Pending |
+| EXPORT-01 | Phase 1 | Pending |
+| EXPORT-02 | Phase 1 | Pending |
+| NL-01 | Phase 2 | Pending |
+| NL-02 | Phase 2 | Pending |
+| NL-03 | Phase 2 | Pending |
+| NL-04 | Phase 2 | Pending |
+| NL-05 | Phase 2 | Pending |
+| NL-06 | Phase 2 | Pending |
+| NL-07 | Phase 2 | Pending |
+| NL-08 | Phase 2 | Pending |
+| NL-09 | Phase 2 | Pending |
+| NL-10 | Phase 2 | Pending |
+| SAFE-01 | Phase 1 | Pending |
+| SAFE-02 | Phase 2 | Pending |
+| SAFE-03 | Phase 2 | Pending |
+| SAFE-04 | Phase 2 | Pending |
+| SAFE-05 | Phase 2 | Pending |
+| SAFE-06 | Phase 2 | Pending |
+| SETUP-01 | Phase 1 | Pending |
+| SETUP-02 | Phase 1 | Pending |
+| SETUP-03 | Phase 1 | Pending |
+| ONBD-01 | Phase 2 | Pending |
+| ONBD-02 | Phase 2 | Pending |
 
 **Coverage:**
-- v1 requirements: 48 total
-- Mapped to phases: 0 ⚠️ (roadmapper fills this in)
-- Unmapped: 48 ⚠️
+- v1 requirements: 49 total (note: traceability table contains 49 rows; original count of 48 was a pre-fill estimate)
+- Phase 1: 32 requirements (FOUND-01..08, DATA-01..07, BROWSE-01..09, VIZ-01..02, EXPORT-01..02, SETUP-01..03, SAFE-01)
+- Phase 2: 17 requirements (NL-01..10, SAFE-02..06, ONBD-01..02)
+- Mapped to phases: 49 / 49
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-23*
-*Last updated: 2026-04-23 after initial definition*
+*Last updated: 2026-04-23 after roadmap creation — traceability filled in*
