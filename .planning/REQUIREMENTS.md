@@ -18,10 +18,10 @@
 
 ### Data Layer
 
-- [ ] **DATA-01**: The `result_normalizer` module maps `None`, empty string, `"None"`, `"null"`, `"N/A"`, and captured shell errors (`cat: …`, `Permission denied`, `No such file`) to a single `pd.NA` missing sentinel
-- [ ] **DATA-02**: The `result_normalizer` classifies any `Result` value into one of `{HEX, DECIMAL, CSV, WHITESPACE_BLOB, COMPOUND, IDENTIFIER, ERROR, MISSING}` without coercing the value — coercion happens lazily per-query
-- [ ] **DATA-03**: The `result_normalizer` can split LUN-prefixed `Item` values (`N_fieldname` for `N ∈ {0..7}`) into a LUN-index column and a field-name column on demand
-- [ ] **DATA-04**: The `result_normalizer` can split DME `_local`/`_peer` suffixes and unpack compound `local=...,peer=...` values on demand
+- [x] **DATA-01**: The `result_normalizer` module maps `None`, empty string, `"None"`, `"null"`, `"N/A"`, and captured shell errors (`cat: …`, `Permission denied`, `No such file`) to a single `pd.NA` missing sentinel
+- [x] **DATA-02**: The `result_normalizer` classifies any `Result` value into one of `{HEX, DECIMAL, CSV, WHITESPACE_BLOB, COMPOUND, IDENTIFIER, ERROR, MISSING}` without coercing the value — coercion happens lazily per-query
+- [x] **DATA-03**: The `result_normalizer` can split LUN-prefixed `Item` values (`N_fieldname` for `N ∈ {0..7}`) into a LUN-index column and a field-name column on demand
+- [x] **DATA-04**: The `result_normalizer` can split DME `_local`/`_peer` suffixes and unpack compound `local=...,peer=...` values on demand
 - [ ] **DATA-05**: `ufs_service` fetches rows with `WHERE PLATFORM_ID IN (...)` and/or `WHERE (InfoCategory, Item) IN (...)` applied server-side; the full `ufs_data` table is never loaded into pandas
 - [ ] **DATA-06**: `ufs_service.pivot_to_wide` produces a wide-form DataFrame with `aggfunc="first"` and logs a warning when duplicate `(PLATFORM_ID, InfoCategory, Item)` cells are detected
 - [ ] **DATA-07**: Every `ufs_service` query honors a 200-row cap (matching `AgentConfig.row_cap`) and surfaces the cap as a visible message when reached
@@ -132,10 +132,10 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | FOUND-06 | Phase 1 | Complete |
 | FOUND-07 | Phase 1 | Pending |
 | FOUND-08 | Phase 1 | Complete |
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
+| DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Pending |
 | DATA-06 | Phase 1 | Pending |
 | DATA-07 | Phase 1 | Pending |

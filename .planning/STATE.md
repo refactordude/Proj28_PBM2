@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-04-23T19:10:07.549Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-04-23T19:19:26.010Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 7
-  completed_plans: 1
-  percent: 14
+  completed_plans: 2
+  percent: 29
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 01 (Foundation + Browsing) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-04-23
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 2 | 3 tasks | 8 files |
+| Phase 01-foundation-browsing P02 | 5 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent decisions affecting current work:
 - [Phase 01]: D-04 honored: streamlit-authenticator not imported in Phase 1; config/auth.yaml stays gitignored
 - [Phase 01]: D-03 sidebar: DB selector (3 cases), inert LLM selector with Phase 2 hint, health indicator dot with 60s TTL
 - [Phase 01]: D-01 navigation: Browse default=True, Settings second, Ask commented out for Phase 2
+- [Phase 01-02]: classify() checks ERROR before is_missing() so shell-error strings return ResultType.ERROR not MISSING, while normalize() maps both to pd.NA
+- [Phase 01-02]: is_missing() calls pd.isna() first to handle pandas 3.x StringDtype which stores None/pd.NA as float nan inside Series.apply() callbacks
+- [Phase 01-02]: try_numeric() returns object dtype Series (mixed int/float/pd.NA) to avoid forced nullable Int64 conversion
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-23T19:10:07.534Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-04-23T19:19:25.990Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
