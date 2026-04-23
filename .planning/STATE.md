@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-04-23T19:31:12.175Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-04-23T19:35:50.280Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 7
-  completed_plans: 4
-  percent: 57
+  completed_plans: 5
+  percent: 71
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 01 (Foundation + Browsing) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-04-23
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation-browsing P02 | 5 | 2 tasks | 5 files |
 | Phase 01-foundation-browsing P03 | 4min | 2 tasks | 2 files |
 | Phase 01-foundation-browsing P04 | 103s | 2 tasks | 1 files |
+| Phase 01-foundation-browsing P05 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-browsing]: pivot_to_wide pivots PLATFORM_ID x Item (or Item x PLATFORM_ID with swap_axes=True); InfoCategory is retained in long-form df for Detail tab but not in wide pivot
 - [Phase 01-foundation-browsing]: Session-state draft key _settings_draft buffers edits; only Save Connection writes to YAML (Browse pages must avoid this key)
 - [Phase 01-foundation-browsing]: LLM ping uses openai SDK models.list() for openai type; requests.get /api/tags for ollama; others return Phase 1 not-implemented
+- [Phase 01-foundation-browsing]: Session state key conventions: selected_platforms, selected_params, pivot_swap_axes, _browse_url_loaded owned by browse.py — other pages must not collide
+- [Phase 01-foundation-browsing]: Query param CSV separator is comma; Plan 07 ctrl_export column replaces Copy Link with Export dialog trigger
 
 ### Pending Todos
 
@@ -92,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-23T19:31:12.159Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-04-23T19:35:50.243Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None

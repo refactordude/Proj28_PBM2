@@ -28,15 +28,15 @@
 
 ### Browsing
 
-- [ ] **BROWSE-01**: User sees a list of all distinct `PLATFORM_ID` values and can multi-select platforms with type-ahead search
-- [ ] **BROWSE-02**: User sees `InfoCategory → Item` as a browsable hierarchy (sidebar or tree), with LUN-prefixed items grouped under their field name
-- [ ] **BROWSE-03**: User can search parameters by substring across both `InfoCategory` and `Item` via a type-ahead search bar
-- [ ] **BROWSE-04**: User sees a wide-form pivot grid (platforms × parameters), sortable by any column; the grid defaults to a single `InfoCategory` and caps displayed columns at ~30 with a visible warning when exceeded
+- [x] **BROWSE-01**: User sees a list of all distinct `PLATFORM_ID` values and can multi-select platforms with type-ahead search
+- [x] **BROWSE-02**: User sees `InfoCategory → Item` as a browsable hierarchy (sidebar or tree), with LUN-prefixed items grouped under their field name
+- [x] **BROWSE-03**: User can search parameters by substring across both `InfoCategory` and `Item` via a type-ahead search bar
+- [x] **BROWSE-04**: User sees a wide-form pivot grid (platforms × parameters), sortable by any column; the grid defaults to a single `InfoCategory` and caps displayed columns at ~30 with a visible warning when exceeded
 - [ ] **BROWSE-05**: User can open a single-platform detail view that lists `(InfoCategory, Item, Result)` rows grouped by `InfoCategory`
-- [ ] **BROWSE-06**: User sees a row-count indicator ("showing N of M platforms / K of L parameters") on every result view
-- [ ] **BROWSE-07**: User sees plain-English loading, empty, and error states for every query
-- [ ] **BROWSE-08**: User's filter selections persist across widget interactions via `st.session_state`
-- [ ] **BROWSE-09**: User can copy a shareable URL that reproduces the current filter state via `st.query_params`
+- [x] **BROWSE-06**: User sees a row-count indicator ("showing N of M platforms / K of L parameters") on every result view
+- [x] **BROWSE-07**: User sees plain-English loading, empty, and error states for every query
+- [x] **BROWSE-08**: User's filter selections persist across widget interactions via `st.session_state`
+- [x] **BROWSE-09**: User can copy a shareable URL that reproduces the current filter state via `st.query_params`
 
 ### Visualization
 
@@ -139,15 +139,15 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Complete |
 | DATA-07 | Phase 1 | Complete |
-| BROWSE-01 | Phase 1 | Pending |
-| BROWSE-02 | Phase 1 | Pending |
-| BROWSE-03 | Phase 1 | Pending |
-| BROWSE-04 | Phase 1 | Pending |
+| BROWSE-01 | Phase 1 | Complete |
+| BROWSE-02 | Phase 1 | Complete |
+| BROWSE-03 | Phase 1 | Complete |
+| BROWSE-04 | Phase 1 | Complete |
 | BROWSE-05 | Phase 1 | Pending |
-| BROWSE-06 | Phase 1 | Pending |
-| BROWSE-07 | Phase 1 | Pending |
-| BROWSE-08 | Phase 1 | Pending |
-| BROWSE-09 | Phase 1 | Pending |
+| BROWSE-06 | Phase 1 | Complete |
+| BROWSE-07 | Phase 1 | Complete |
+| BROWSE-08 | Phase 1 | Complete |
+| BROWSE-09 | Phase 1 | Complete |
 | VIZ-01 | Phase 1 | Pending |
 | VIZ-02 | Phase 1 | Pending |
 | EXPORT-01 | Phase 1 | Pending |

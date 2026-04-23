@@ -49,5 +49,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Browsing | 2/7 | In Progress|  |
+| 1. Foundation + Browsing | 5/7 | In Progress|  |
 | 2. NL Agent Layer | 0/TBD | Not started | - |
