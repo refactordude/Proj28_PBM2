@@ -10,7 +10,7 @@ PBM2 ships in two phases that respect the core value ordering: browsing must wor
 - Integer phases (1, 2): Planned milestone work
 - Decimal phases (1.1, etc.): Urgent insertions if needed
 
-- [ ] **Phase 1: Foundation + Browsing** - Deployable read-only data browser: auth, settings, data service, pivot grid, charts, export
+- [x] **Phase 1: Foundation + Browsing** - Deployable read-only data browser: auth, settings, data service, pivot grid, charts, export (completed 2026-04-23)
 - [ ] **Phase 2: NL Agent Layer** - Natural-language query on top of the Phase 1 service layer, with full safety harness
 
 ## Phase Details
@@ -49,5 +49,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Browsing | 5/7 | In Progress|  |
+| 1. Foundation + Browsing | 7/7 | Complete   | 2026-04-23 |
 | 2. NL Agent Layer | 0/TBD | Not started | - |

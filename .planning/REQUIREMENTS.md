@@ -45,8 +45,8 @@
 
 ### Export
 
-- [ ] **EXPORT-01**: User can download the current pivot grid or detail view as an Excel (`.xlsx`) file via `openpyxl`
-- [ ] **EXPORT-02**: User can download the current pivot grid or detail view as a CSV file
+- [x] **EXPORT-01**: User can download the current pivot grid or detail view as an Excel (`.xlsx`) file via `openpyxl`
+- [x] **EXPORT-02**: User can download the current pivot grid or detail view as a CSV file
 
 ### NL Agent
 
@@ -150,8 +150,8 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | BROWSE-09 | Phase 1 | Complete |
 | VIZ-01 | Phase 1 | Complete |
 | VIZ-02 | Phase 1 | Complete |
-| EXPORT-01 | Phase 1 | Pending |
-| EXPORT-02 | Phase 1 | Pending |
+| EXPORT-01 | Phase 1 | Complete |
+| EXPORT-02 | Phase 1 | Complete |
 | NL-01 | Phase 2 | Pending |
 | NL-02 | Phase 2 | Pending |
 | NL-03 | Phase 2 | Pending |
