@@ -72,9 +72,9 @@
 
 ### Settings
 
-- [ ] **SETUP-01**: Admin can create, read, update, and delete database connection entries from the Settings page; entries are persisted to `config/settings.yaml`
-- [ ] **SETUP-02**: Admin can create, read, update, and delete LLM connection entries from the Settings page; entries are persisted to `config/settings.yaml`
-- [ ] **SETUP-03**: Admin can test a database or LLM connection from the Settings page and see a pass/fail indicator
+- [x] **SETUP-01**: Admin can create, read, update, and delete database connection entries from the Settings page; entries are persisted to `config/settings.yaml`
+- [x] **SETUP-02**: Admin can create, read, update, and delete LLM connection entries from the Settings page; entries are persisted to `config/settings.yaml`
+- [x] **SETUP-03**: Admin can test a database or LLM connection from the Settings page and see a pass/fail indicator
 
 ### Onboarding
 
@@ -168,9 +168,9 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | SAFE-04 | Phase 2 | Pending |
 | SAFE-05 | Phase 2 | Pending |
 | SAFE-06 | Phase 2 | Pending |
-| SETUP-01 | Phase 1 | Pending |
-| SETUP-02 | Phase 1 | Pending |
-| SETUP-03 | Phase 1 | Pending |
+| SETUP-01 | Phase 1 | Complete |
+| SETUP-02 | Phase 1 | Complete |
+| SETUP-03 | Phase 1 | Complete |
 | ONBD-01 | Phase 2 | Pending |
 | ONBD-02 | Phase 2 | Pending |
 
