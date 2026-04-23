@@ -32,7 +32,7 @@
 - [x] **BROWSE-02**: User sees `InfoCategory → Item` as a browsable hierarchy (sidebar or tree), with LUN-prefixed items grouped under their field name
 - [x] **BROWSE-03**: User can search parameters by substring across both `InfoCategory` and `Item` via a type-ahead search bar
 - [x] **BROWSE-04**: User sees a wide-form pivot grid (platforms × parameters), sortable by any column; the grid defaults to a single `InfoCategory` and caps displayed columns at ~30 with a visible warning when exceeded
-- [ ] **BROWSE-05**: User can open a single-platform detail view that lists `(InfoCategory, Item, Result)` rows grouped by `InfoCategory`
+- [x] **BROWSE-05**: User can open a single-platform detail view that lists `(InfoCategory, Item, Result)` rows grouped by `InfoCategory`
 - [x] **BROWSE-06**: User sees a row-count indicator ("showing N of M platforms / K of L parameters") on every result view
 - [x] **BROWSE-07**: User sees plain-English loading, empty, and error states for every query
 - [x] **BROWSE-08**: User's filter selections persist across widget interactions via `st.session_state`
@@ -40,8 +40,8 @@
 
 ### Visualization
 
-- [ ] **VIZ-01**: User can render a bar / line / scatter chart (Plotly) from any numeric column in the pivot grid or detail view
-- [ ] **VIZ-02**: Chart rendering uses lazy per-query numeric coercion and silently skips cells that are `pd.NA` or not coercible to a number
+- [x] **VIZ-01**: User can render a bar / line / scatter chart (Plotly) from any numeric column in the pivot grid or detail view
+- [x] **VIZ-02**: Chart rendering uses lazy per-query numeric coercion and silently skips cells that are `pd.NA` or not coercible to a number
 
 ### Export
 
@@ -143,13 +143,13 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | BROWSE-02 | Phase 1 | Complete |
 | BROWSE-03 | Phase 1 | Complete |
 | BROWSE-04 | Phase 1 | Complete |
-| BROWSE-05 | Phase 1 | Pending |
+| BROWSE-05 | Phase 1 | Complete |
 | BROWSE-06 | Phase 1 | Complete |
 | BROWSE-07 | Phase 1 | Complete |
 | BROWSE-08 | Phase 1 | Complete |
 | BROWSE-09 | Phase 1 | Complete |
-| VIZ-01 | Phase 1 | Pending |
-| VIZ-02 | Phase 1 | Pending |
+| VIZ-01 | Phase 1 | Complete |
+| VIZ-02 | Phase 1 | Complete |
 | EXPORT-01 | Phase 1 | Pending |
 | EXPORT-02 | Phase 1 | Pending |
 | NL-01 | Phase 2 | Pending |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-04-23T19:35:50.280Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-04-23T19:40:44.664Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 7
-  completed_plans: 5
-  percent: 71
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 01 (Foundation + Browsing) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-04-23
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation-browsing P03 | 4min | 2 tasks | 2 files |
 | Phase 01-foundation-browsing P04 | 103s | 2 tasks | 1 files |
 | Phase 01-foundation-browsing P05 | 2min | 2 tasks | 1 files |
+| Phase 01-foundation-browsing P06 | 2min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-browsing]: LLM ping uses openai SDK models.list() for openai type; requests.get /api/tags for ollama; others return Phase 1 not-implemented
 - [Phase 01-foundation-browsing]: Session state key conventions: selected_platforms, selected_params, pivot_swap_axes, _browse_url_loaded owned by browse.py — other pages must not collide
 - [Phase 01-foundation-browsing]: Query param CSV separator is comma; Plan 07 ctrl_export column replaces Copy Link with Export dialog trigger
+- [Phase 01-foundation-browsing]: _sync_state_to_url now takes 4 args (platforms, params, swap, tab) — Plan 07 must call with all 4
+- [Phase 01-foundation-browsing]: New session state keys: browse.tab, chart.x_col, chart.y_col, chart.type owned by browse.py
+- [Phase 01-foundation-browsing]: Pivot ctrl_export slot is st.empty() — Plan 07 puts Export... button there
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-23T19:35:50.243Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-04-23T19:40:44.625Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
