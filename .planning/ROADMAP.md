@@ -20,7 +20,7 @@ PBM2 ships in two phases that respect the core value ordering: browsing must wor
 **Depends on**: Nothing (first phase)
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06, FOUND-07, FOUND-08, DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, DATA-07, BROWSE-01, BROWSE-02, BROWSE-03, BROWSE-04, BROWSE-05, BROWSE-06, BROWSE-07, BROWSE-08, BROWSE-09, VIZ-01, VIZ-02, EXPORT-01, EXPORT-02, SETUP-01, SETUP-02, SETUP-03, SAFE-01
 **Success Criteria** (what must be TRUE):
-  1. User signs in with team credentials, sees only a login page if unauthenticated, and is refused app startup if the cookie key is still the demo value
+  1. App runs on the team intranet without authentication (auth deferred to a pre-deployment phase per CONTEXT D-04). `config/auth.yaml` and `.env` are gitignored so the scaffold does not leak demo credentials when auth is turned on later.
   2. User can configure DB and LLM connection entries from the Settings page, test each connection, and see a pass/fail result — before touching any data browser
   3. User can select one or more platforms and one or more parameters, view the result as a sortable wide-form pivot grid (platforms x parameters), and see a row-count indicator confirming how many platforms and parameters are displayed
   4. User can chart any numeric parameter column as a bar, line, or scatter Plotly chart, and download the current result as an Excel or CSV file
