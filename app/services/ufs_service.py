@@ -40,6 +40,23 @@ logger = logging.getLogger(__name__)
 
 _TABLE = "ufs_data"  # SAFE-01: single allowed table name — module constant, not user input
 
+# Security (T-03-01): allowlist guard so _TABLE can never be an arbitrary string
+# even if the constant were changed to read from settings or env in future.
+_ALLOWED_TABLES: frozenset[str] = frozenset({"ufs_data"})
+
+
+def _safe_table(name: str) -> str:
+    """Return name unchanged if it is in the allowlist; raise ValueError otherwise.
+
+    This guard prevents SQL injection if _TABLE were ever sourced from settings,
+    user input, or an environment variable.  Because the table name is not a SQL
+    bind-parameter placeholder, it must be validated at the application level
+    before being interpolated into an sa.text() string.
+    """
+    if name not in _ALLOWED_TABLES:
+        raise ValueError(f"Table '{name}' is not in the allowed table list")
+    return name
+
 
 # ---------------------------------------------------------------------------
 # Catalog queries (cached 300 s — catalog data is immutable between ingestions)
@@ -52,9 +69,10 @@ def list_platforms(_db: DBAdapter) -> list[str]:
     The underscore prefix on _db disables Streamlit cache hashing of the adapter
     (FOUND-07). Cached for 300 seconds — platform list changes only on new ingestion.
     """
+    tbl = _safe_table(_TABLE)
     with _db._get_engine().connect() as conn:
         df = pd.read_sql_query(
-            sa.text(f"SELECT DISTINCT PLATFORM_ID FROM {_TABLE} ORDER BY PLATFORM_ID"),
+            sa.text(f"SELECT DISTINCT PLATFORM_ID FROM {tbl} ORDER BY PLATFORM_ID"),
             conn,
         )
     return df["PLATFORM_ID"].dropna().astype(str).tolist()
@@ -67,10 +85,11 @@ def list_parameters(_db: DBAdapter) -> list[dict]:
     Each dict has keys 'InfoCategory' and 'Item'. Sorted by (InfoCategory, Item).
     Cached for 300 seconds — parameter catalog is stable between ingestions.
     """
+    tbl = _safe_table(_TABLE)
     with _db._get_engine().connect() as conn:
         df = pd.read_sql_query(
             sa.text(
-                f"SELECT DISTINCT InfoCategory, Item FROM {_TABLE} "
+                f"SELECT DISTINCT InfoCategory, Item FROM {tbl} "
                 "ORDER BY InfoCategory, Item"
             ),
             conn,
@@ -128,9 +147,11 @@ def fetch_cells(
 
     # Build SQL with expanding bindparams (SQLAlchemy 2.x canonical IN clause pattern).
     # Converting tuple to list because sa.bindparam expanding=True expects a list.
+    # _safe_table validates _TABLE against _ALLOWED_TABLES before interpolation (T-03-01).
+    tbl = _safe_table(_TABLE)
     if has_cat_filter:
         sql = sa.text(
-            f"SELECT PLATFORM_ID, InfoCategory, Item, Result FROM {_TABLE} "
+            f"SELECT PLATFORM_ID, InfoCategory, Item, Result FROM {tbl} "
             "WHERE PLATFORM_ID IN :platforms "
             "AND InfoCategory IN :categories "
             "AND Item IN :items "
@@ -148,7 +169,7 @@ def fetch_cells(
         }
     else:
         sql = sa.text(
-            f"SELECT PLATFORM_ID, InfoCategory, Item, Result FROM {_TABLE} "
+            f"SELECT PLATFORM_ID, InfoCategory, Item, Result FROM {tbl} "
             "WHERE PLATFORM_ID IN :platforms "
             "AND Item IN :items "
             "LIMIT :cap"
