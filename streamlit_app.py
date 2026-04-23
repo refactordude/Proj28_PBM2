@@ -8,6 +8,7 @@ Auth (streamlit-authenticator) is deferred to a pre-deployment phase per D-04.
 """
 from __future__ import annotations
 
+import html
 import time
 from typing import Any
 
@@ -130,8 +131,11 @@ def render_sidebar(settings: Settings) -> None:
     else:
         dot_color = "#aaaaaa"
 
+    # Escape user-editable db name — Settings YAML is writable by anyone with intranet
+    # access and would otherwise execute <script> payloads injected as a db name.
+    safe_label = html.escape(active_db) if active_db else "No DB"
     st.sidebar.markdown(
-        f'<span style="color:{dot_color};">●</span> {active_db or "No DB"}',
+        f'<span style="color:{dot_color};">●</span> {safe_label}',
         unsafe_allow_html=True,
     )
 
