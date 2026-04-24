@@ -1,0 +1,130 @@
+{# app_v2/templates/overview/index.html
+   Full Overview tab. D-01..D-18, D-21. Block 'entity_list' is HTMX fragment target.  #}
+{% extends "base.html" %}
+
+{% block content %}
+  {# ---- Add platform row (D-08, D-09, typeahead with datalist per D-07) ---- #}
+  <form hx-post="/overview/add"
+        hx-target="#overview-list"
+        hx-swap="afterbegin"
+        hx-on::after-request="this.reset()"
+        class="d-flex gap-2 align-items-center mb-3">
+    <label for="platform-input" class="form-label mb-0 text-nowrap">Add platform to overview</label>
+    <input id="platform-input"
+           type="text"
+           name="platform_id"
+           list="platforms-datalist"
+           class="form-control"
+           placeholder="Start typing a PLATFORM_ID…"
+           autocomplete="off"
+           required>
+    <datalist id="platforms-datalist">
+      {% for pid in all_platform_ids %}
+        <option value="{{ pid }}"></option>
+      {% endfor %}
+    </datalist>
+    <button type="submit" class="btn btn-primary text-nowrap">Add</button>
+  </form>
+
+  {# ---- Filter block (D-12..D-17). Routes in Plan 02-03; layout complete here. ---- #}
+  <details id="filter-details" class="bg-light border rounded p-2 mb-3"
+           {% if filters_open %}open{% endif %}>
+    <summary class="d-flex align-items-center gap-2 user-select-none" style="cursor:pointer">
+      Filters
+      <span id="filter-count-badge"
+            class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
+        {{ active_filter_count }}
+      </span>
+      <a id="clear-filters-link"
+         class="ms-auto small {% if active_filter_count == 0 %}d-none{% endif %}"
+         href="#"
+         hx-post="/overview/filter/reset"
+         hx-target="#overview-list"
+         hx-swap="innerHTML">Clear all</a>
+    </summary>
+    <form id="filter-form"
+          class="row g-2 mt-2"
+          hx-post="/overview/filter"
+          hx-include="[data-filter]"
+          hx-target="#overview-list"
+          hx-swap="innerHTML">
+      <div class="col-auto">
+        <select name="brand" data-filter class="form-select form-select-sm" hx-trigger="change">
+          <option value="">All brands</option>
+          {% for brand in filter_brands %}
+            <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>{{ brand }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <select name="soc" data-filter class="form-select form-select-sm" hx-trigger="change">
+          <option value="">All SoCs</option>
+          {% for soc in filter_socs %}
+            <option value="{{ soc }}" {% if selected_soc == soc %}selected{% endif %}>{{ soc }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <select name="year" data-filter class="form-select form-select-sm" hx-trigger="change">
+          <option value="">All years</option>
+          {% for year in filter_years %}
+            <option value="{{ year }}" {% if selected_year == year|string %}selected{% endif %}>{{ year }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto d-flex align-items-center gap-1">
+        <input type="checkbox" id="has-content-check" name="has_content" value="1"
+               data-filter class="form-check-input" hx-trigger="change"
+               {% if selected_has_content %}checked{% endif %}>
+        <label for="has-content-check" class="form-check-label small">Has content</label>
+      </div>
+    </form>
+  </details>
+
+  {# ---- Entity list — HTMX fragment target. Block name 'entity_list' per UI-SPEC. ---- #}
+  <ul id="overview-list" class="list-group list-group-flush">
+    {% block entity_list %}
+      {# OOB swap element — returned on every filter/add/remove response (UI-SPEC). #}
+      <span id="filter-count-badge" hx-swap-oob="true"
+            class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
+        {{ active_filter_count }}
+      </span>
+
+      {% if entities %}
+        {% for entity in entities %}
+          {% include "overview/_entity_row.html" %}
+        {% endfor %}
+      {% elif active_filter_count == 0 %}
+        {# D-05 empty state — no platforms in curated list at all. #}
+        <div class="alert alert-info text-center py-5" role="alert">
+          <i class="bi bi-arrow-up-circle fs-3 d-block mb-2"></i>
+          No platforms in your overview yet. Use the search above to add your first one.
+        </div>
+      {% else %}
+        {# Filters applied, zero results. #}
+        <li class="list-group-item text-center text-muted py-4">
+          No platforms match the current filters.
+          <a href="#"
+             hx-post="/overview/filter/reset"
+             hx-target="#overview-list"
+             hx-swap="innerHTML">Clear filters</a>
+        </li>
+      {% endif %}
+    {% endblock entity_list %}
+  </ul>
+
+  {# ---- localStorage open/closed persistence for #filter-details (UI-SPEC). ---- #}
+  <script>
+  (function () {
+    var el = document.getElementById('filter-details');
+    if (!el) return;
+    var key = 'pbm2.overview.filters.open';
+    var stored = localStorage.getItem(key);
+    if (stored === 'false') el.removeAttribute('open');
+    else if (stored === 'true') el.setAttribute('open', '');
+    el.addEventListener('toggle', function () {
+      localStorage.setItem(key, el.open ? 'true' : 'false');
+    });
+  }());
+  </script>
+{% endblock %}

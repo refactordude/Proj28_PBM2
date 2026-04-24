@@ -1,0 +1,37 @@
+{# app_v2/templates/overview/_entity_row.html
+   Single list-group-item per entity. D-01..D-06, AI Summary disabled in Phase 2 per D-06. #}
+<li class="list-group-item d-flex align-items-center">
+  <span class="fw-bold fs-5">{{ entity.platform_id }}</span>
+
+  <span class="badge rounded-pill bg-primary ms-2">{{ entity.brand or "—" }}</span>
+  <span class="badge rounded-pill bg-info text-dark ms-2">{{ entity.soc_raw or "—" }}</span>
+  {% if entity.year is none %}
+    <span class="badge rounded-pill bg-secondary ms-2">Unknown</span>
+  {% else %}
+    <span class="badge rounded-pill bg-success ms-2">{{ entity.year }}</span>
+  {% endif %}
+
+  <div class="me-auto"></div>
+
+  <a href="/platforms/{{ entity.platform_id }}"
+     class="btn btn-link btn-sm"
+     aria-label="View {{ entity.platform_id }}">
+    <i class="bi bi-arrow-right-circle"></i>
+  </a>
+
+  {# AI Summary — disabled in Phase 2 per D-06; Phase 3 removes `disabled` + wires the handler. #}
+  <button class="btn btn-outline-primary btn-sm ms-2"
+          disabled
+          title="Content page must exist first (Phase 3)">
+    <i class="bi bi-stars"></i> AI Summary
+  </button>
+
+  <button class="btn btn-outline-danger btn-sm ms-2"
+          aria-label="Remove {{ entity.platform_id }}"
+          hx-delete="/overview/{{ entity.platform_id }}"
+          hx-target="closest .list-group-item"
+          hx-swap="outerHTML swap:300ms"
+          hx-confirm="Remove {{ entity.platform_id }} from your overview?">
+    <i class="bi bi-x"></i>
+  </button>
+</li>
