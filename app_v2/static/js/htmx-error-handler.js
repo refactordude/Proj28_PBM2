@@ -23,7 +23,12 @@
       // Route the error response into the dedicated error container regardless
       // of the original hx-target. Prevents stale error text from lingering in
       // feature-specific targets (e.g. #overview-list) after the next success.
-      evt.detail.target = document.getElementById("htmx-error-container");
+      // Guard against missing container (e.g. templates that don't extend base.html):
+      // if null, HTMX falls back to the original hx-target — still visible, not silent.
+      var errorContainer = document.getElementById("htmx-error-container");
+      if (errorContainer) {
+        evt.detail.target = errorContainer;
+      }
     }
   }
 
