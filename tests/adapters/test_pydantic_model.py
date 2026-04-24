@@ -3,6 +3,10 @@
 Tests verify that the factory returns the correct PydanticAI model class for each
 LLMConfig.type, applies default model name fallbacks, and raises ValueError for
 unsupported types. No network calls are made — only instance type assertions.
+
+Note: OpenAI SDK 2.x raises OpenAIError at OpenAIProvider instantiation if no api_key
+is available (env var or explicit). Tests pass a dummy key to satisfy this SDK-level
+requirement — the key is never used in a network call by these unit tests.
 """
 from __future__ import annotations
 
@@ -13,13 +17,16 @@ from pydantic_ai.models.ollama import OllamaModel
 from app.core.config import LLMConfig
 from app.adapters.llm.pydantic_model import build_pydantic_model
 
+# Dummy key satisfies OpenAI SDK's validation without making real API calls
+_DUMMY_KEY = "sk-test-dummy-key-for-unit-tests-only"
+
 
 # ---------------------------------------------------------------------------
 # Test 1: openai type returns OpenAIChatModel
 # ---------------------------------------------------------------------------
 def test_build_openai_returns_openai_chat_model():
     """build_pydantic_model with type='openai' returns an OpenAIChatModel instance."""
-    cfg = LLMConfig(name="o", type="openai", model="gpt-4o-mini")
+    cfg = LLMConfig(name="o", type="openai", model="gpt-4o-mini", api_key=_DUMMY_KEY)
     model = build_pydantic_model(cfg)
     assert isinstance(model, OpenAIChatModel)
 
@@ -49,7 +56,7 @@ def test_build_unsupported_type_raises_value_error():
 # ---------------------------------------------------------------------------
 def test_build_openai_empty_endpoint_uses_default():
     """build_pydantic_model with endpoint='' passes base_url=None to OpenAIProvider (api.openai.com default)."""
-    cfg = LLMConfig(name="o", type="openai", model="gpt-4o-mini", endpoint="")
+    cfg = LLMConfig(name="o", type="openai", model="gpt-4o-mini", endpoint="", api_key=_DUMMY_KEY)
     # Should not raise; provider defaults to api.openai.com/v1
     model = build_pydantic_model(cfg)
     assert isinstance(model, OpenAIChatModel)
@@ -61,7 +68,7 @@ def test_build_openai_empty_endpoint_uses_default():
 def test_build_empty_model_uses_fallback_defaults():
     """build_pydantic_model uses 'gpt-4o-mini' for openai and 'qwen2.5:7b' for ollama when model is empty."""
     # openai fallback
-    cfg_openai = LLMConfig(name="o", type="openai", model="")
+    cfg_openai = LLMConfig(name="o", type="openai", model="", api_key=_DUMMY_KEY)
     model_openai = build_pydantic_model(cfg_openai)
     assert isinstance(model_openai, OpenAIChatModel)
 
