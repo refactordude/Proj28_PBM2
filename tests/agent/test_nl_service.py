@@ -7,8 +7,10 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 from pydantic_ai.exceptions import UsageLimitExceeded
 
+from app.adapters.db.base import DBAdapter
 from app.core.agent.config import AgentConfig
 from app.core.agent.nl_agent import (
     AgentDeps,
@@ -17,6 +19,35 @@ from app.core.agent.nl_agent import (
     SQLResult,
 )
 from app.core.agent.nl_service import NLResult, run_nl_query
+from app.core.config import DatabaseConfig
+
+
+# ---------------------------------------------------------------------------
+# Minimal concrete DBAdapter for tests (cannot pass MagicMock — Pydantic is_instance)
+# ---------------------------------------------------------------------------
+
+
+class _StubDB(DBAdapter):
+    """Minimal concrete DBAdapter for tests — no real DB access needed."""
+
+    def __init__(self):
+        super().__init__(DatabaseConfig(name="stub", type="mysql"))
+        self._engine_mock = MagicMock()
+
+    def _get_engine(self):
+        return self._engine_mock
+
+    def test_connection(self) -> tuple[bool, str]:
+        return True, "ok"
+
+    def list_tables(self) -> list[str]:
+        return ["ufs_data"]
+
+    def get_schema(self, tables=None) -> dict:
+        return {}
+
+    def run_query(self, sql: str) -> pd.DataFrame:
+        return pd.DataFrame()
 
 
 class _FakeRunResult:
@@ -37,9 +68,9 @@ class _FakeAgent:
         return _FakeRunResult(self._output)
 
 
-def _make_deps(db_mock, *, active_llm_type="ollama"):
+def _make_deps(db, *, active_llm_type="ollama"):
     return AgentDeps(
-        db=db_mock,
+        db=db,
         agent_cfg=AgentConfig(
             allowed_tables=["ufs_data"],
             row_cap=200,
@@ -54,7 +85,7 @@ def _make_deps(db_mock, *, active_llm_type="ollama"):
 def test_step_cap_returns_failure():
     """Test 1 — UsageLimitExceeded -> NLResult(kind='failure', reason='step-cap')."""
     agent = _FakeAgent(raise_exc=UsageLimitExceeded("step cap"))
-    deps = _make_deps(MagicMock())
+    deps = _make_deps(_StubDB())
     result = run_nl_query("Q", agent, deps)
     assert result.kind == "failure"
     assert result.failure.reason == "step-cap"
@@ -67,7 +98,7 @@ def test_clarification_branch():
         candidate_params=["InfoCategory / Item1", "InfoCategory / Item2"],
     )
     agent = _FakeAgent(output=output)
-    deps = _make_deps(MagicMock())
+    deps = _make_deps(_StubDB())
     result = run_nl_query("Q", agent, deps)
     assert result.kind == "clarification_needed"
     assert result.message == "Which param do you mean?"
@@ -77,20 +108,20 @@ def test_clarification_branch():
 def test_ok_branch_fetches_dataframe(monkeypatch):
     """Test 3 — SQLResult -> NLResult(kind='ok') with LIMIT injected DataFrame."""
     fake_df = pd.DataFrame({"PLATFORM_ID": ["P1"], "Result": ["ok"]})
-    engine_mock = MagicMock()
+
+    db = _StubDB()
     conn_mock = MagicMock()
-    engine_mock.connect.return_value.__enter__.return_value = conn_mock
-    db_mock = MagicMock()
-    db_mock._get_engine.return_value = engine_mock
+    db._engine_mock.connect.return_value.__enter__.return_value = conn_mock
 
     # Patch pd.read_sql_query to bypass real DB
     import app.core.agent.nl_service as mod
+
     monkeypatch.setattr(mod.pd, "read_sql_query", lambda sql, conn: fake_df)
 
     sql = "SELECT PLATFORM_ID, Result FROM ufs_data WHERE PLATFORM_ID = 'P1'"
     output = SQLResult(query=sql, explanation="One row for P1.")
     agent = _FakeAgent(output=output)
-    deps = _make_deps(db_mock)
+    deps = _make_deps(db)
 
     result = run_nl_query("Q", agent, deps)
     assert result.kind == "ok"
@@ -103,7 +134,7 @@ def test_ok_branch_rejected_by_validator():
     """Test 4 — SQLResult with disallowed table -> NLResult(kind='failure', reason='llm-error')."""
     bad = SQLResult(query="SELECT * FROM mysql.user", explanation="bad")
     agent = _FakeAgent(output=bad)
-    deps = _make_deps(MagicMock())
+    deps = _make_deps(_StubDB())
 
     result = run_nl_query("Q", agent, deps)
     assert result.kind == "failure"
@@ -124,7 +155,9 @@ def test_nl_service_importable_without_streamlit():
         timeout=30,
         cwd="/home/yh/Desktop/02_Projects/Proj28_PBM2",
     )
-    assert r.returncode == 0, f"returncode={r.returncode}\nstdout={r.stdout}\nstderr={r.stderr}"
+    assert r.returncode == 0, (
+        f"returncode={r.returncode}\nstdout={r.stdout}\nstderr={r.stderr}"
+    )
     assert "ok" in r.stdout
 
 
