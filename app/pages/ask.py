@@ -29,6 +29,38 @@ from app.core.config import find_llm, load_settings
 
 
 _HISTORY_CAP = 50
+
+
+def load_starter_prompts() -> list[dict]:
+    """Load starter prompts from config/starter_prompts.yaml.
+
+    Fallback chain (ONBD-02):
+      1. config/starter_prompts.yaml (user-local, gitignored)
+      2. config/starter_prompts.example.yaml (committed template)
+      3. Empty list (graceful degradation -- gallery just doesn't render)
+
+    Each returned entry has 'label' (str) and 'question' (str).
+    Returns [] on empty/missing/malformed YAML.
+    """
+    from pathlib import Path
+    import yaml
+
+    for filename in ("config/starter_prompts.yaml", "config/starter_prompts.example.yaml"):
+        path = Path(filename)
+        if path.exists():
+            try:
+                with path.open("r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or []
+                if isinstance(data, list):
+                    return [
+                        e for e in data
+                        if isinstance(e, dict) and "label" in e and "question" in e
+                    ]
+            except yaml.YAMLError:
+                return []
+    return []
+
+
 _DEFAULTS: dict[str, Any] = {
     "ask.question": "",
     "ask.history": [],
@@ -142,22 +174,15 @@ def _render_question_input() -> str:
 
 
 def _render_starter_gallery() -> None:
-    """Gallery rendered only when no history yet. (Plan 02-06 wires the YAML loader.)
-
-    This plan is the UI scaffold; it renders from a stubbed list. Plan 02-06 replaces
-    the stub with a load_starter_prompts() call.
-    """
+    """Gallery rendered only when no history yet (ONBD-01, D-27)."""
     if st.session_state.get("ask.history"):
         return
+    prompts = load_starter_prompts()
+    if not prompts:
+        return  # graceful degradation when YAML is missing
     st.subheader("Try asking...")
-    stub_prompts = [
-        {"label": "WriteProt status by platform",
-         "question": "What is the WriteProt status for all LUNs on each platform?"},
-        {"label": "Compare bkops across platforms",
-         "question": "Compare background operations settings across all platforms."},
-    ]
     cols = st.columns(4)
-    for i, prompt in enumerate(stub_prompts[:8]):
+    for i, prompt in enumerate(prompts[:8]):
         with cols[i % 4]:
             if st.button(prompt["label"], key=f"starter_{i}", type="secondary"):
                 st.session_state["ask.question"] = prompt["question"]
