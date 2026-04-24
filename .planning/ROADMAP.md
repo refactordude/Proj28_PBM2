@@ -40,7 +40,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   4. Bootstrap 5, HTMX, and Bootstrap Icons are served from `/static/vendor/` (not CDN-dependent); the page renders correctly with network access blocked
   5. A validation error on any HTMX form (4xx/5xx response) shows a visible error message in the page — not silently discarded
 **Plans**: 4 plans
-- [ ] 01-01-PLAN.md — Dependencies + ufs_service _core extraction (INFRA-06, INFRA-09)
+- [x] 01-01-PLAN.md — Dependencies + ufs_service _core extraction (INFRA-06, INFRA-09)
 - [ ] 01-02-PLAN.md — nl_service extraction from ask.py (INFRA-07)
 - [ ] 01-03-PLAN.md — FastAPI shell + vendored static assets + base template (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05)
 - [ ] 01-04-PLAN.md — app_v2/services/cache.py TTLCache wrappers (INFRA-08)
