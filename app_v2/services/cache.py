@@ -88,6 +88,21 @@ def list_parameters(db: DBAdapter, db_name: str = "") -> list[dict]:
     key=lambda db, platforms, infocategories, items, row_cap=200, db_name="":
         hashkey(platforms, infocategories, items, row_cap, db_name),
 )
+def _fetch_cells_cached(
+    db: DBAdapter,
+    platforms: Tuple[str, ...],
+    infocategories: Tuple[str, ...],
+    items: Tuple[str, ...],
+    row_cap: int = 200,
+    db_name: str = "",
+) -> tuple[pd.DataFrame, bool]:
+    """Internal cached function — stores the raw DataFrame in TTLCache.
+
+    Do NOT call this directly. Use fetch_cells() which returns a defensive copy.
+    """
+    return fetch_cells_core(db, platforms, infocategories, items, row_cap, db_name)
+
+
 def fetch_cells(
     db: DBAdapter,
     platforms: Tuple[str, ...],
@@ -101,12 +116,16 @@ def fetch_cells(
     Key: hashkey(platforms, infocategories, items, row_cap, db_name).
     The adapter is NOT hashed.
 
-    NOTE: TTLCache returns the SAME cached object to every caller until TTL
-    expires. A defensive copy is returned here so callers can freely mutate
-    (e.g. add computed columns) without corrupting the cached value for
-    concurrent or subsequent requests (Pitfall 3 mutability contract).
+    Returns a defensive copy of the cached DataFrame on every call so callers
+    can freely mutate (e.g. add computed columns) without corrupting the shared
+    cached object for concurrent or subsequent requests (Pitfall 3 contract).
+
+    The copy is made here, outside _fetch_cells_cached, because cachetools
+    @cached returns the stored value directly on a hit — the decorated function
+    body is bypassed — so a copy() inside the decorated function would only run
+    on a cache miss.
     """
-    df, capped = fetch_cells_core(db, platforms, infocategories, items, row_cap, db_name)
+    df, capped = _fetch_cells_cached(db, platforms, infocategories, items, row_cap, db_name)
     return df.copy(), capped  # MUST copy — TTLCache returns same object to all callers
 
 
