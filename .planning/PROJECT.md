@@ -8,46 +8,51 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 
 **Fast ad-hoc browsing of the parameter database.** Even if the NL layer fails, the UI must let a non-SQL user quickly find the platforms they care about, the parameters they care about, and see them in a wide-form grid they can read, compare, chart, and export. NL query rides on top of this and enhances it — it does not replace it.
 
+## Current State
+
+**v1.0 MVP shipped 2026-04-24.** Both planned phases delivered in a single autonomous run (`/gsd-autonomous`):
+
+- **Phase 1 (Foundation + Browsing):** Streamlit app with navigation (Browse + Settings), DB/LLM connection CRUD in Settings, full Browse page with Pivot/Detail/Chart tabs, sidebar filters, shareable URL round-trip, Excel/CSV export. MySQLAdapter with correct pooling and read-only enforcement. EAV Result normalization pipeline (65 tests).
+- **Phase 2 (NL Agent Layer):** Ask page with PydanticAI-backed natural-language-to-SQL agent, safety harness (sqlparse SELECT-only validator with UNION/CTE guards, LIMIT injector, path scrubber, `<db_data>` prompt-injection wrapper, step-cap, timeout), dual OpenAI/Ollama backends via `openai` SDK with different `base_url`, NL-05 two-turn parameter confirmation flow, OpenAI data-sensitivity warning, 8-prompt starter gallery.
+- **Stats:** 3080 LOC app/ + 1711 LOC tests/, 171 passing pytest cases, 87 commits across 2 days.
+- **Known deferrals:** FOUND-01 (login) and FOUND-03 (cookie-key startup guard) deferred to a pre-deployment phase per locked decision D-04. `config/auth.yaml` remains gitignored so demo credentials cannot leak when auth is enabled later.
+
 ## Requirements
 
 ### Validated
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+#### Browsing & Discovery — v1.0
+- ✓ Browsable parameter catalog (InfoCategory / Item multiselect with typeahead) — v1.0
+- ✓ Type-ahead search over `InfoCategory / Item` combined labels — v1.0
+- ✓ Platform picker (multi-select over `PLATFORM_ID`) — v1.0
+- ✓ Parameter picker (multi-select, sorted InfoCategory ASC then Item ASC) — v1.0
+- ✓ Starter-prompt gallery (8 curated UFS prompts; editable via YAML) — v1.0
+
+#### Data Display — v1.0
+- ✓ Wide-form pivot grid with `aggfunc="first"`, swap-axes toggle, 30-column cap — v1.0
+- ✓ Long-form Detail tab for single-platform deep dive, sorted — v1.0
+- ✓ Result normalization pipeline (missing sentinels, shell errors, LUN split, DME split, lazy numeric coercion) — v1.0
+- ✓ Plotly charts for numeric parameters (bar / line / scatter) with per-column numeric detection — v1.0
+- ✓ Excel (openpyxl) and CSV (single utf-8-sig BOM) export via unified dialog — v1.0
+
+#### Natural-Language Layer — v1.0
+- ✓ NL question input handling all 3 core shapes (lookup / compare / filter) — v1.0
+- ✓ Agent proposes candidate `(InfoCategory, Item)` params from the real DB before executing SQL (NL-05 two-turn flow) — v1.0
+- ✓ Plain-text LLM-synthesized summary alongside result table — v1.0
+- ✓ Sidebar radio switches OpenAI ↔ Ollama at runtime (default Ollama per D-25) — v1.0
+- ✓ Safety harness: readonly DB user, `allowed_tables=["ufs_data"]`, sqlparse validator, LIMIT injection, step-cap, wall-clock timeout via MySQL `max_execution_time`, path scrub for OpenAI, `<db_data>` prompt-injection wrapper — v1.0
+
+#### Platform — v1.0
+- ✓ Settings UI for DB and LLM connection CRUD with per-row Test button — v1.0
+- ⏳ Streamlit intranet deployment — v1.0 scaffolding complete (auth deferred to pre-deployment phase per D-04; `streamlit-authenticator` and cookie-key guard still to be enabled before team-wide rollout)
 
 ### Active
 
-<!-- Current scope. Building toward these. -->
+<!-- Pending decisions about what comes after v1.0. Populate at next milestone planning. -->
 
-#### Browsing & Discovery
-
-- [ ] Browsable parameter catalog (InfoCategory → Item tree/sidebar)
-- [ ] Type-ahead search bar over `InfoCategory` and `Item` names
-- [ ] Platform picker (filter by one or many `PLATFORM_ID` values)
-- [ ] Parameter picker (multi-select; category + item)
-- [ ] Starter-prompt / saved-question gallery that users can click to run or modify
-
-#### Data Display
-
-- [ ] Wide-form pivot grid: platforms × parameters (`aggfunc="first"`), sortable, scrollable
-- [ ] Long-form browsable view for a single platform (grouped by `InfoCategory`)
-- [ ] Result normalization: coerce `None` / `"None"` / empty / `"cat: ..."` / `"Permission denied"` to a single missing sentinel before display
-- [ ] Charts for numeric parameters (Plotly or Altair) — bar / line / scatter as appropriate
-- [ ] Excel and CSV export of any visible result table
-
-#### Natural-Language Layer
-
-- [ ] NL question input that answers the three core shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
-- [ ] Agent proposes candidate parameters from a vague question before running SQL
-- [ ] Plain-text LLM-synthesized summary alongside the returned data table / chart
-- [ ] LLM adapter supports OpenAI and Ollama, switchable at runtime from the sidebar
-- [ ] Agent safety: `readonly` DB user, `allowed_tables: ["ufs_data"]`, row cap, step cap, timeout — all honored
-
-#### Platform
-
-- [ ] Streamlit intranet deployment, shared team credentials via `streamlit-authenticator`
-- [ ] Settings UI (or at minimum config file flow) for database connections and LLM endpoints — consistent with existing `config/settings.example.yaml`
+(None yet — v1.0 just shipped; start `/gsd-new-milestone` to scope v1.1)
 
 ### Out of Scope
 
@@ -103,13 +108,17 @@ All three contribute equally, so solving only one is not enough.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Ad-hoc browsing is the v1 must-work feature; NL is secondary | User explicitly chose "Fast ad-hoc browsing" over "NL → correct answer" when forced to pick one — UI must stand on its own | — Pending |
-| Dual LLM backends (OpenAI + Ollama), user-selectable at runtime | Scaffolding already supports it; lets team pick per-question based on data sensitivity and quality needs | — Pending |
-| Shared-credential intranet auth via existing `streamlit-authenticator` | Team is small, on internal network; proper SSO is not worth the complexity in v1 | — Pending |
-| Name "PBM2" left unexpanded | Internal tool; acronym does not need to be marketable | — Pending |
-| Discovery aids = all four: catalog + search + LLM suggest + starter prompts | User ranked discovery pain equal to EAV and SQL pain; partial solutions leave real users stuck | — Pending |
-| DB is strictly read-only in v1; no upload / write UI | "Someone else maintains the DB" — ingestion belongs upstream | — Pending |
-| `Result` normalization is lazy and per-query | Same `Item` legitimately has different encodings across platforms; global coercion would lose information | — Pending |
+| Ad-hoc browsing is the v1 must-work feature; NL is secondary | User explicitly chose "Fast ad-hoc browsing" over "NL → correct answer" when forced to pick one — UI must stand on its own | ✓ Good — v1.0 Browse is complete and independently valuable; NL layered on top |
+| Dual LLM backends (OpenAI + Ollama), user-selectable at runtime | Scaffolding already supports it; lets team pick per-question based on data sensitivity and quality needs | ✓ Good — both backends reachable via same `openai` SDK path (PydanticAI abstracts it) |
+| Shared-credential intranet auth via existing `streamlit-authenticator` | Team is small, on internal network; proper SSO is not worth the complexity in v1 | ⚠️ Revisit — D-04 deferred auth to a pre-deployment phase. Must enable streamlit-authenticator + cookie-key guard before team-wide rollout |
+| Name "PBM2" left unexpanded | Internal tool; acronym does not need to be marketable | ✓ Good |
+| Discovery aids = all four: catalog + search + LLM suggest + starter prompts | User ranked discovery pain equal to EAV and SQL pain; partial solutions leave real users stuck | ✓ Good — all four shipped (catalog multiselect, typeahead, NL-05 agent suggest, starter gallery) |
+| DB is strictly read-only in v1; no upload / write UI | "Someone else maintains the DB" — ingestion belongs upstream | ✓ Good — enforced at DB adapter (readonly user) + service layer (`SET SESSION TRANSACTION READ ONLY`) + SQL validator (SELECT-only) |
+| `Result` normalization is lazy and per-query | Same `Item` legitimately has different encodings across platforms; global coercion would lose information | ✓ Good — `normalize()` applied only to the Result column per query; `try_numeric()` called per-column during chart render |
+| Agent has exactly one tool (`run_sql`); no schema inspector | Minimizes agent attack surface; forces the agent to ask the user via NL-05 rather than introspect the schema | ✓ Good — validated in Phase 2 code review (UNION/CTE smuggle attempts caught by sqlparse validator) |
+| NL-05 uses `st.multiselect` pre-checked with agent candidates; "Run Query" to execute | Preserves Browse-page mental model; user can add/remove candidates before committing | ✓ Good |
+| Path scrub (`/sys/`, `/proc/`, `/dev/`) applied only when OpenAI backend active | Local Ollama sees raw data; cloud LLM gets scrubbed data — protects sensitive filesystem paths from leaving the intranet | ✓ Good — re-review caught case-insensitive miss (uppercase paths) and fixed |
+| Phase 1 auth deferred to pre-deployment phase per D-04 | Team agreed to skip auth during core app build so the data-browsing value could be validated first; gitignore still in place so scaffold cannot leak demo creds | — Pending — revisit when preparing for team-wide rollout |
 
 ## Evolution
 
@@ -129,4 +138,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-23 after initialization*
+*Last updated: 2026-04-24 after v1.0 MVP milestone*

@@ -1,0 +1,49 @@
+# 사내 데이터 플랫폼 설정
+# 이 파일을 config/settings.yaml로 복사해서 사용하세요.
+# (Settings UI에서 CRUD하면 자동으로 settings.yaml에 저장됩니다.)
+
+databases:
+  - name: "Production MySQL (Read-only)"
+    type: mysql
+    host: localhost
+    port: 3306
+    database: mydb
+    user: readonly_user
+    password: "change-me"
+    readonly: true
+
+llms:
+  - name: "GPT-4o Mini"
+    type: openai
+    model: gpt-4o-mini
+    api_key: ""          # 비워두면 OPENAI_API_KEY 환경변수 사용
+    endpoint: ""         # OpenAI 기본 endpoint 사용
+    temperature: 0.0
+    max_tokens: 2000
+
+  - name: "Local Llama (Ollama)"
+    type: ollama
+    model: "llama3.1:8b"
+    endpoint: "http://localhost:11434"
+    api_key: ""
+    temperature: 0.0
+    max_tokens: 2000
+
+app:
+  default_database: "Production MySQL (Read-only)"
+  default_llm: "GPT-4o Mini"
+  query_row_limit: 1000
+  recent_query_history: 20
+  agent:
+    # 비워두면 현재 선택된 LLM(`llms` 중 default_llm 또는 사이드바에서 고른 항목)의
+    # model 값을 그대로 사용합니다. 에이전트만 별도 모델로 올리고 싶을 때만 지정하세요
+    # (예: 일반 답변은 gpt-oss-120b, 에이전트 루프만 gpt-4.1 로 정확도 escalation).
+    model: ""
+    max_steps: 5
+    row_cap: 200
+    timeout_s: 30
+    # 에이전트의 run_sql이 질의할 수 있는 테이블 목록.
+    # Settings UI의 [앱 기본값 → 에이전트 허용 테이블]에서도 편집 가능.
+    allowed_tables:
+      - "ufs_data"
+    max_context_tokens: 30000
