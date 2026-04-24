@@ -101,12 +101,13 @@ def fetch_cells(
     Key: hashkey(platforms, infocategories, items, row_cap, db_name).
     The adapter is NOT hashed.
 
-    NOTE: TTLCache returns the SAME DataFrame object to every caller until TTL
-    expires. Do NOT mutate the returned DataFrame in the caller — it will be
-    seen by the next caller. If mutation is needed, `df.copy()` at the call site
-    (Pitfall 3 mutability concern).
+    NOTE: TTLCache returns the SAME cached object to every caller until TTL
+    expires. A defensive copy is returned here so callers can freely mutate
+    (e.g. add computed columns) without corrupting the cached value for
+    concurrent or subsequent requests (Pitfall 3 mutability contract).
     """
-    return fetch_cells_core(db, platforms, infocategories, items, row_cap, db_name)
+    df, capped = fetch_cells_core(db, platforms, infocategories, items, row_cap, db_name)
+    return df.copy(), capped  # MUST copy — TTLCache returns same object to all callers
 
 
 # ---------------------------------------------------------------------------

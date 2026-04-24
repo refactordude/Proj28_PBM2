@@ -99,13 +99,48 @@ def test_list_parameters_independent_of_list_platforms(fake_db):
 # ---------------------------------------------------------------------------
 
 def test_fetch_cells_cache_hit_on_identical_filters(fake_db):
+    # fetch_cells returns df.copy() on every call, so the two returned DataFrames
+    # are NOT the same object (r1 is not r2) — but core is called only once
+    # (second call hits the cache and returns a fresh copy of the cached value).
     df = pd.DataFrame({"PLATFORM_ID": ["P1"], "InfoCategory": ["c"], "Item": ["x"], "Result": ["1"]})
     with patch("app_v2.services.cache.fetch_cells_core",
                return_value=(df, False)) as mock_core:
-        r1 = fetch_cells(fake_db, ("P1",), (), ("x",))
-        r2 = fetch_cells(fake_db, ("P1",), (), ("x",))
-    assert r1 is r2
-    assert mock_core.call_count == 1
+        r1_df, r1_capped = fetch_cells(fake_db, ("P1",), (), ("x",))
+        r2_df, r2_capped = fetch_cells(fake_db, ("P1",), (), ("x",))
+    assert mock_core.call_count == 1, "core must be called exactly once on a cache hit"
+    assert r1_df is not r2_df, "each call must return a distinct copy (mutation isolation)"
+    assert r1_df.equals(r2_df), "both copies must have identical content"
+    assert r1_capped == r2_capped == False  # noqa: E712
+
+
+def test_fetch_cells_mutation_does_not_corrupt_cache(fake_db):
+    """Mutating the returned DataFrame must NOT affect the cached value.
+
+    This is the security-relevant contract from Pitfall 3: TTLCache stores the
+    core result; fetch_cells() returns df.copy() so callers can freely add
+    columns or transform rows without poisoning the shared cached object.
+    """
+    original_df = pd.DataFrame({
+        "PLATFORM_ID": ["P1"],
+        "InfoCategory": ["cat"],
+        "Item": ["item"],
+        "Result": ["42"],
+    })
+    with patch("app_v2.services.cache.fetch_cells_core",
+               return_value=(original_df, False)) as mock_core:
+        df1, _ = fetch_cells(fake_db, ("P1",), (), ("item",))
+        # Mutate the first returned copy — add a derived column
+        df1["Derived"] = df1["Result"].astype(int) * 2
+
+        # Second call hits the cache; the cached DataFrame must be unaffected
+        df2, _ = fetch_cells(fake_db, ("P1",), (), ("item",))
+
+    assert mock_core.call_count == 1, "should still be a cache hit"
+    assert "Derived" not in df2.columns, (
+        "mutation of df1 must NOT bleed into the cached value returned as df2"
+    )
+    # The original cached source should also be untouched
+    assert "Derived" not in original_df.columns
 
 
 def test_fetch_cells_different_platforms_miss(fake_db):
