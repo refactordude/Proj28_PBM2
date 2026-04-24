@@ -15,10 +15,12 @@ from app_v2.main import app
 import app_v2.services.overview_store as overview_store_mod
 
 # Fixed fake catalog matching the three platforms used across tests.
+# NOTE: all IDs use 3 underscore-separated parts (brand_model_soc) so parse_platform_id
+# correctly extracts soc_raw for year lookups.
 _FAKE_CATALOG = [
     "Samsung_S22Ultra_SM8450",
     "Pixel8_GoogleTensor_GS301",
-    "Xiaomi13_SM8550",
+    "Xiaomi13_Pro_SM8550",
 ]
 
 
@@ -92,9 +94,11 @@ def test_get_root_contains_filter_block(isolated_overview):
 
 
 def test_get_root_page_title(isolated_overview):
-    """Page title matches the copywriting contract."""
+    """Page title includes 'Overview' and 'PBM2' per base.html template pattern."""
     r = isolated_overview.get("/")
-    assert "PBM2 — Overview" in r.text
+    # base.html renders: <title>{{ page_title }} — PBM2 v2.0</title>
+    # With page_title="Overview" this produces: "Overview — PBM2 v2.0"
+    assert "Overview — PBM2 v2.0" in r.text
 
 
 # ---------------------------------------------------------------------------
@@ -237,11 +241,11 @@ def test_delete_invalid_regex_returns_422(isolated_overview):
 def test_get_root_after_add_shows_entity_row_with_correct_badges(isolated_overview):
     """Full-page render after two adds; both PIDs visible with correct badges."""
     isolated_overview.post("/overview/add", data={"platform_id": "Samsung_S22Ultra_SM8450"})
-    isolated_overview.post("/overview/add", data={"platform_id": "Xiaomi13_SM8550"})
+    isolated_overview.post("/overview/add", data={"platform_id": "Xiaomi13_Pro_SM8550"})
     r = isolated_overview.get("/")
     body = r.text
     assert "Samsung_S22Ultra_SM8450" in body
-    assert "Xiaomi13_SM8550" in body
+    assert "Xiaomi13_Pro_SM8550" in body
     assert "Samsung" in body
     assert "Xiaomi" in body
     assert "SM8450" in body

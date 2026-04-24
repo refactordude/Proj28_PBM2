@@ -1,8 +1,6 @@
-"""Root / full-page routes for Phase 1 — GET /, /browse, /ask.
+"""Root full-page routes for /browse and /ask stubs.
 
-All three return the Bootstrap shell (base.html). /browse and /ask additionally
-render a 'Coming in Phase {N}' alert as a placeholder. Feature logic lands in
-Phases 2-5.
+NOTE: GET / is owned by routers/overview.py as of Phase 2.
 
 INFRA-05 convention: ALL routes are `def` (sync), not `async def`. Even though
 these Phase 1 stubs do not touch the DB, establishing the convention from the
@@ -14,16 +12,6 @@ from fastapi.responses import HTMLResponse
 from app_v2.templates import templates
 
 router = APIRouter()
-
-
-@router.get("/", response_class=HTMLResponse)
-def overview_page(request: Request):
-    """Overview tab (default landing). Phase 2 replaces this with the curated list UI."""
-    return templates.TemplateResponse(request, "base.html", {
-        "active_tab": "overview",
-        "page_title": "Overview",
-        "placeholder_message": None,  # Overview has no Phase-coming banner
-    })
 
 
 @router.get("/browse", response_class=HTMLResponse)
