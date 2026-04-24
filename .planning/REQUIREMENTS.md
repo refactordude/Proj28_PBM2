@@ -78,8 +78,8 @@
 
 ### Onboarding
 
-- [ ] **ONBD-01**: User sees a gallery of 6–10 curated starter prompts (backed by a YAML file) on the NL page; clicking a prompt fills the question input
-- [ ] **ONBD-02**: The starter-prompt YAML is editable by anyone with filesystem access — adding or removing a prompt requires no code change
+- [x] **ONBD-01**: User sees a gallery of 6–10 curated starter prompts (backed by a YAML file) on the NL page; clicking a prompt fills the question input
+- [x] **ONBD-02**: The starter-prompt YAML is editable by anyone with filesystem access — adding or removing a prompt requires no code change
 
 ## v2 Requirements
 
@@ -171,8 +171,8 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | SETUP-01 | Phase 1 | Complete |
 | SETUP-02 | Phase 1 | Complete |
 | SETUP-03 | Phase 1 | Complete |
-| ONBD-01 | Phase 2 | Pending |
-| ONBD-02 | Phase 2 | Pending |
+| ONBD-01 | Phase 2 | Complete |
+| ONBD-02 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 49 total (note: traceability table contains 49 rows; original count of 48 was a pre-fill estimate)

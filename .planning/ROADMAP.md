@@ -45,7 +45,7 @@ PBM2 ships in two phases that respect the core value ordering: browsing must wor
 - [x] 02-03-PLAN.md — PydanticAI Agent core: types, run_sql tool, run_agent runner (NL-06, SAFE-04 step-cap, SAFE-05)
 - [x] 02-04-PLAN.md — Ask page: title, history, question input, answer zone, sensitivity warning, abort banner, gallery scaffold (NL-01, NL-02, NL-03, NL-04, NL-10)
 - [ ] 02-05-PLAN.md — NL-05 param confirmation multiselect + Run Query second-turn flow (NL-05)
-- [ ] 02-06-PLAN.md — Starter prompt gallery YAML loader + 8 curated prompts (ONBD-01, ONBD-02)
+- [x] 02-06-PLAN.md — Starter prompt gallery YAML loader + 8 curated prompts (ONBD-01, ONBD-02)
 **Needs research**: yes
 **UI hint**: yes
 
@@ -57,4 +57,4 @@ Phases execute in numeric order: 1 → 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Browsing | 7/7 | Complete   | 2026-04-23 |
-| 2. NL Agent Layer | 4/6 | In Progress|  |
+| 2. NL Agent Layer | 5/6 | In Progress|  |
