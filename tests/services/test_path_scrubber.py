@@ -67,6 +67,28 @@ class TestMultipleOccurrences:
         assert result.count("<path>") == 3
 
 
+class TestUppercasePathsScrubbed:
+    def test_uppercase_sys_scrubbed(self):
+        """/SYS/ uppercase variant must be scrubbed (re.IGNORECASE) — WR-03 regression."""
+        result = scrub_paths("/SYS/BLOCK/sda")
+        assert "<path>" in result
+        assert "/SYS/" not in result
+
+    def test_uppercase_proc_scrubbed(self):
+        result = scrub_paths("/PROC/cpuinfo")
+        assert "<path>" in result
+        assert "/PROC/" not in result
+
+    def test_uppercase_dev_scrubbed(self):
+        result = scrub_paths("/DEV/null")
+        assert "<path>" in result
+        assert "/DEV/" not in result
+
+    def test_mixed_case_sys_scrubbed(self):
+        result = scrub_paths("/Sys/kernel/foo")
+        assert "<path>" in result
+
+
 class TestNonMatchingPassthrough:
     def test_plain_text_unchanged(self):
         text = "plain text with no paths"

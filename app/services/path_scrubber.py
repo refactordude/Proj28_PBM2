@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-_PATH_PATTERN = re.compile(r"/(?:sys|proc|dev)/\S*")
+_PATH_PATTERN = re.compile(r"/(?:sys|proc|dev)/\S*", re.IGNORECASE)
 
 
 def scrub_paths(text: str) -> str:
