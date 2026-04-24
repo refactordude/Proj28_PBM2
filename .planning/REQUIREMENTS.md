@@ -55,7 +55,7 @@
 - [ ] **NL-03**: User can click **Regenerate** to re-run the same NL question with a fresh LLM call
 - [ ] **NL-04**: User's NL questions and answers are preserved for the session in a history panel
 - [ ] **NL-05**: Before running a query, the agent proposes candidate `(InfoCategory, Item)` parameters drawn from the actual DB and asks the user to confirm or adjust before SQL is executed
-- [ ] **NL-06**: The agent correctly handles the three core question shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
+- [x] **NL-06**: The agent correctly handles the three core question shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
 - [x] **NL-07**: User can switch the LLM backend between OpenAI and Ollama from the sidebar; the choice takes effect on the next NL query
 - [x] **NL-08**: Both OpenAI and Ollama backends use the same `openai` Python SDK client, differing only in `base_url` and `api_key`
 - [x] **NL-09**: Ollama backend has a JSON extraction fallback (`json.loads` → regex first-JSON-block → plain text) so smaller models that emit imperfect tool-call JSON do not crash the agent
@@ -66,8 +66,8 @@
 - [x] **SAFE-01**: DB connection uses a read-only MySQL user; every session attempts `SET SESSION TRANSACTION READ ONLY` (non-fatal if unsupported)
 - [x] **SAFE-02**: Agent-generated SQL is validated with `sqlparse` — only a single `SELECT` statement referencing a table in `allowed_tables` is executed; INSERT / UPDATE / DELETE / DROP / CALL / multi-statement queries are rejected
 - [x] **SAFE-03**: Agent-generated SQL has a `LIMIT` injected if one is missing (cap = `AgentConfig.row_cap`)
-- [ ] **SAFE-04**: Agent loop enforces `max_steps=5` as a hard step counter and `timeout_s=30` as a wall-clock timeout; exceeding either aborts cleanly with a user-visible message
-- [ ] **SAFE-05**: DB rows passed into the LLM context are wrapped in `<db_data>...</db_data>` delimiters with an explicit system-prompt instruction that content inside the tag is raw data, never instructions
+- [x] **SAFE-04**: Agent loop enforces `max_steps=5` as a hard step counter and `timeout_s=30` as a wall-clock timeout; exceeding either aborts cleanly with a user-visible message
+- [x] **SAFE-05**: DB rows passed into the LLM context are wrapped in `<db_data>...</db_data>` delimiters with an explicit system-prompt instruction that content inside the tag is raw data, never instructions
 - [x] **SAFE-06**: `Result` values containing filesystem paths (`/sys/`, `/proc/`, `/dev/`) are scrubbed to a placeholder before being sent to any cloud LLM
 
 ### Settings
@@ -157,7 +157,7 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | NL-03 | Phase 2 | Pending |
 | NL-04 | Phase 2 | Pending |
 | NL-05 | Phase 2 | Pending |
-| NL-06 | Phase 2 | Pending |
+| NL-06 | Phase 2 | Complete |
 | NL-07 | Phase 2 | Complete |
 | NL-08 | Phase 2 | Complete |
 | NL-09 | Phase 2 | Complete |
@@ -165,8 +165,8 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 2 | Complete |
 | SAFE-03 | Phase 2 | Complete |
-| SAFE-04 | Phase 2 | Pending |
-| SAFE-05 | Phase 2 | Pending |
+| SAFE-04 | Phase 2 | Complete |
+| SAFE-05 | Phase 2 | Complete |
 | SAFE-06 | Phase 2 | Complete |
 | SETUP-01 | Phase 1 | Complete |
 | SETUP-02 | Phase 1 | Complete |
