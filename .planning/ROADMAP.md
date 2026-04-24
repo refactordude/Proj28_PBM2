@@ -42,7 +42,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 **Plans**: 4 plans
 - [x] 01-01-PLAN.md — Dependencies + ufs_service _core extraction (INFRA-06, INFRA-09)
 - [x] 01-02-PLAN.md — nl_service extraction from ask.py (INFRA-07)
-- [ ] 01-03-PLAN.md — FastAPI shell + vendored static assets + base template (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05)
+- [x] 01-03-PLAN.md — FastAPI shell + vendored static assets + base template (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05)
 - [ ] 01-04-PLAN.md — app_v2/services/cache.py TTLCache wrappers (INFRA-08)
 
 ### Phase 2: Overview Tab + Filters

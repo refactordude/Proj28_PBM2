@@ -11,11 +11,11 @@
 
 ### Infrastructure & Foundation
 
-- [ ] **INFRA-01**: App runs via `uvicorn app_v2.main:app --host 0.0.0.0 --port 8000` on the team intranet; returns HTML at `/`, `/browse`, `/ask`, `/platforms/<id>`. No auth gate in v2.0.
-- [ ] **INFRA-02**: `base.html` provides a Bootstrap 5 shell with horizontal top-nav tabs (Overview / Browse / Ask), global `htmx:beforeSwap` JavaScript handler that renders HTMX 4xx/5xx responses into a dedicated error container (not silently dropped), and Bootstrap-styled 404/500 pages.
-- [ ] **INFRA-03**: `app_v2/lifespan` (FastAPI `@asynccontextmanager`) initializes `app.state.db` (MySQLAdapter), `app.state.settings` (Pydantic Settings), and `app.state.agent_registry = {}` for lazy per-backend NL-agent caching.
-- [ ] **INFRA-04**: Bootstrap 5.3.8 + HTMX 2.0.10 + bootstrap-icons 1.13.1 are vendored into `app_v2/static/vendor/` (not CDN-dependent) so the app runs on intranet without outbound internet access. Base template references local paths.
-- [ ] **INFRA-05**: All DB-touching routes are `def` (synchronous), not `async def`, so FastAPI dispatches them to the threadpool and sync SQLAlchemy does not block the event loop.
+- [x] **INFRA-01**: App runs via `uvicorn app_v2.main:app --host 0.0.0.0 --port 8000` on the team intranet; returns HTML at `/`, `/browse`, `/ask`, `/platforms/<id>`. No auth gate in v2.0.
+- [x] **INFRA-02**: `base.html` provides a Bootstrap 5 shell with horizontal top-nav tabs (Overview / Browse / Ask), global `htmx:beforeSwap` JavaScript handler that renders HTMX 4xx/5xx responses into a dedicated error container (not silently dropped), and Bootstrap-styled 404/500 pages.
+- [x] **INFRA-03**: `app_v2/lifespan` (FastAPI `@asynccontextmanager`) initializes `app.state.db` (MySQLAdapter), `app.state.settings` (Pydantic Settings), and `app.state.agent_registry = {}` for lazy per-backend NL-agent caching.
+- [x] **INFRA-04**: Bootstrap 5.3.8 + HTMX 2.0.10 + bootstrap-icons 1.13.1 are vendored into `app_v2/static/vendor/` (not CDN-dependent) so the app runs on intranet without outbound internet access. Base template references local paths.
+- [x] **INFRA-05**: All DB-touching routes are `def` (synchronous), not `async def`, so FastAPI dispatches them to the threadpool and sync SQLAlchemy does not block the event loop.
 - [x] **INFRA-06**: **Pre-work gate — ufs_service refactor.** `app/services/ufs_service.py` is refactored so `list_platforms`, `list_parameters`, `fetch_cells`, and `pivot_to_wide` each have a pure `_core()` variant callable WITHOUT Streamlit context. The existing `@st.cache_data` wrappers delegate to the `_core()` functions so v1.0 API stays unchanged. All 171 v1.0 tests must still pass after refactor.
 - [x] **INFRA-07**: **Pre-work gate — nl_service extraction.** SAFE-02..06 harness (sqlparse validator, LIMIT injector, path scrubber, step-cap enforcement, `<db_data>` wrapper) currently lives in `app/pages/ask.py`. Extract into `app/core/agent/nl_service.py` with a single `run_nl_query(question, agent, deps) -> NLResult` entrypoint. v1.0 `ask.py` is refactored to call `nl_service` instead of inlining the harness. All v1.0 NL tests must still pass.
 - [ ] **INFRA-08**: `app_v2/services/cache.py` provides `cachetools.TTLCache` + `threading.Lock()` wrappers for all `_core()` functions exposed by the refactored `ufs_service`. Cache keys exclude unhashable objects (adapter) — use `db_name: str` only.
@@ -102,11 +102,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
-| INFRA-05 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Complete |
+| INFRA-04 | Phase 1 | Complete |
+| INFRA-05 | Phase 1 | Complete |
 | INFRA-06 | Phase 1 | Complete |
 | INFRA-07 | Phase 1 | Complete |
 | INFRA-08 | Phase 1 | Pending |
