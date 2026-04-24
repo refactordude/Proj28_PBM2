@@ -325,11 +325,16 @@ def _run_agent_flow(question: str) -> None:
         # is text-for-LLM; the user's view is a DataFrame.
         import sqlalchemy as sa
         if hasattr(db, "_get_engine"):
+            timeout_ms = int(cfg.timeout_s) * 1000
             with db._get_engine().connect() as conn:
                 try:
                     conn.execute(sa.text("SET SESSION TRANSACTION READ ONLY"))
                 except Exception:
                     pass
+                try:
+                    conn.execute(sa.text(f"SET SESSION max_execution_time={timeout_ms}"))
+                except Exception:
+                    pass  # Pitfall 8 — MySQL 5.7.8+ only
                 df = pd.read_sql_query(sa.text(safe_sql), conn)
         else:
             df = db.run_query(safe_sql)
