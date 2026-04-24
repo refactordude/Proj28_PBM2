@@ -38,7 +38,14 @@ PBM2 ships in two phases that respect the core value ordering: browsing must wor
   3. User can switch between Ollama (default) and OpenAI backends from the sidebar; switching to OpenAI shows a data-sensitivity warning before the first request of the session
   4. The agent correctly handles all three core question shapes (lookup-one-platform, compare-across-platforms, filter-platforms-by-value) and aborts cleanly with a user-visible message if the step cap or timeout is exceeded
   5. User sees a starter-prompt gallery of 6-10 curated questions; clicking a prompt fills the NL input and is immediately runnable
-**Plans**: TBD
+**Plans**: 6 plans
+**Plan list**:
+- [ ] 02-01-PLAN.md — Deps install (nest-asyncio) + build_pydantic_model factory + sidebar radio activation (NL-07, NL-08)
+- [ ] 02-02-PLAN.md — Pure-function safety primitives: validate_sql, inject_limit, scrub_paths, extract_json (SAFE-02, SAFE-03, SAFE-04 timeout, SAFE-06, NL-09)
+- [ ] 02-03-PLAN.md — PydanticAI Agent core: types, run_sql tool, run_agent runner (NL-06, SAFE-04 step-cap, SAFE-05)
+- [ ] 02-04-PLAN.md — Ask page: title, history, question input, answer zone, sensitivity warning, abort banner, gallery scaffold (NL-01, NL-02, NL-03, NL-04, NL-10)
+- [ ] 02-05-PLAN.md — NL-05 param confirmation multiselect + Run Query second-turn flow (NL-05)
+- [ ] 02-06-PLAN.md — Starter prompt gallery YAML loader + 8 curated prompts (ONBD-01, ONBD-02)
 **Needs research**: yes
 **UI hint**: yes
 
@@ -50,4 +57,4 @@ Phases execute in numeric order: 1 → 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Browsing | 7/7 | Complete   | 2026-04-23 |
-| 2. NL Agent Layer | 0/TBD | Not started | - |
+| 2. NL Agent Layer | 0/6 | Not started | - |
