@@ -20,10 +20,7 @@ from app.core.agent.config import AgentConfig
 from app.core.agent.nl_agent import (
     AgentDeps,
     AgentRunFailure,
-    ClarificationNeeded,
-    SQLResult,
     build_agent,
-    run_agent,
 )
 from app.core.agent.nl_service import NLResult, run_nl_query
 from app.adapters.db.registry import build_adapter
