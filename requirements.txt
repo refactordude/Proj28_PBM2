@@ -16,3 +16,12 @@ plotly>=5.22
 altair>=5.3
 python-dotenv>=1.0
 bcrypt>=4.2
+# --- v2.0 Bootstrap Shell additions (Phase 1, INFRA-09) ---
+fastapi>=0.136,<0.137
+uvicorn[standard]>=0.32
+jinja2>=3.1
+jinja2-fragments>=1.3
+python-multipart>=0.0.9
+markdown-it-py[plugins]>=3.0
+cachetools>=7.0,<8.0
+pydantic-settings>=2.14
