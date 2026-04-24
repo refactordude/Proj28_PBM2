@@ -21,7 +21,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 
 ### v2.0 Bootstrap Shell — Active
 
-- [ ] **Phase 1: Pre-work + Foundation** - v1.0 refactors (ufs_service, nl_service) + FastAPI shell, static vendor, cache layer, deps
+- [x] **Phase 1: Pre-work + Foundation** - v1.0 refactors (ufs_service, nl_service) + FastAPI shell, static vendor, cache layer, deps (completed 2026-04-24)
 - [ ] **Phase 2: Overview Tab + Filters** - Curated platform list, add/remove, HTMX-swapped faceted filters
 - [ ] **Phase 3: Content Pages + AI Summary** - Per-platform markdown CRUD, safe rendering, in-place LLM summary
 - [ ] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps, Excel/CSV export under Bootstrap
@@ -43,7 +43,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 01-01-PLAN.md — Dependencies + ufs_service _core extraction (INFRA-06, INFRA-09)
 - [x] 01-02-PLAN.md — nl_service extraction from ask.py (INFRA-07)
 - [x] 01-03-PLAN.md — FastAPI shell + vendored static assets + base template (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05)
-- [ ] 01-04-PLAN.md — app_v2/services/cache.py TTLCache wrappers (INFRA-08)
+- [x] 01-04-PLAN.md — app_v2/services/cache.py TTLCache wrappers (INFRA-08)
 
 ### Phase 2: Overview Tab + Filters
 **Goal**: Users can build and maintain a curated watchlist of platforms from the live database, filter it by Brand/SoC/Year and content status, and see each platform with its metadata badges — all without a full page reload.
@@ -101,7 +101,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Pre-work + Foundation | v2.0 | 2/4 | In Progress|  |
+| 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
 | 2. Overview Tab + Filters | v2.0 | 0/? | Not started | - |
 | 3. Content Pages + AI Summary | v2.0 | 0/? | Not started | - |
 | 4. Browse Tab Port | v2.0 | 0/? | Not started | - |
