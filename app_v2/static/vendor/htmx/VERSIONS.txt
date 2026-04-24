@@ -1,0 +1,6 @@
+htmx: 2.0.10
+source: https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js
+downloaded: 2026-04-24
+pinned-reason: HTMX 4.0 is alpha (2026-04-09); 2.x is stable and maintained indefinitely.
+files:
+  - htmx.min.js

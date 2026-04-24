@@ -1,0 +1,6 @@
+bootstrap: 5.3.8
+source: https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/
+downloaded: 2026-04-24
+files:
+  - bootstrap.min.css
+  - bootstrap.bundle.min.js
