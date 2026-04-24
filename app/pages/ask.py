@@ -25,10 +25,28 @@ from app.core.agent.nl_agent import (
     build_agent,
     run_agent,
 )
-from app.core.config import find_llm, load_settings
+from app.adapters.db.registry import build_adapter
+from app.core.config import find_database, find_llm, load_settings
 
 
 _HISTORY_CAP = 50
+
+
+@st.cache_resource
+def _get_db_adapter(db_name: str):
+    """Return a cached DBAdapter for the named database (mirrors browse.py pattern).
+
+    Using a page-local factory avoids importing streamlit_app at module level,
+    which would trigger st.Page() validation and break AppTest (Pitfall 7b).
+    Returns None if db_name is empty or not found in settings.
+    """
+    if not db_name:
+        return None
+    settings = load_settings()
+    cfg = find_database(settings, db_name)
+    if cfg is None:
+        return None
+    return build_adapter(cfg)
 
 
 def _format_param_label(info_category: str, item: str) -> str:
@@ -244,8 +262,7 @@ def _run_agent_flow(question: str) -> None:
         st.error("No LLM backend selected. Pick one in the sidebar.")
         return
     active_db = st.session_state.get("active_db", "")
-    from streamlit_app import get_db_adapter  # avoid circular import at module load
-    db = get_db_adapter(active_db)
+    db = _get_db_adapter(active_db)
     if db is None:
         st.warning("No active database. Configure one in Settings.")
         return
@@ -334,12 +351,13 @@ def _render_param_confirmation() -> None:
         return
 
     active_db = st.session_state.get("active_db", "")
-    from streamlit_app import get_db_adapter  # avoid circular import at module load
-    db = get_db_adapter(active_db)
+    db = _get_db_adapter(active_db)
     if db is None:
-        st.warning("No active database. Configure one in Settings.")
-        return
-    full_catalog = _full_param_catalog(db, active_db)
+        # Graceful degradation: no DB available, use only the agent's proposed params.
+        # User can still uncheck proposals; they cannot add catalog params without a DB.
+        full_catalog: list[str] = []
+    else:
+        full_catalog = _full_param_catalog(db, active_db)
 
     options = sorted(set(full_catalog) | set(pending))
 

@@ -118,3 +118,76 @@ def test_ask_page_no_sensitivity_warning_when_ollama():
         else:
             os.environ["SETTINGS_PATH"] = orig_settings
         Path(settings_path).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# NL-05 param confirmation tests (Plan 02-05)
+#
+# Notes:
+#   - AppTest runs ask.py in an isolated script context; monkeypatching imported
+#     module objects has no effect (same limitation as documented in Plan 02-04).
+#   - Tests that require the multiselect to render set active_db="" so that
+#     get_db_adapter returns None, triggering the graceful-degradation path that
+#     still renders the multiselect (using only agent-proposed params as options).
+#   - This matches the actual degraded-DB UX — useful for offline/test scenarios.
+# ---------------------------------------------------------------------------
+
+def test_param_confirmation_multiselect_renders_when_pending():
+    """NL-05: multiselect 'Parameters to include' renders when ask.pending_params is set."""
+    at = AppTest.from_file("app/pages/ask.py", default_timeout=60)
+    at.session_state["ask.pending_params"] = ["cat / item1", "cat / item2"]
+    at.session_state["ask.pending_message"] = "Please confirm parameters."
+    # active_db="" -> get_db_adapter returns None -> graceful degradation path
+    at.session_state["active_db"] = ""
+    at.run()
+    assert not at.exception, f"Unexpected exception: {at.exception}"
+    labels = [m.label for m in at.multiselect]
+    assert "Parameters to include" in labels, (
+        f"Expected 'Parameters to include' multiselect, got labels: {labels}"
+    )
+    # Caption should mention agent proposed 2 parameters
+    caps = [c.value for c in at.caption]
+    assert any("Agent proposed 2 parameters" in c for c in caps), (
+        f"Expected caption with 'Agent proposed 2 parameters', got: {caps}"
+    )
+
+
+def test_no_confirmation_row_when_pending_empty():
+    """NL-05: no param confirmation multiselect when ask.pending_params is empty."""
+    at = AppTest.from_file("app/pages/ask.py", default_timeout=60)
+    at.session_state["ask.pending_params"] = []
+    at.run()
+    assert not at.exception, f"Unexpected exception: {at.exception}"
+    labels = [m.label for m in at.multiselect]
+    assert "Parameters to include" not in labels, (
+        f"Expected no confirmation multiselect but got: {labels}"
+    )
+
+
+def test_first_turn_ask_button_shown_when_no_pending():
+    """NL-05: 'Ask' primary button visible when no pending params."""
+    at = AppTest.from_file("app/pages/ask.py", default_timeout=60)
+    at.session_state["ask.pending_params"] = []
+    at.run()
+    assert not at.exception, f"Unexpected exception: {at.exception}"
+    button_labels = [b.label for b in at.button]
+    assert "Ask" in button_labels, (
+        f"Expected 'Ask' button but got labels: {button_labels}"
+    )
+    assert "Run Query" not in button_labels, (
+        f"Expected no 'Run Query' button but got labels: {button_labels}"
+    )
+
+
+def test_run_query_button_shown_only_when_pending():
+    """NL-05: 'Run Query' primary button visible when pending params exist."""
+    at = AppTest.from_file("app/pages/ask.py", default_timeout=60)
+    at.session_state["ask.pending_params"] = ["cat / item1"]
+    # active_db="" -> get_db_adapter returns None -> graceful degradation path
+    at.session_state["active_db"] = ""
+    at.run()
+    assert not at.exception, f"Unexpected exception: {at.exception}"
+    button_labels = [b.label for b in at.button]
+    assert "Run Query" in button_labels, (
+        f"Expected 'Run Query' button but got labels: {button_labels}"
+    )
