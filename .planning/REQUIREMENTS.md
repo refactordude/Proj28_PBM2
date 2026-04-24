@@ -17,7 +17,7 @@
 - [ ] **INFRA-04**: Bootstrap 5.3.8 + HTMX 2.0.10 + bootstrap-icons 1.13.1 are vendored into `app_v2/static/vendor/` (not CDN-dependent) so the app runs on intranet without outbound internet access. Base template references local paths.
 - [ ] **INFRA-05**: All DB-touching routes are `def` (synchronous), not `async def`, so FastAPI dispatches them to the threadpool and sync SQLAlchemy does not block the event loop.
 - [x] **INFRA-06**: **Pre-work gate — ufs_service refactor.** `app/services/ufs_service.py` is refactored so `list_platforms`, `list_parameters`, `fetch_cells`, and `pivot_to_wide` each have a pure `_core()` variant callable WITHOUT Streamlit context. The existing `@st.cache_data` wrappers delegate to the `_core()` functions so v1.0 API stays unchanged. All 171 v1.0 tests must still pass after refactor.
-- [ ] **INFRA-07**: **Pre-work gate — nl_service extraction.** SAFE-02..06 harness (sqlparse validator, LIMIT injector, path scrubber, step-cap enforcement, `<db_data>` wrapper) currently lives in `app/pages/ask.py`. Extract into `app/core/agent/nl_service.py` with a single `run_nl_query(question, agent, deps) -> NLResult` entrypoint. v1.0 `ask.py` is refactored to call `nl_service` instead of inlining the harness. All v1.0 NL tests must still pass.
+- [x] **INFRA-07**: **Pre-work gate — nl_service extraction.** SAFE-02..06 harness (sqlparse validator, LIMIT injector, path scrubber, step-cap enforcement, `<db_data>` wrapper) currently lives in `app/pages/ask.py`. Extract into `app/core/agent/nl_service.py` with a single `run_nl_query(question, agent, deps) -> NLResult` entrypoint. v1.0 `ask.py` is refactored to call `nl_service` instead of inlining the harness. All v1.0 NL tests must still pass.
 - [ ] **INFRA-08**: `app_v2/services/cache.py` provides `cachetools.TTLCache` + `threading.Lock()` wrappers for all `_core()` functions exposed by the refactored `ufs_service`. Cache keys exclude unhashable objects (adapter) — use `db_name: str` only.
 - [x] **INFRA-09**: Shared `requirements.txt` is extended with v2.0 deps (`fastapi>=0.136,<0.137`, `uvicorn[standard]>=0.32`, `jinja2>=3.1`, `jinja2-fragments>=1.3`, `python-multipart`, `markdown-it-py[plugins]>=3.0`, `cachetools>=7.0,<8.0`, `pydantic-settings>=2.14`). Existing Streamlit deps are retained.
 
@@ -108,7 +108,7 @@
 | INFRA-04 | Phase 1 | Pending |
 | INFRA-05 | Phase 1 | Pending |
 | INFRA-06 | Phase 1 | Complete |
-| INFRA-07 | Phase 1 | Pending |
+| INFRA-07 | Phase 1 | Complete |
 | INFRA-08 | Phase 1 | Pending |
 | INFRA-09 | Phase 1 | Complete |
 | OVERVIEW-01 | Phase 2 | Pending |
