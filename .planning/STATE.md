@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-24T00:35:47.863Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-04-24T00:43:20.312Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 13
-  completed_plans: 8
-  percent: 62
+  completed_plans: 9
+  percent: 69
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 02 (NL Agent Layer) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-04-24
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation-browsing P06 | 2min | 2 tasks | 1 files |
 | Phase 01-foundation-browsing P07 | 4min | 2 tasks | 3 files |
 | Phase 02 P01 | 7min | 3 tasks | 5 files |
+| Phase 02 P02 | 5min | 4 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Recent decisions affecting current work:
 - [Phase 02]: openai SDK 2.x requires api_key at OpenAIProvider construction — unit tests use dummy key to satisfy validation without network calls
 - [Phase 02]: OllamaProvider uses explicit base_url=endpoint+'/v1' per RESEARCH Pitfall 2 — parallel path to legacy OllamaAdapter, not a replacement
 - [Phase 02]: st.navigation ask.py entry deferred to Plan 02-04 to avoid FileNotFoundError before ask.py exists
+- [Phase 02]: Subquery alias fix: Identifier with first token Parenthesis is subquery alias — recurse into Parenthesis, skip alias name in allowed_tables check
+- [Phase 02]: inject_limit idempotent (Pitfall 5): regex sub only on existing > row_cap path; double-call verified by test_double_call_no_double_limit
+- [Phase 02]: extract_json returns None for JSON arrays — agent always outputs dict (SQLResult or ClarificationNeeded)
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-24T00:35:47.847Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-24T00:43:20.292Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
