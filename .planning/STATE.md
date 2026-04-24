@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-04-23T23:10:55.533Z"
-last_activity: 2026-04-23
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-04-24T00:35:47.863Z"
+last_activity: 2026-04-24
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_plans: 13
+  completed_plans: 8
+  percent: 62
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-23)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 01 — Foundation + Browsing
+**Current focus:** Phase 02 — NL Agent Layer
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-23
+Phase: 02 (NL Agent Layer) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-04-24
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation-browsing P05 | 2min | 2 tasks | 1 files |
 | Phase 01-foundation-browsing P06 | 2min | 2 tasks | 1 files |
 | Phase 01-foundation-browsing P07 | 4min | 2 tasks | 3 files |
+| Phase 02 P01 | 7min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-browsing]: CSV BOM encoding: to_csv(index=False).encode('utf-8-sig') — single BOM. Double-BOM (passing encoding to to_csv AND encode()) corrupts Excel cell A1.
 - [Phase 01-foundation-browsing]: Export is Pivot-tab-only in Phase 1 (D-15/D-16). Detail tab and Chart tab export are out of Phase 1 scope.
 - [Phase 01-foundation-browsing]: pivot.df_wide and pivot.df_long are DataFrames (recomputed each rerun, not persisted across sessions). Filename sanitization is defense-in-depth; browser save-as is ultimate gate.
+- [Phase 02]: openai SDK 2.x requires api_key at OpenAIProvider construction — unit tests use dummy key to satisfy validation without network calls
+- [Phase 02]: OllamaProvider uses explicit base_url=endpoint+'/v1' per RESEARCH Pitfall 2 — parallel path to legacy OllamaAdapter, not a replacement
+- [Phase 02]: st.navigation ask.py entry deferred to Plan 02-04 to avoid FileNotFoundError before ask.py exists
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-23T19:46:54.851Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-04-24T00:35:47.847Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

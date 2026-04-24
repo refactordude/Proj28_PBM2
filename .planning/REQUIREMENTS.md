@@ -56,8 +56,8 @@
 - [ ] **NL-04**: User's NL questions and answers are preserved for the session in a history panel
 - [ ] **NL-05**: Before running a query, the agent proposes candidate `(InfoCategory, Item)` parameters drawn from the actual DB and asks the user to confirm or adjust before SQL is executed
 - [ ] **NL-06**: The agent correctly handles the three core question shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
-- [ ] **NL-07**: User can switch the LLM backend between OpenAI and Ollama from the sidebar; the choice takes effect on the next NL query
-- [ ] **NL-08**: Both OpenAI and Ollama backends use the same `openai` Python SDK client, differing only in `base_url` and `api_key`
+- [x] **NL-07**: User can switch the LLM backend between OpenAI and Ollama from the sidebar; the choice takes effect on the next NL query
+- [x] **NL-08**: Both OpenAI and Ollama backends use the same `openai` Python SDK client, differing only in `base_url` and `api_key`
 - [ ] **NL-09**: Ollama backend has a JSON extraction fallback (`json.loads` → regex first-JSON-block → plain text) so smaller models that emit imperfect tool-call JSON do not crash the agent
 - [ ] **NL-10**: Default LLM backend is Ollama; selecting OpenAI displays a one-time data-sensitivity warning before the first request of the session
 
@@ -158,8 +158,8 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | NL-04 | Phase 2 | Pending |
 | NL-05 | Phase 2 | Pending |
 | NL-06 | Phase 2 | Pending |
-| NL-07 | Phase 2 | Pending |
-| NL-08 | Phase 2 | Pending |
+| NL-07 | Phase 2 | Complete |
+| NL-08 | Phase 2 | Complete |
 | NL-09 | Phase 2 | Pending |
 | NL-10 | Phase 2 | Pending |
 | SAFE-01 | Phase 1 | Complete |
