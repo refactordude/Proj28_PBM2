@@ -9,7 +9,10 @@ directly — all framework exceptions are translated to AgentRunFailure.
 """
 from __future__ import annotations
 
+import logging
 from typing import Literal, Union
+
+_log = logging.getLogger(__name__)
 
 import pandas as pd
 import sqlalchemy as sa
@@ -170,7 +173,11 @@ def build_agent(model) -> Agent:
         try:
             rows_text = _execute_read_only(ctx.deps.db, safe_sql, cfg.timeout_s)
         except Exception as exc:
-            return f"SQL execution error: {type(exc).__name__}: {exc}"
+            # Log full detail server-side (may contain connection URI from pymysql).
+            # Return only the exception class name to the LLM — never send str(exc)
+            # to a cloud backend (WR-04).
+            _log.warning("run_sql execution error: %s: %s", type(exc).__name__, exc)
+            return f"SQL execution error: {type(exc).__name__}"
 
         if ctx.deps.active_llm_type == "openai":
             rows_text = scrub_paths(rows_text)
