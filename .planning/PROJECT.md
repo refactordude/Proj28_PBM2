@@ -8,7 +8,27 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 
 **Fast ad-hoc browsing of the parameter database.** Even if the NL layer fails, the UI must let a non-SQL user quickly find the platforms they care about, the parameters they care about, and see them in a wide-form grid they can read, compare, chart, and export. NL query rides on top of this and enhances it — it does not replace it.
 
-## Current State
+## Current Milestone: v2.0 Bootstrap Shell
+
+**Goal:** Complete UX rewrite — move off Streamlit onto FastAPI + Bootstrap 5 + HTMX with a horizontal-tab shell, curated platform-entity overview, per-platform markdown content pages, and in-place AI Summary.
+
+**Target features:**
+- FastAPI + Bootstrap + HTMX stack (Jinja2 templates, markdown-it-py) — parallel to v1.0 Streamlit code which stays archived
+- Horizontal tab nav at top: Overview / Browse / Ask
+- Overview tab: curated platform list (user adds/removes from the full PLATFORM_ID set), each entity has title, link to content page, "AI Summary" button (HTMX in-place swap)
+- Interactive filters (Brand / SoC / Year + "has content page" toggle) driving HTMX-swapped overview list
+- Per-platform markdown content pages at `content/platforms/<PLATFORM_ID>.md` — addable / editable / deletable via HTMX forms; rendered with markdown-it-py
+- "AI Summary" calls the v1.0 LLM adapter (single-shot completion) on the content-page markdown, returns a short summary, swapped in-place
+- Browse tab: re-implements v1.0's wide-form pivot grid (platform × parameter) under Bootstrap — swap-axes, row/col caps, Excel/CSV export
+- Ask tab: carries v1.0 NL agent forward (PydanticAI, dual OpenAI/Ollama, SAFE-02..06 harness intact) under the new UI shell
+
+**Key context:**
+- v1.0 Streamlit code stays archived and untouched (parallel rewrite). v2.0 lives in a new directory, likely `app_v2/` or `v2/` at repo root — roadmapper decides.
+- Framework-agnostic v1.0 modules (`result_normalizer`, `nl_agent`, safety primitives, LLM factory, config models) are REUSED by v2.0 — imports only, no copies.
+- `ufs_service.py` needs a small refactor to swap `@st.cache_data` → `cachetools.TTLCache` so it can serve both apps.
+- Auth still deferred (matches v1.0 pattern) — `config/auth.yaml` stays gitignored.
+
+## Previous State
 
 **v1.0 MVP shipped 2026-04-24.** Both planned phases delivered in a single autonomous run (`/gsd-autonomous`):
 
@@ -50,9 +70,40 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 
 ### Active
 
-<!-- Pending decisions about what comes after v1.0. Populate at next milestone planning. -->
+<!-- v2.0 Bootstrap Shell — rewrite UI onto FastAPI + Bootstrap + HTMX. -->
 
-(None yet — v1.0 just shipped; start `/gsd-new-milestone` to scope v1.1)
+#### Platform (v2.0)
+- [ ] FastAPI app with Bootstrap 5 + HTMX shell, parallel to archived v1.0 Streamlit code
+- [ ] Horizontal top-nav tabs: Overview / Browse / Ask
+- [ ] Intranet deployment target unchanged; auth still deferred (re-enable in a later milestone)
+
+#### Overview (v2.0)
+- [ ] User can add a platform to the curated overview (from PLATFORM_IDs in ufs_data)
+- [ ] User can remove a platform from the overview
+- [ ] Each entity shows: title, link to content page, "AI Summary" button
+- [ ] Interactive filters by Brand / SoC / Year parsed from PLATFORM_ID + "has content page" toggle
+- [ ] Filter changes and add/remove are HTMX-swapped (no full page reload)
+
+#### Content pages (v2.0)
+- [ ] Per-platform markdown content pages at `content/platforms/<PLATFORM_ID>.md`
+- [ ] Content page can be added, edited, deleted via HTMX forms
+- [ ] Empty state when no content file exists — explicit Edit/Add affordance
+- [ ] Markdown rendered with markdown-it-py (or similar)
+
+#### AI Summary (v2.0)
+- [ ] Button on each overview entity calls the LLM (reusing v1.0's openai SDK + backend radio) to summarize the content page markdown
+- [ ] Summary swapped in-place via HTMX — no navigation
+- [ ] Button disabled / hidden when no content file exists
+
+#### Browse carry-over (v2.0)
+- [ ] Wide-form pivot grid (platform × parameter) re-rendered in Bootstrap tables
+- [ ] Same filter / swap-axes / row-cap / col-cap behavior as v1.0
+- [ ] Excel + CSV export
+
+#### Ask carry-over (v2.0)
+- [ ] NL agent (PydanticAI + dual OpenAI/Ollama) reachable from the Ask tab
+- [ ] Same safety harness (sqlparse validator, LIMIT injector, scrub, step-cap, timeout, `<db_data>` wrapper)
+- [ ] NL-05 two-turn param confirmation flow under HTMX
 
 ### Out of Scope
 
