@@ -705,7 +705,7 @@ def load_starter_prompts() -> list[dict]:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Ollama model name for starter prompt placeholder text**
    - What we know: `AgentConfig.model` defaults to `""` (inherits from LLMConfig); typical small models are `qwen2.5:7b` or `llama3.2:3b`
