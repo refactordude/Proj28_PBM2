@@ -139,16 +139,20 @@ def render_sidebar(settings: Settings) -> None:
         unsafe_allow_html=True,
     )
 
-    # --- LLM selector (inert in Phase 1) ---
+    # --- LLM selector (active in Phase 2, NL-07) ---
     if settings.llms:
-        st.sidebar.selectbox(
+        llm_names = [ll.name for ll in settings.llms]
+        # Default to the first Ollama entry (NL-10 default Ollama); fall back to index 0
+        default_idx = next(
+            (i for i, ll in enumerate(settings.llms) if ll.type == "ollama"), 0
+        )
+        st.sidebar.radio(
             "LLM Backend",
-            options=[ll.name for ll in settings.llms],
+            options=llm_names,
+            index=default_idx,
             key="active_llm",
         )
-        st.sidebar.caption("LLM backend selection takes effect in Phase 2 (Ask page).")
     else:
-        # No LLMs configured — do not crash; session_state key may be set by browse page later
         if "active_llm" not in st.session_state:
             st.session_state["active_llm"] = ""
 
