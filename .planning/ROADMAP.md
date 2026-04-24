@@ -55,7 +55,10 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   3. User can filter the list by Brand, SoC, or Year (or any combination); matching entities display and non-matching entities disappear without leaving the page; "Clear all" restores the full list
   4. When the curated list is empty (first run or all removed), an explicit "Add your first platform" prompt appears — not a blank area
   5. The active-filter badge shows the count of applied filters; the entity list reflects filters immediately on dropdown change
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 02-01-PLAN.md — Data layer: PLATFORM_ID parser + SoC→year lookup + overview_store YAML (FILTER-04, OVERVIEW-05)
+- [ ] 02-02-PLAN.md — Overview GET + templates + POST /add + DELETE /remove (OVERVIEW-01, OVERVIEW-02, OVERVIEW-03, OVERVIEW-04, OVERVIEW-06)
+- [ ] 02-03-PLAN.md — Filter service + POST /filter + POST /filter/reset with OOB badge swap (FILTER-01, FILTER-02, FILTER-03)
 **UI hint**: yes
 
 ### Phase 3: Content Pages + AI Summary
@@ -102,7 +105,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
-| 2. Overview Tab + Filters | v2.0 | 0/? | Not started | - |
+| 2. Overview Tab + Filters | v2.0 | 0/3 | Not started | - |
 | 3. Content Pages + AI Summary | v2.0 | 0/? | Not started | - |
 | 4. Browse Tab Port | v2.0 | 0/? | Not started | - |
 | 5. Ask Tab Port | v2.0 | 0/? | Not started | - |
