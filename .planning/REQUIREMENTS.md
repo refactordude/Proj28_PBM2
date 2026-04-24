@@ -27,7 +27,7 @@
 - [ ] **OVERVIEW-02**: Overview page renders a list of curated platform entities. Each entity row shows: title (PLATFORM_ID), Brand badge, SoC badge, Year badge (when known), link to the platform's content page, "AI Summary" button, Remove (×) button.
 - [ ] **OVERVIEW-03**: User can add a platform to the curated list via a typeahead input (datalist or lightweight combobox) populated from PLATFORM_IDs available in `ufs_data`. HTMX `hx-trigger="keyup changed delay:250ms"` debounce on search; `hx-post` to add.
 - [ ] **OVERVIEW-04**: User can remove a platform from the curated list via the Remove (×) button; HTMX `hx-delete` + `hx-swap="delete"` on the entity row. Confirmation via browser `confirm()` or `hx-confirm`.
-- [ ] **OVERVIEW-05**: Curated list persists to `config/overview.yaml` (gitignored; `config/overview.example.yaml` committed as a template with 0–3 sample entries).
+- [x] **OVERVIEW-05**: Curated list persists to `config/overview.yaml` (gitignored; `config/overview.example.yaml` committed as a template with 0–3 sample entries).
 - [ ] **OVERVIEW-06**: Overview page shows an empty state when the curated list is empty — explicit "Add your first platform" affordance pointing at the typeahead input.
 
 ### Overview Filters
@@ -35,7 +35,7 @@
 - [ ] **FILTER-01**: Overview page shows faceted filter controls: Brand (select with unique values parsed from curated `PLATFORM_IDs`), SoC (select), Year (select populated from SoC→year lookup table; excludes entries where year is `None`), "Has content page" toggle (checkbox).
 - [ ] **FILTER-02**: Changing any filter triggers an HTMX swap of the entity list only (not full page). `hx-include="[data-filter]"` pattern to aggregate all filter inputs into a single request; `change` trigger for selects, `change` for checkbox.
 - [ ] **FILTER-03**: Active filter badge shows the count of currently-active filters. "Clear all" link resets all filters and triggers a fresh list swap.
-- [ ] **FILTER-04**: `PLATFORM_ID` parser splits on `_` with `maxsplit=2` to yield `(brand, model, soc_raw)`. A `SoC→year` lookup table (shipped in `app_v2/data/soc_year.py`) maps known SoCs to release years; unknown SoCs return `year=None` and display "Unknown" in the Year badge. Entities with `year=None` are excluded from the Year filter dropdown options (they still appear in results if no Year filter is active).
+- [x] **FILTER-04**: `PLATFORM_ID` parser splits on `_` with `maxsplit=2` to yield `(brand, model, soc_raw)`. A `SoC→year` lookup table (shipped in `app_v2/data/soc_year.py`) maps known SoCs to release years; unknown SoCs return `year=None` and display "Unknown" in the Year badge. Entities with `year=None` are excluded from the Year filter dropdown options (they still appear in results if no Year filter is active).
 
 ### Content Pages
 
@@ -115,12 +115,12 @@
 | OVERVIEW-02 | Phase 2 | Pending |
 | OVERVIEW-03 | Phase 2 | Pending |
 | OVERVIEW-04 | Phase 2 | Pending |
-| OVERVIEW-05 | Phase 2 | Pending |
+| OVERVIEW-05 | Phase 2 | Complete |
 | OVERVIEW-06 | Phase 2 | Pending |
 | FILTER-01 | Phase 2 | Pending |
 | FILTER-02 | Phase 2 | Pending |
 | FILTER-03 | Phase 2 | Pending |
-| FILTER-04 | Phase 2 | Pending |
+| FILTER-04 | Phase 2 | Complete |
 | CONTENT-01 | Phase 3 | Pending |
 | CONTENT-02 | Phase 3 | Pending |
 | CONTENT-03 | Phase 3 | Pending |

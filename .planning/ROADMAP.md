@@ -56,7 +56,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   4. When the curated list is empty (first run or all removed), an explicit "Add your first platform" prompt appears — not a blank area
   5. The active-filter badge shows the count of applied filters; the entity list reflects filters immediately on dropdown change
 **Plans**: 3 plans
-- [ ] 02-01-PLAN.md — Data layer: PLATFORM_ID parser + SoC→year lookup + overview_store YAML (FILTER-04, OVERVIEW-05)
+- [x] 02-01-PLAN.md — Data layer: PLATFORM_ID parser + SoC→year lookup + overview_store YAML (FILTER-04, OVERVIEW-05)
 - [ ] 02-02-PLAN.md — Overview GET + templates + POST /add + DELETE /remove (OVERVIEW-01, OVERVIEW-02, OVERVIEW-03, OVERVIEW-04, OVERVIEW-06)
 - [ ] 02-03-PLAN.md — Filter service + POST /filter + POST /filter/reset with OOB badge swap (FILTER-01, FILTER-02, FILTER-03)
 **UI hint**: yes
