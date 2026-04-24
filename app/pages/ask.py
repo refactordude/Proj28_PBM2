@@ -31,6 +31,18 @@ from app.core.config import find_llm, load_settings
 _HISTORY_CAP = 50
 
 
+def _format_param_label(info_category: str, item: str) -> str:
+    """Canonical 'InfoCategory / Item' label — matches Browse page format (D-21)."""
+    return f"{info_category} / {item}"
+
+
+def _full_param_catalog(db, db_name: str) -> list[str]:
+    """Return full 'InfoCategory / Item' label catalog from DB for the multiselect."""
+    from app.services.ufs_service import list_parameters
+    rows = list_parameters(db, db_name=db_name)
+    return [_format_param_label(r["InfoCategory"], r["Item"]) for r in rows]
+
+
 def load_starter_prompts() -> list[dict]:
     """Load starter prompts from config/starter_prompts.yaml.
 
@@ -67,6 +79,7 @@ _DEFAULTS: dict[str, Any] = {
     "ask.openai_warning_dismissed": False,
     "ask.confirmed_params": [],
     "ask.pending_params": [],
+    "ask.pending_message": "",
     "ask.last_sql": "",
     "ask.last_df": None,
     "ask.last_summary": "",
@@ -268,9 +281,9 @@ def _run_agent_flow(question: str) -> None:
     st.session_state["ask.last_abort"] = None
 
     if isinstance(output, ClarificationNeeded):
-        # Plan 02-05 replaces this branch with the multiselect flow.
-        st.session_state["ask.pending_params"] = output.candidate_params
-        st.info(f"[Plan 02-05 placeholder] {output.message}")
+        st.session_state["ask.pending_params"] = list(output.candidate_params)
+        st.session_state["ask.pending_message"] = output.message
+        st.session_state["ask.confirmed_params"] = []
         return
 
     # SQLResult — execute it via the same tool path by re-running.
@@ -314,6 +327,63 @@ def _run_agent_flow(question: str) -> None:
     _append_history(question, safe_sql, len(df), "ok")
 
 
+def _render_param_confirmation() -> None:
+    """NL-05 — render multiselect + Run Query when pending_params is populated."""
+    pending = st.session_state.get("ask.pending_params", [])
+    if not pending:
+        return
+
+    active_db = st.session_state.get("active_db", "")
+    from streamlit_app import get_db_adapter  # avoid circular import at module load
+    db = get_db_adapter(active_db)
+    if db is None:
+        st.warning("No active database. Configure one in Settings.")
+        return
+    full_catalog = _full_param_catalog(db, active_db)
+
+    options = sorted(set(full_catalog) | set(pending))
+
+    message = st.session_state.get("ask.pending_message", "")
+    if message:
+        st.write(message)
+
+    confirmed = st.multiselect(
+        "Parameters to include",
+        options=options,
+        default=pending,
+        key="ask.param_confirmation",
+        placeholder="Search to add more parameters...",
+    )
+    st.caption(
+        f"Agent proposed {len(pending)} parameters. Uncheck to remove, search to add."
+    )
+
+    if st.button("Run Query", type="primary", key="ask.run_query"):
+        st.session_state["ask.confirmed_params"] = list(confirmed)
+        _run_confirmed_agent_flow()
+
+
+def _run_confirmed_agent_flow() -> None:
+    """Second-turn agent run with confirmed params injected into the prompt (NL-05).
+
+    Per RESEARCH Open Question 3: we inject confirmed params as a structured user
+    message rather than maintaining multi-turn message history — keeps the agent stateless.
+    """
+    question = st.session_state.get("ask.question", "")
+    confirmed = st.session_state.get("ask.confirmed_params", [])
+    if not question.strip() or not confirmed:
+        return
+    composed = (
+        f"User-confirmed parameters: {confirmed}\n\n"
+        f"Original question: {question}\n\n"
+        "Use ONLY the confirmed parameters above. Do not ask for more clarification."
+    )
+    # Clear pending state before the call so a new ClarificationNeeded won't loop forever.
+    st.session_state["ask.pending_params"] = []
+    st.session_state["ask.pending_message"] = ""
+    _run_agent_flow(composed)
+
+
 def render() -> None:
     _init_session_state()
     _render_banners()
@@ -321,10 +391,13 @@ def render() -> None:
     _render_history()
     question = _render_question_input()
 
-    # Submit on explicit "Run" press — for this plan we use a default button.
-    # (Plan 02-05 replaces this with the param-confirmation "Run Query" button.)
-    if st.button("Run", type="primary", key="ask.run"):
-        _run_agent_flow(question)
+    if st.session_state.get("ask.pending_params"):
+        _render_param_confirmation()
+    else:
+        if st.button("Ask", type="primary", key="ask.first_turn"):
+            st.session_state["ask.pending_params"] = []
+            st.session_state["ask.confirmed_params"] = []
+            _run_agent_flow(question)
 
     _render_answer_zone()
     _render_starter_gallery()
