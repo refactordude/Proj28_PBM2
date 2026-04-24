@@ -2,6 +2,7 @@
 config/settings.yaml
 config/auth.yaml
 config/starter_prompts.yaml
+config/overview.yaml
 .env
 
 # Python
