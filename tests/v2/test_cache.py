@@ -144,13 +144,17 @@ def test_fetch_cells_different_db_name_separate_cache_entries(fake_db):
 def test_ttl_expiry_invalidates_entry(fake_db):
     """Simulate TTL expiry by advancing cachetools' time source.
 
-    cachetools.TTLCache calls a timer function internally; we replace the cache's
-    timer to advance it past the TTL between calls.
+    In cachetools v7, TTLCache.timer is a read-only property returning a
+    _Timer wrapper object. The underlying timer callable is stored in the
+    name-mangled attribute _Timer__timer on that wrapper. We replace it to
+    control time without wall-clock sleep.
     """
     cache = cache_mod._platforms_cache
-    original_timer = cache.timer
+    timer_obj = cache.timer  # cachetools._TimedCache._Timer instance
+    # Save the real callable (name-mangled from _Timer.__timer)
+    original_inner = timer_obj._Timer__timer
     fake_time = [1000.0]
-    cache.timer = lambda: fake_time[0]
+    timer_obj._Timer__timer = lambda: fake_time[0]
 
     try:
         with patch("app_v2.services.cache.list_platforms_core",
@@ -163,7 +167,7 @@ def test_ttl_expiry_invalidates_entry(fake_db):
         assert r2 == ["B"], "post-TTL call should re-invoke core"
         assert mock_core.call_count == 2
     finally:
-        cache.timer = original_timer
+        timer_obj._Timer__timer = original_inner
 
 
 # ---------------------------------------------------------------------------
