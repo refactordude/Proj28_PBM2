@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-24T21:20:40.529Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-04-24T21:34:40.388Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
-  percent: 71
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 02 (Overview Tab + Filters) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-24
 
@@ -57,6 +57,8 @@ Progress: [██████████] 100%
 - Cache wrapper names: list_platforms/list_parameters/fetch_cells (not cached_ prefix) — Phase 2+ imports from app_v2.services.cache
 - TTL expiry test patches _Timer__timer (name-mangled inner callable) — cachetools v7 makes TTLCache.timer a read-only property
 - Per-cache threading.Lock instances (not shared) — reduces contention under concurrent route access
+- list_platforms called unconditionally (try/except) in overview routes — monkeypatch works in tests without real DB; production degrades to empty datalist
+- Phase 1 GET / stub removed from root.py; overview router owns /; root.py retains /browse and /ask only
 
 ### Pending Todos
 
@@ -68,7 +70,7 @@ None — roadmap complete, all 46 requirements mapped, research gaps noted in SU
 
 ## Session Continuity
 
-Last session: 2026-04-24T21:20:40.497Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-24T21:34:40.353Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
 Next action: `/gsd-plan-phase 1`

@@ -23,12 +23,12 @@
 
 ### Overview Tab
 
-- [ ] **OVERVIEW-01**: User can open the Overview tab at `/` (default) or `/?tab=overview`. Tab state reflects in URL via `hx-push-url`.
-- [ ] **OVERVIEW-02**: Overview page renders a list of curated platform entities. Each entity row shows: title (PLATFORM_ID), Brand badge, SoC badge, Year badge (when known), link to the platform's content page, "AI Summary" button, Remove (×) button.
-- [ ] **OVERVIEW-03**: User can add a platform to the curated list via a typeahead input (datalist or lightweight combobox) populated from PLATFORM_IDs available in `ufs_data`. HTMX `hx-trigger="keyup changed delay:250ms"` debounce on search; `hx-post` to add.
-- [ ] **OVERVIEW-04**: User can remove a platform from the curated list via the Remove (×) button; HTMX `hx-delete` + `hx-swap="delete"` on the entity row. Confirmation via browser `confirm()` or `hx-confirm`.
+- [x] **OVERVIEW-01**: User can open the Overview tab at `/` (default) or `/?tab=overview`. Tab state reflects in URL via `hx-push-url`.
+- [x] **OVERVIEW-02**: Overview page renders a list of curated platform entities. Each entity row shows: title (PLATFORM_ID), Brand badge, SoC badge, Year badge (when known), link to the platform's content page, "AI Summary" button, Remove (×) button.
+- [x] **OVERVIEW-03**: User can add a platform to the curated list via a typeahead input (datalist or lightweight combobox) populated from PLATFORM_IDs available in `ufs_data`. HTMX `hx-trigger="keyup changed delay:250ms"` debounce on search; `hx-post` to add.
+- [x] **OVERVIEW-04**: User can remove a platform from the curated list via the Remove (×) button; HTMX `hx-delete` + `hx-swap="delete"` on the entity row. Confirmation via browser `confirm()` or `hx-confirm`.
 - [x] **OVERVIEW-05**: Curated list persists to `config/overview.yaml` (gitignored; `config/overview.example.yaml` committed as a template with 0–3 sample entries).
-- [ ] **OVERVIEW-06**: Overview page shows an empty state when the curated list is empty — explicit "Add your first platform" affordance pointing at the typeahead input.
+- [x] **OVERVIEW-06**: Overview page shows an empty state when the curated list is empty — explicit "Add your first platform" affordance pointing at the typeahead input.
 
 ### Overview Filters
 
@@ -111,12 +111,12 @@
 | INFRA-07 | Phase 1 | Complete |
 | INFRA-08 | Phase 1 | Complete |
 | INFRA-09 | Phase 1 | Complete |
-| OVERVIEW-01 | Phase 2 | Pending |
-| OVERVIEW-02 | Phase 2 | Pending |
-| OVERVIEW-03 | Phase 2 | Pending |
-| OVERVIEW-04 | Phase 2 | Pending |
+| OVERVIEW-01 | Phase 2 | Complete |
+| OVERVIEW-02 | Phase 2 | Complete |
+| OVERVIEW-03 | Phase 2 | Complete |
+| OVERVIEW-04 | Phase 2 | Complete |
 | OVERVIEW-05 | Phase 2 | Complete |
-| OVERVIEW-06 | Phase 2 | Pending |
+| OVERVIEW-06 | Phase 2 | Complete |
 | FILTER-01 | Phase 2 | Pending |
 | FILTER-02 | Phase 2 | Pending |
 | FILTER-03 | Phase 2 | Pending |
