@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title | default("PBM2") }} — PBM2 v2.0</title>
+
+  {# INFRA-04: vendored Bootstrap 5.3.8, HTMX 2.0.10, Bootstrap Icons 1.13.1 #}
+  <link rel="stylesheet" href="{{ url_for('static', path='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='vendor/bootstrap-icons/bootstrap-icons.css') }}">
+
+  {# INFRA-02: HTMX loaded with defer; error handler attached on DOMContentLoaded #}
+  <script src="{{ url_for('static', path='vendor/htmx/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='vendor/bootstrap/bootstrap.bundle.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='js/htmx-error-handler.js') }}" defer></script>
+</head>
+<body>
+  {# Horizontal top-nav tabs (INFRA-02). hx-boost is NOT applied here per
+     Pitfall 8 — tab nav uses plain links + explicit full-page routes so browser
+     back/forward always loads a full page, not a fragment. #}
+  <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <i class="bi bi-database"></i> PBM2
+      </a>
+      <ul class="nav nav-tabs card-header-tabs ms-3">
+        <li class="nav-item">
+          <a class="nav-link {% if active_tab == 'overview' %}active{% endif %}"
+             {% if active_tab == 'overview' %}aria-current="page"{% endif %}
+             href="/">
+            <i class="bi bi-list-ul"></i> Overview
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_tab == 'browse' %}active{% endif %}"
+             {% if active_tab == 'browse' %}aria-current="page"{% endif %}
+             href="/browse">
+            <i class="bi bi-table"></i> Browse
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if active_tab == 'ask' %}active{% endif %}"
+             {% if active_tab == 'ask' %}aria-current="page"{% endif %}
+             href="/ask">
+            <i class="bi bi-chat-dots"></i> Ask
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  {# INFRA-02: HTMX error container — htmx-error-handler.js swaps 4xx/5xx responses here.
+     Kept in the persistent shell (NOT inside swappable tab content) to survive navigation. #}
+  <div id="htmx-error-container" class="container-fluid mt-2"></div>
+
+  <main class="container-fluid mt-3">
+    {% block content %}
+      {% if placeholder_message %}
+        <div class="alert alert-info" role="alert">
+          <i class="bi bi-info-circle"></i> {{ placeholder_message }}
+        </div>
+      {% endif %}
+      {# Overview/Browse/Ask feature content injected in Phases 2-5 via template inheritance #}
+    {% endblock %}
+  </main>
+</body>
+</html>
