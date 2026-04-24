@@ -1,6 +1,7 @@
 # Config files containing secrets (per D-11: settings.yaml holds plaintext passwords/api_keys)
 config/settings.yaml
 config/auth.yaml
+config/starter_prompts.yaml
 .env
 
 # Python

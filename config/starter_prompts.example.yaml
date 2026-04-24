@@ -1,0 +1,26 @@
+# Phase 2 -- Starter prompts for the Ask page (ONBD-01, ONBD-02).
+# Edit this file (or copy to config/starter_prompts.yaml) to customize.
+# Each entry: label (button text, <=40 chars) + question (prompt pre-fill).
+# 8 prompts total: 3 lookup-one-platform, 3 compare-across-platforms, 2 filter-platforms-by-value.
+
+# --- Lookup one platform (3) ---
+- label: "WriteProt status for one platform"
+  question: "What is the WriteProt status for all LUNs on platform X?"
+- label: "LUN capacities for one platform"
+  question: "Show all LUN capacities for platform X."
+- label: "bkops settings for one platform"
+  question: "What are the background-operations (bkops) settings for platform X?"
+
+# --- Compare across platforms (3) ---
+- label: "Compare UFS spec_version"
+  question: "Compare the UFS specification version (spec_version) across all platforms."
+- label: "Compare bkops across platforms"
+  question: "Compare background-operations (bkops) settings across all platforms."
+- label: "Compare ffu_features across platforms"
+  question: "Compare the ffu_features flags across all platforms."
+
+# --- Filter platforms by value (2) ---
+- label: "Platforms with write protection on"
+  question: "List platforms where any LUN has write protection enabled."
+- label: "Platforms with purge disabled"
+  question: "Which platforms have bkops purge disabled?"
