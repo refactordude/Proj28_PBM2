@@ -51,6 +51,13 @@ def validate_sql(sql: str, allowed_tables: list[str]) -> ValidationResult:
         if tok.ttype is T.Keyword and tok.normalized.upper().split()[0] in _SET_OP_KEYWORDS:
             return ValidationResult(ok=False, reason="UNION / INTERSECT / EXCEPT are not allowed")
 
+    # CTE check — WITH clauses wrap subquery bodies that _walk() never descends into,
+    # making them a vector for allowed_tables bypass (CR-02).  The agent prompt
+    # has no legitimate use for CTEs (single-table, three query shapes only).
+    for tok in stmt.flatten():
+        if tok.ttype is T.Keyword.CTE:
+            return ValidationResult(ok=False, reason="WITH (CTE) is not allowed")
+
     # Comment check — reject outright, don't attempt to strip (SAFE-02 / T-02-02-06)
     for tok in stmt.flatten():
         if tok.ttype in (T.Comment.Single, T.Comment.Multiline):

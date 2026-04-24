@@ -186,6 +186,33 @@ class TestSetOperationsRejected:
 
 
 # ---------------------------------------------------------------------------
+# CTE (WITH clause) — CR-02 regression tests
+# ---------------------------------------------------------------------------
+
+class TestCTERejected:
+    def test_cte_with_other_table_rejected(self):
+        """CTE body is invisible to _walk(), allowing allowed_tables bypass (CR-02)."""
+        result = validate_sql(
+            "WITH t AS (SELECT * FROM other_table) SELECT * FROM ufs_data", ALLOWED
+        )
+        assert result.ok is False
+
+    def test_cte_with_admin_table_rejected(self):
+        """Regression: CTE hiding access to reserved-word table name."""
+        result = validate_sql(
+            "WITH evil AS (SELECT * FROM admin) SELECT * FROM ufs_data", ALLOWED
+        )
+        assert result.ok is False
+
+    def test_cte_rejection_reason(self):
+        result = validate_sql(
+            "WITH t AS (SELECT * FROM ufs_data) SELECT * FROM ufs_data", ALLOWED
+        )
+        assert result.ok is False
+        assert "CTE" in result.reason or "WITH" in result.reason
+
+
+# ---------------------------------------------------------------------------
 # Edge cases — empty / whitespace SQL
 # ---------------------------------------------------------------------------
 
