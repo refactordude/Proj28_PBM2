@@ -245,7 +245,10 @@ def _render_answer_zone() -> None:
         with st.expander("Generated SQL", expanded=False):
             st.code(sql, language="sql")
             if st.button("Regenerate", type="secondary", key="ask.regenerate"):
-                _run_agent_flow(st.session_state.get("ask.question", ""))
+                if st.session_state.get("ask.confirmed_params"):
+                    _run_confirmed_agent_flow()
+                else:
+                    _run_agent_flow(st.session_state.get("ask.question", ""))
 
 
 def _run_agent_flow(question: str) -> None:
