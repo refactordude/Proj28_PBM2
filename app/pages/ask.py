@@ -25,6 +25,7 @@ from app.core.agent.nl_agent import (
     build_agent,
     run_agent,
 )
+from app.core.agent.nl_service import NLResult, run_nl_query
 from app.adapters.db.registry import build_adapter
 from app.core.config import find_database, find_llm, load_settings
 
@@ -252,11 +253,14 @@ def _render_answer_zone() -> None:
 
 
 def _run_agent_flow(question: str) -> None:
-    """Single-shot agent run — NL-05 confirmation flow is wired in Plan 02-05.
+    """Single-shot agent run via nl_service (INFRA-07).
 
-    On ClarificationNeeded, this plan stores the proposed params in
-    ask.pending_params and shows a stub message. Plan 02-05 replaces the stub
-    with the actual multiselect + Run Query flow.
+    This function is now a thin UI/session-state shim over nl_service.run_nl_query.
+    All SAFE-02..06 orchestration lives in nl_service; ask.py owns only:
+      - reading active_llm / active_db from session_state
+      - resolving db adapter + agent + deps
+      - storing nl_result outcomes into session_state for the renderers
+      - appending history entries
     """
     if not question.strip():
         return
@@ -288,68 +292,38 @@ def _run_agent_flow(question: str) -> None:
     )
 
     with st.spinner("Thinking..."):
-        output = run_agent(agent, question, deps)
+        nl_result: NLResult = run_nl_query(question, agent, deps)
 
-    if isinstance(output, AgentRunFailure):
-        st.session_state["ask.last_abort"] = output
+    # --- Failure branch
+    if nl_result.kind == "failure":
+        st.session_state["ask.last_abort"] = nl_result.failure
         st.session_state["ask.last_df"] = None
         st.session_state["ask.last_summary"] = ""
-        st.session_state["ask.last_sql"] = output.last_sql
-        _append_history(question, output.last_sql, 0, "failed")
+        st.session_state["ask.last_sql"] = nl_result.failure.last_sql if nl_result.failure else ""
+        _append_history(
+            question,
+            nl_result.failure.last_sql if nl_result.failure else "",
+            0,
+            "failed",
+        )
         return
 
+    # Any non-failure clears the previous abort banner
     st.session_state["ask.last_abort"] = None
 
-    if isinstance(output, ClarificationNeeded):
-        st.session_state["ask.pending_params"] = list(output.candidate_params)
-        st.session_state["ask.pending_message"] = output.message
+    # --- Clarification branch (NL-05)
+    if nl_result.kind == "clarification_needed":
+        st.session_state["ask.pending_params"] = list(nl_result.candidate_params)
+        st.session_state["ask.pending_message"] = nl_result.message
         st.session_state["ask.confirmed_params"] = []
         return
 
-    # SQLResult — execute it via the same tool path by re-running.
-    # In practice PydanticAI's tool call already executed the SQL; the agent's
-    # result.output.query is the SQL and result.output.explanation is the summary.
-    # We need the actual DataFrame for the table — fetch it now from the DB using
-    # the validated query. Use the same validator+limiter+executor chain.
-    from app.core.agent.nl_agent import _execute_read_only  # internal reuse
-    from app.services.sql_limiter import inject_limit
-    from app.services.sql_validator import validate_sql
-
-    cfg = settings.app.agent
-    vr = validate_sql(output.query, cfg.allowed_tables)
-    if not vr.ok:
-        st.error(f"Generated SQL was rejected: {vr.reason}")
-        _append_history(question, output.query, 0, "failed")
-        return
-    safe_sql = inject_limit(output.query, cfg.row_cap)
-    try:
-        # Run the query and capture as DataFrame for display (separate from the tool-call
-        # text the agent already saw). This is intentional duplication — the agent's view
-        # is text-for-LLM; the user's view is a DataFrame.
-        import sqlalchemy as sa
-        if hasattr(db, "_get_engine"):
-            timeout_ms = int(cfg.timeout_s) * 1000
-            with db._get_engine().connect() as conn:
-                try:
-                    conn.execute(sa.text("SET SESSION TRANSACTION READ ONLY"))
-                except Exception:
-                    pass
-                try:
-                    conn.execute(sa.text(f"SET SESSION max_execution_time={timeout_ms}"))
-                except Exception:
-                    pass  # Pitfall 8 — MySQL 5.7.8+ only
-                df = pd.read_sql_query(sa.text(safe_sql), conn)
-        else:
-            df = db.run_query(safe_sql)
-    except Exception as exc:
-        st.error(f"SQL execution failed. ({type(exc).__name__})")
-        _append_history(question, safe_sql, 0, "failed")
-        return
-
-    st.session_state["ask.last_sql"] = safe_sql
-    st.session_state["ask.last_df"] = df
-    st.session_state["ask.last_summary"] = output.explanation
-    _append_history(question, safe_sql, len(df), "ok")
+    # --- OK branch — display the DataFrame + summary + SQL
+    assert nl_result.kind == "ok"
+    st.session_state["ask.last_sql"] = nl_result.sql
+    st.session_state["ask.last_df"] = nl_result.df
+    st.session_state["ask.last_summary"] = nl_result.summary
+    _append_history(question, nl_result.sql, len(nl_result.df) if nl_result.df is not None else 0, "ok")
 
 
 def _render_param_confirmation() -> None:
