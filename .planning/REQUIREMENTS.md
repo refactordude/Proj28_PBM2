@@ -50,16 +50,16 @@
 
 ### NL Agent
 
-- [ ] **NL-01**: User types a natural-language question and receives both a result table and a plain-text LLM summary
-- [ ] **NL-02**: User sees the LLM-generated SQL in a collapsed expander on every NL result
-- [ ] **NL-03**: User can click **Regenerate** to re-run the same NL question with a fresh LLM call
-- [ ] **NL-04**: User's NL questions and answers are preserved for the session in a history panel
+- [x] **NL-01**: User types a natural-language question and receives both a result table and a plain-text LLM summary
+- [x] **NL-02**: User sees the LLM-generated SQL in a collapsed expander on every NL result
+- [x] **NL-03**: User can click **Regenerate** to re-run the same NL question with a fresh LLM call
+- [x] **NL-04**: User's NL questions and answers are preserved for the session in a history panel
 - [ ] **NL-05**: Before running a query, the agent proposes candidate `(InfoCategory, Item)` parameters drawn from the actual DB and asks the user to confirm or adjust before SQL is executed
 - [x] **NL-06**: The agent correctly handles the three core question shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
 - [x] **NL-07**: User can switch the LLM backend between OpenAI and Ollama from the sidebar; the choice takes effect on the next NL query
 - [x] **NL-08**: Both OpenAI and Ollama backends use the same `openai` Python SDK client, differing only in `base_url` and `api_key`
 - [x] **NL-09**: Ollama backend has a JSON extraction fallback (`json.loads` → regex first-JSON-block → plain text) so smaller models that emit imperfect tool-call JSON do not crash the agent
-- [ ] **NL-10**: Default LLM backend is Ollama; selecting OpenAI displays a one-time data-sensitivity warning before the first request of the session
+- [x] **NL-10**: Default LLM backend is Ollama; selecting OpenAI displays a one-time data-sensitivity warning before the first request of the session
 
 ### Safety
 
@@ -152,16 +152,16 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | VIZ-02 | Phase 1 | Complete |
 | EXPORT-01 | Phase 1 | Complete |
 | EXPORT-02 | Phase 1 | Complete |
-| NL-01 | Phase 2 | Pending |
-| NL-02 | Phase 2 | Pending |
-| NL-03 | Phase 2 | Pending |
-| NL-04 | Phase 2 | Pending |
+| NL-01 | Phase 2 | Complete |
+| NL-02 | Phase 2 | Complete |
+| NL-03 | Phase 2 | Complete |
+| NL-04 | Phase 2 | Complete |
 | NL-05 | Phase 2 | Pending |
 | NL-06 | Phase 2 | Complete |
 | NL-07 | Phase 2 | Complete |
 | NL-08 | Phase 2 | Complete |
 | NL-09 | Phase 2 | Complete |
-| NL-10 | Phase 2 | Pending |
+| NL-10 | Phase 2 | Complete |
 | SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 2 | Complete |
 | SAFE-03 | Phase 2 | Complete |

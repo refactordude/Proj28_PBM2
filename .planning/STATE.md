@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-04-24T00:57:16.463Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-04-24T01:10:01.117Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 13
-  completed_plans: 10
-  percent: 77
+  completed_plans: 11
+  percent: 85
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 ## Current Position
 
 Phase: 02 (NL Agent Layer) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-04-24
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P01 | 7min | 3 tasks | 5 files |
 | Phase 02 P02 | 5min | 4 tasks | 8 files |
 | Phase 02-nl-agent-layer P03 | 9 minutes | 2 tasks | 3 files |
+| Phase 02-nl-agent-layer P04 | 18 minutes | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,9 @@ Recent decisions affecting current work:
 - [Phase 02-nl-agent-layer]: TestModel introspection uses agent._function_toolset.output_schema.toolset._tool_defs for output tool names — PydanticAI 1.86 internal; version-sensitive
 - [Phase 02-nl-agent-layer]: build_agent() is cache-free; @st.cache_resource wrapping deferred to Plan 02-04 (ask.py) so tests can construct fresh agents without Streamlit cache interference
 - [Phase 02-nl-agent-layer]: FunctionModel used for ClarificationNeeded tests — TestModel.custom_output_args always targets first union member (SQLResult); FunctionModel selects 'final_result_ClarificationNeeded' by name
+- [Phase 02-nl-agent-layer]: AppTest default_timeout=60 required — pydantic_ai import adds ~15s cold-start in AppTest isolated execution
+- [Phase 02-nl-agent-layer]: SETTINGS_PATH env var used as AppTest fixture for sensitivity warning tests — monkeypatching imported module object has no effect in AppTest's isolated script context
+- [Phase 02-nl-agent-layer]: ask.py imports get_db_adapter lazily inside _run_agent_flow to avoid circular import at module load
 
 ### Pending Todos
 
@@ -116,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-24T00:57:16.444Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-04-24T01:10:01.098Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
