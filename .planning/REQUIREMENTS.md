@@ -102,55 +102,55 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | TBD | Pending |
-| INFRA-02 | TBD | Pending |
-| INFRA-03 | TBD | Pending |
-| INFRA-04 | TBD | Pending |
-| INFRA-05 | TBD | Pending |
-| INFRA-06 | TBD | Pending |
-| INFRA-07 | TBD | Pending |
-| INFRA-08 | TBD | Pending |
-| INFRA-09 | TBD | Pending |
-| OVERVIEW-01 | TBD | Pending |
-| OVERVIEW-02 | TBD | Pending |
-| OVERVIEW-03 | TBD | Pending |
-| OVERVIEW-04 | TBD | Pending |
-| OVERVIEW-05 | TBD | Pending |
-| OVERVIEW-06 | TBD | Pending |
-| FILTER-01 | TBD | Pending |
-| FILTER-02 | TBD | Pending |
-| FILTER-03 | TBD | Pending |
-| FILTER-04 | TBD | Pending |
-| CONTENT-01 | TBD | Pending |
-| CONTENT-02 | TBD | Pending |
-| CONTENT-03 | TBD | Pending |
-| CONTENT-04 | TBD | Pending |
-| CONTENT-05 | TBD | Pending |
-| CONTENT-06 | TBD | Pending |
-| CONTENT-07 | TBD | Pending |
-| CONTENT-08 | TBD | Pending |
-| SUMMARY-01 | TBD | Pending |
-| SUMMARY-02 | TBD | Pending |
-| SUMMARY-03 | TBD | Pending |
-| SUMMARY-04 | TBD | Pending |
-| SUMMARY-05 | TBD | Pending |
-| SUMMARY-06 | TBD | Pending |
-| SUMMARY-07 | TBD | Pending |
-| BROWSE-V2-01 | TBD | Pending |
-| BROWSE-V2-02 | TBD | Pending |
-| BROWSE-V2-03 | TBD | Pending |
-| BROWSE-V2-04 | TBD | Pending |
-| BROWSE-V2-05 | TBD | Pending |
-| ASK-V2-01 | TBD | Pending |
-| ASK-V2-02 | TBD | Pending |
-| ASK-V2-03 | TBD | Pending |
-| ASK-V2-04 | TBD | Pending |
-| ASK-V2-05 | TBD | Pending |
-| ASK-V2-06 | TBD | Pending |
-| ASK-V2-07 | TBD | Pending |
-| ASK-V2-08 | TBD | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
+| INFRA-06 | Phase 1 | Pending |
+| INFRA-07 | Phase 1 | Pending |
+| INFRA-08 | Phase 1 | Pending |
+| INFRA-09 | Phase 1 | Pending |
+| OVERVIEW-01 | Phase 2 | Pending |
+| OVERVIEW-02 | Phase 2 | Pending |
+| OVERVIEW-03 | Phase 2 | Pending |
+| OVERVIEW-04 | Phase 2 | Pending |
+| OVERVIEW-05 | Phase 2 | Pending |
+| OVERVIEW-06 | Phase 2 | Pending |
+| FILTER-01 | Phase 2 | Pending |
+| FILTER-02 | Phase 2 | Pending |
+| FILTER-03 | Phase 2 | Pending |
+| FILTER-04 | Phase 2 | Pending |
+| CONTENT-01 | Phase 3 | Pending |
+| CONTENT-02 | Phase 3 | Pending |
+| CONTENT-03 | Phase 3 | Pending |
+| CONTENT-04 | Phase 3 | Pending |
+| CONTENT-05 | Phase 3 | Pending |
+| CONTENT-06 | Phase 3 | Pending |
+| CONTENT-07 | Phase 3 | Pending |
+| CONTENT-08 | Phase 3 | Pending |
+| SUMMARY-01 | Phase 3 | Pending |
+| SUMMARY-02 | Phase 3 | Pending |
+| SUMMARY-03 | Phase 3 | Pending |
+| SUMMARY-04 | Phase 3 | Pending |
+| SUMMARY-05 | Phase 3 | Pending |
+| SUMMARY-06 | Phase 3 | Pending |
+| SUMMARY-07 | Phase 3 | Pending |
+| BROWSE-V2-01 | Phase 4 | Pending |
+| BROWSE-V2-02 | Phase 4 | Pending |
+| BROWSE-V2-03 | Phase 4 | Pending |
+| BROWSE-V2-04 | Phase 4 | Pending |
+| BROWSE-V2-05 | Phase 4 | Pending |
+| ASK-V2-01 | Phase 5 | Pending |
+| ASK-V2-02 | Phase 5 | Pending |
+| ASK-V2-03 | Phase 5 | Pending |
+| ASK-V2-04 | Phase 5 | Pending |
+| ASK-V2-05 | Phase 5 | Pending |
+| ASK-V2-06 | Phase 5 | Pending |
+| ASK-V2-07 | Phase 5 | Pending |
+| ASK-V2-08 | Phase 5 | Pending |
 
 **Totals:**
-- v2.0 Requirements: **46** (9 INFRA + 6 OVERVIEW + 4 FILTER + 8 CONTENT + 7 SUMMARY + 5 BROWSE-V2 + 8 ASK-V2, one mapping already committed to phases via INFRA-06/07 as pre-work gates)
+- v2.0 Requirements: **46** (9 INFRA + 6 OVERVIEW + 4 FILTER + 8 CONTENT + 7 SUMMARY + 5 BROWSE-V2 + 8 ASK-V2)
 - Deferred: 7
-- Mapped to phases: 0 / 46 (populated by roadmapper)
+- Mapped to phases: 46 / 46 (Phase 1: 9, Phase 2: 10, Phase 3: 15, Phase 4: 5, Phase 5: 8)
