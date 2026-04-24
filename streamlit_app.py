@@ -176,12 +176,12 @@ def main() -> None:
                 icon=":material/table_chart:",
                 default=True,
             ),
+            st.Page("app/pages/ask.py", title="Ask", icon=":material/chat:"),
             st.Page(
                 "app/pages/settings.py",
                 title="Settings",
                 icon=":material/settings:",
             ),
-            # st.Page("app/pages/nl_agent.py", title="Ask", icon=":material/chat:"),  # Phase 2 — uncomment when NL agent is wired
         ]
     )
     pg.run()
