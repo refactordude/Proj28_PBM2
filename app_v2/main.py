@@ -20,6 +20,8 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from html import escape
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -98,9 +100,10 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         return templates.TemplateResponse(request, "404.html", {"detail": exc.detail}, status_code=404)
     if exc.status_code == 500:
         return templates.TemplateResponse(request, "500.html", {"detail": exc.detail}, status_code=500)
-    # Fall through to FastAPI default for other codes
+    # Fall through to FastAPI default for other codes.
+    # exc.detail is escaped to prevent XSS — Jinja2 autoescape does not apply here.
     return HTMLResponse(
-        content=f"<h1>HTTP {exc.status_code}</h1><p>{exc.detail}</p>",
+        content=f"<h1>HTTP {exc.status_code}</h1><p>{escape(str(exc.detail))}</p>",
         status_code=exc.status_code,
     )
 
