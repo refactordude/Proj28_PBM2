@@ -2,11 +2,19 @@
 
 Handles server-side filtering, row-capping, pivot-to-wide, and @st.cache_data caching.
 
-Public API (stable — imported by Plans 04-07):
+Public API — v1.0 Streamlit path (unchanged; @st.cache_data wrappers):
   list_platforms(_db) -> list[str]
   list_parameters(_db) -> list[dict]
   fetch_cells(_db, platforms, infocategories, items, row_cap=200) -> tuple[pd.DataFrame, bool]
   pivot_to_wide(df_long, swap_axes=False, col_cap=30) -> tuple[pd.DataFrame, bool]
+
+Public API — v2.0 framework-agnostic path (NEW — used by app_v2/services/cache.py):
+  list_platforms_core(db)
+  list_parameters_core(db)
+  fetch_cells_core(db, platforms, infocategories, items, row_cap=200)
+  pivot_to_wide_core(df_long, swap_axes=False, col_cap=30)
+
+Each _core function is the pure body; the Streamlit-decorated wrapper delegates to it.
 
 Cache TTL contract:
   - list_platforms / list_parameters: ttl=300 (catalog data changes infrequently)
@@ -62,17 +70,19 @@ def _safe_table(name: str) -> str:
 # Catalog queries (cached 300 s — catalog data is immutable between ingestions)
 # ---------------------------------------------------------------------------
 
-@st.cache_data(ttl=300, show_spinner=False)
-def list_platforms(_db: DBAdapter, db_name: str = "") -> list[str]:
-    """Return sorted distinct PLATFORM_ID values.
 
-    The underscore prefix on _db disables Streamlit cache hashing of the adapter
-    (FOUND-07). db_name is included in the cache key so that two sessions using
-    different databases never share catalog data (T-03-04 / Pitfall-8).
-    Cached for 300 seconds — platform list changes only on new ingestion.
+def list_platforms_core(db: DBAdapter, db_name: str = "") -> list[str]:
+    """Return sorted distinct PLATFORM_ID values — pure, un-cached, framework-agnostic.
+
+    This is the framework-agnostic core called by:
+      - list_platforms() (v1.0 Streamlit wrapper — adds @st.cache_data)
+      - app_v2/services/cache.py (v2.0 FastAPI wrapper — adds cachetools.TTLCache + threading.Lock)
+
+    No @st.cache_data decorator, no Streamlit dependency — safe to call from any Python
+    process. Security contract (_safe_table + allowlist) is preserved.
     """
     tbl = _safe_table(_TABLE)
-    with _db._get_engine().connect() as conn:
+    with db._get_engine().connect() as conn:
         df = pd.read_sql_query(
             sa.text(f"SELECT DISTINCT PLATFORM_ID FROM {tbl} ORDER BY PLATFORM_ID"),
             conn,
@@ -81,16 +91,22 @@ def list_platforms(_db: DBAdapter, db_name: str = "") -> list[str]:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def list_parameters(_db: DBAdapter, db_name: str = "") -> list[dict]:
-    """Return sorted distinct (InfoCategory, Item) rows as a list of dicts.
+def list_platforms(_db: DBAdapter, db_name: str = "") -> list[str]:
+    """v1.0 wrapper — delegates to list_platforms_core under @st.cache_data.
 
-    Each dict has keys 'InfoCategory' and 'Item'. Sorted by (InfoCategory, Item).
-    db_name is included in the cache key so that two sessions using different
-    databases never share catalog data (T-03-04 / Pitfall-8).
-    Cached for 300 seconds — parameter catalog is stable between ingestions.
+    Cache key contract unchanged: _db skipped (underscore prefix), db_name included.
+    See list_platforms_core for the behavior.
+    """
+    return list_platforms_core(_db, db_name)
+
+
+def list_parameters_core(db: DBAdapter, db_name: str = "") -> list[dict]:
+    """Return sorted distinct (InfoCategory, Item) rows — pure, un-cached.
+
+    See list_platforms_core for the framework-agnostic contract.
     """
     tbl = _safe_table(_TABLE)
-    with _db._get_engine().connect() as conn:
+    with db._get_engine().connect() as conn:
         df = pd.read_sql_query(
             sa.text(
                 f"SELECT DISTINCT InfoCategory, Item FROM {tbl} "
@@ -101,47 +117,30 @@ def list_parameters(_db: DBAdapter, db_name: str = "") -> list[dict]:
     return df.to_dict("records")
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def list_parameters(_db: DBAdapter, db_name: str = "") -> list[dict]:
+    """v1.0 wrapper — delegates to list_parameters_core under @st.cache_data."""
+    return list_parameters_core(_db, db_name)
+
+
 # ---------------------------------------------------------------------------
 # Cell query (cached 60 s — more volatile than catalog)
 # ---------------------------------------------------------------------------
 
-@st.cache_data(ttl=60, show_spinner=False)
-def fetch_cells(
-    _db: DBAdapter,
+
+def fetch_cells_core(
+    db: DBAdapter,
     platforms: tuple[str, ...],
     infocategories: tuple[str, ...],
     items: tuple[str, ...],
     row_cap: int = 200,
     db_name: str = "",
 ) -> tuple[pd.DataFrame, bool]:
-    """Fetch long-form EAV rows filtered by platforms and items.
+    """Fetch long-form EAV rows filtered by platforms and items — pure, un-cached.
 
-    Args:
-        _db: DBAdapter instance (underscore prefix — Streamlit skips hashing it).
-        platforms: Tuple of PLATFORM_ID values to include. Empty -> (empty DF, False).
-        infocategories: Tuple of InfoCategory values. Empty -> no category filter applied.
-        items: Tuple of Item values to include. Empty -> (empty DF, False).
-        row_cap: Maximum rows to return (default 200, matching AgentConfig.row_cap).
-        db_name: Database identity string included in the cache key so sessions using
-            different databases never share cached cell data (T-03-04 / Pitfall-8).
-
-    Returns:
-        (df, capped):
-          df — long-form DataFrame with columns [PLATFORM_ID, InfoCategory, Item, Result].
-               Result column is normalized via result_normalizer.normalize.
-          capped — True if the DB returned more rows than row_cap (rows were truncated).
-
-    Security (T-03-01):
-        All user-supplied filter values are bound via sa.bindparam(..., expanding=True).
-        No f-string interpolation of user data.
-
-    Safety (SAFE-01 / T-03-02):
-        Attempts a read-only session statement non-fatally. SQLite and some
-        MySQL configurations will raise; the exception is suppressed.
-
-    DATA-05 guard:
-        If platforms or items is empty, returns (empty DF, False) immediately without
-        executing any SQL — prevents full-table scans.
+    This is the framework-agnostic core. All DATA-05 / SAFE-01 / T-03-01 contracts
+    from the @st.cache_data wrapper (fetch_cells) are implemented here. See
+    fetch_cells docstring for the full contract.
     """
     _EMPTY = pd.DataFrame(columns=["PLATFORM_ID", "InfoCategory", "Item", "Result"])
 
@@ -149,12 +148,8 @@ def fetch_cells(
     if not platforms or not items:
         return _EMPTY.copy(), False
 
-    # Empty infocategories is allowed — means "all categories for these items"
     has_cat_filter = bool(infocategories)
 
-    # Build SQL with expanding bindparams (SQLAlchemy 2.x canonical IN clause pattern).
-    # Converting tuple to list because sa.bindparam expanding=True expects a list.
-    # _safe_table validates _TABLE against _ALLOWED_TABLES before interpolation (T-03-01).
     tbl = _safe_table(_TABLE)
     if has_cat_filter:
         sql = sa.text(
@@ -190,9 +185,7 @@ def fetch_cells(
             "cap": row_cap + 1,
         }
 
-    with _db._get_engine().connect() as conn:
-        # SAFE-01: attempt read-only session — non-fatal; SQLite and some MySQL
-        # configs don't support this statement.
+    with db._get_engine().connect() as conn:
         try:
             conn.execute(sa.text("SET SESSION TRANSACTION READ ONLY"))
         except Exception:
@@ -200,17 +193,31 @@ def fetch_cells(
 
         df = pd.read_sql_query(sql, conn, params=params)
 
-    # DATA-07: detect and enforce row cap
     capped = len(df) > row_cap
     if capped:
         df = df.head(row_cap)
 
-    # DATA-01/02: normalize the Result column (stages 1-2) in place.
-    # Stage 5 (try_numeric) is deferred to the chart path per DATA-02 — lazy coercion.
     if not df.empty and "Result" in df.columns:
         df["Result"] = normalize(df["Result"])
 
     return df, capped
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def fetch_cells(
+    _db: DBAdapter,
+    platforms: tuple[str, ...],
+    infocategories: tuple[str, ...],
+    items: tuple[str, ...],
+    row_cap: int = 200,
+    db_name: str = "",
+) -> tuple[pd.DataFrame, bool]:
+    """v1.0 wrapper — delegates to fetch_cells_core under @st.cache_data.
+
+    Preserves the underscore-prefix `_db` Streamlit cache-hashing convention.
+    See fetch_cells_core for the full behavior contract (DATA-05, SAFE-01, T-03-01).
+    """
+    return fetch_cells_core(_db, platforms, infocategories, items, row_cap, db_name)
 
 
 # ---------------------------------------------------------------------------
@@ -274,3 +281,9 @@ def pivot_to_wide(
         col_capped = True
 
     return wide, col_capped
+
+
+# Alias for framework-agnostic import symmetry — plan 01-04 cache.py imports
+# pivot_to_wide_core alongside the other _core functions. pivot_to_wide itself
+# has no Streamlit decorator so the function object is identical.
+pivot_to_wide_core = pivot_to_wide
