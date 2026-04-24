@@ -54,7 +54,7 @@
 - [x] **NL-02**: User sees the LLM-generated SQL in a collapsed expander on every NL result
 - [x] **NL-03**: User can click **Regenerate** to re-run the same NL question with a fresh LLM call
 - [x] **NL-04**: User's NL questions and answers are preserved for the session in a history panel
-- [ ] **NL-05**: Before running a query, the agent proposes candidate `(InfoCategory, Item)` parameters drawn from the actual DB and asks the user to confirm or adjust before SQL is executed
+- [x] **NL-05**: Before running a query, the agent proposes candidate `(InfoCategory, Item)` parameters drawn from the actual DB and asks the user to confirm or adjust before SQL is executed
 - [x] **NL-06**: The agent correctly handles the three core question shapes: lookup-one-platform, compare-across-platforms, filter-platforms-by-value
 - [x] **NL-07**: User can switch the LLM backend between OpenAI and Ollama from the sidebar; the choice takes effect on the next NL query
 - [x] **NL-08**: Both OpenAI and Ollama backends use the same `openai` Python SDK client, differing only in `base_url` and `api_key`
@@ -156,7 +156,7 @@ Deferred to a future release. Tracked but not in the current roadmap.
 | NL-02 | Phase 2 | Complete |
 | NL-03 | Phase 2 | Complete |
 | NL-04 | Phase 2 | Complete |
-| NL-05 | Phase 2 | Pending |
+| NL-05 | Phase 2 | Complete |
 | NL-06 | Phase 2 | Complete |
 | NL-07 | Phase 2 | Complete |
 | NL-08 | Phase 2 | Complete |

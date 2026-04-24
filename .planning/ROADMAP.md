@@ -44,7 +44,7 @@ PBM2 ships in two phases that respect the core value ordering: browsing must wor
 - [x] 02-02-PLAN.md — Pure-function safety primitives: validate_sql, inject_limit, scrub_paths, extract_json (SAFE-02, SAFE-03, SAFE-04 timeout, SAFE-06, NL-09)
 - [x] 02-03-PLAN.md — PydanticAI Agent core: types, run_sql tool, run_agent runner (NL-06, SAFE-04 step-cap, SAFE-05)
 - [x] 02-04-PLAN.md — Ask page: title, history, question input, answer zone, sensitivity warning, abort banner, gallery scaffold (NL-01, NL-02, NL-03, NL-04, NL-10)
-- [ ] 02-05-PLAN.md — NL-05 param confirmation multiselect + Run Query second-turn flow (NL-05)
+- [x] 02-05-PLAN.md — NL-05 param confirmation multiselect + Run Query second-turn flow (NL-05)
 - [x] 02-06-PLAN.md — Starter prompt gallery YAML loader + 8 curated prompts (ONBD-01, ONBD-02)
 **Needs research**: yes
 **UI hint**: yes
