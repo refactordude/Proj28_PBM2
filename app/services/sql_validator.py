@@ -44,6 +44,13 @@ def validate_sql(sql: str, allowed_tables: list[str]) -> ValidationResult:
             ok=False, reason=f"Only SELECT is allowed, got {stmt.get_type()}"
         )
 
+    # Set-operation check — UNION / INTERSECT / EXCEPT are not needed for single-table
+    # queries and are the primary mechanism for allowed_tables bypass (CR-01).
+    _SET_OP_KEYWORDS = {"UNION", "INTERSECT", "EXCEPT"}
+    for tok in stmt.flatten():
+        if tok.ttype is T.Keyword and tok.normalized.upper().split()[0] in _SET_OP_KEYWORDS:
+            return ValidationResult(ok=False, reason="UNION / INTERSECT / EXCEPT are not allowed")
+
     # Comment check — reject outright, don't attempt to strip (SAFE-02 / T-02-02-06)
     for tok in stmt.flatten():
         if tok.ttype in (T.Comment.Single, T.Comment.Multiline):

@@ -148,6 +148,44 @@ class TestDisallowedTables:
 
 
 # ---------------------------------------------------------------------------
+# Set operations (UNION / INTERSECT / EXCEPT) — CR-01 regression tests
+# ---------------------------------------------------------------------------
+
+class TestSetOperationsRejected:
+    def test_union_select_rejected(self):
+        """UNION allows bypassing allowed_tables via a second SELECT branch (CR-01)."""
+        result = validate_sql(
+            "SELECT 1 FROM ufs_data UNION SELECT 1 FROM other_table", ALLOWED
+        )
+        assert result.ok is False
+
+    def test_union_reserved_word_table_rejected(self):
+        """Regression: sqlparse emits reserved-word table names as bare Keyword tokens."""
+        result = validate_sql(
+            "SELECT 1 FROM ufs_data UNION SELECT password FROM admin", ALLOWED
+        )
+        assert result.ok is False
+
+    def test_union_all_rejected(self):
+        result = validate_sql(
+            "SELECT 1 FROM ufs_data UNION ALL SELECT 1 FROM user", ALLOWED
+        )
+        assert result.ok is False
+
+    def test_intersect_rejected(self):
+        result = validate_sql(
+            "SELECT 1 FROM ufs_data INTERSECT SELECT 1 FROM key", ALLOWED
+        )
+        assert result.ok is False
+
+    def test_except_rejected(self):
+        result = validate_sql(
+            "SELECT 1 FROM ufs_data EXCEPT SELECT 1 FROM other_table", ALLOWED
+        )
+        assert result.ok is False
+
+
+# ---------------------------------------------------------------------------
 # Edge cases — empty / whitespace SQL
 # ---------------------------------------------------------------------------
 
