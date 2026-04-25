@@ -244,9 +244,18 @@ def test_summary_cache_ttl_expiry(mocker, cfg_ollama, content_dir):
 
 
 def _httpx_response_mock(mocker, status: int):
-    """Build a MagicMock satisfying ``response: httpx.Response`` arg."""
+    """Build a MagicMock satisfying ``response: httpx.Response`` arg.
+
+    openai 2.32.0's APIStatusError.__init__ reads ``response.headers.get(...)``
+    for ``x-request-id`` extraction; ``spec=httpx.Response`` would expose
+    ``.headers`` as another auto-MagicMock but ``Mock(spec=...)`` only
+    declares attributes from the spec class — for ``httpx.Response`` the
+    ``headers`` property exists but the mock returns a Mock without ``.get``
+    by default. Provide an explicit headers dict.
+    """
     resp = mocker.MagicMock(spec=httpx.Response)
     resp.status_code = status
+    resp.headers = {}  # plain dict — has .get() returning None by default
     return resp
 
 
