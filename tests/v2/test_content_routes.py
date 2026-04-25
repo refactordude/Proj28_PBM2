@@ -237,12 +237,50 @@ def test_post_save_returns_rendered_view_outerHTML_target(isolated_content):
 
 
 def test_post_save_too_large_returns_422(isolated_content):
-    """Save with content > 64KB → 422; file NOT created."""
+    """Save with content > 64KB (codepoints) → 422; file NOT created.
+
+    Form(max_length=65536) catches this at the HTTP boundary (codepoint
+    count). For byte-level overflow with codepoints <= 65536, see the
+    emoji regression test below.
+    """
     client, cd = isolated_content
     payload = "x" * (65536 + 1)
     r = client.post(f"/platforms/{_PID}", data={"content": payload})
     assert r.status_code == 422
     assert not (cd / f"{_PID}.md").exists()
+
+
+def test_post_save_emoji_payload_exceeds_byte_cap_returns_413(isolated_content):
+    """WR-02 regression: 65536 emoji codepoints (≈262KB UTF-8) → HTTP 413.
+
+    D-31 specifies a 64 KB on-disk limit. ``Form(max_length=65536)`` counts
+    CODEPOINTS, not bytes — a 65536-emoji string passes that check (1 codepoint
+    each) but encodes to ~262144 bytes. The authoritative byte check inside
+    ``content_store.save_content`` must reject it with HTTP 413 ("Content too
+    large"), and NO file may be written to disk.
+
+    This test would FAIL prior to the WR-02 fix because save_content silently
+    wrote the 262KB payload, violating D-31's stated invariant.
+    """
+    client, cd = isolated_content
+    # 65536 emoji codepoints. Each "🎉" is 4 bytes UTF-8 → 262144 bytes total.
+    # len(payload) == 65536, so Form(max_length=65536) accepts; only the byte
+    # check inside save_content rejects.
+    payload = "🎉" * 65536
+    assert len(payload) == 65536, "codepoint count must pass Form max_length"
+    assert len(payload.encode("utf-8")) == 65536 * 4, "must exceed byte cap"
+
+    r = client.post(f"/platforms/{_PID}", data={"content": payload})
+    assert r.status_code == 413, (
+        f"WR-02 regression: 64KB-codepoint emoji must be rejected with 413, "
+        f"got {r.status_code}. File on disk: "
+        f"{(cd / f'{_PID}.md').stat().st_size if (cd / f'{_PID}.md').exists() else 'absent'}"
+    )
+    # File must NOT be created — atomic_write_bytes is never invoked when the
+    # byte check rejects up-front.
+    assert not (cd / f"{_PID}.md").exists(), (
+        "WR-02 regression: oversize emoji payload silently written to disk"
+    )
 
 
 # ---------------------------------------------------------------------------

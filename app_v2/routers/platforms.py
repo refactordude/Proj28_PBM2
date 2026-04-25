@@ -20,7 +20,7 @@ import logging
 from pathlib import Path as _Path  # alias to avoid collision with fastapi.Path
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Path, Request
+from fastapi import APIRouter, Form, HTTPException, Path, Request
 from fastapi.responses import HTMLResponse
 
 from app_v2.data.platform_parser import parse_platform_id
@@ -129,8 +129,24 @@ def save_content_route(
     ],
     content: Annotated[str, Form(max_length=MAX_CONTENT_LENGTH)],
 ):
-    """Atomically save markdown (CONTENT-06). Returns the rendered-view fragment."""
-    save_content(platform_id, content, CONTENT_DIR)
+    """Atomically save markdown (CONTENT-06). Returns the rendered-view fragment.
+
+    D-31 size enforcement (WR-02): ``Form(max_length=65536)`` is a coarse
+    codepoint-count first-line guard; the authoritative check is ``save_content``,
+    which rejects payloads whose UTF-8 byte length exceeds 65536 (a 65536-char
+    emoji string is ~262KB on disk). Byte-overflow → HTTP 413.
+    """
+    try:
+        save_content(platform_id, content, CONTENT_DIR)
+    except ValueError:
+        # Byte-size overflow OR (defense-in-depth) a path-traversal _safe_target
+        # rejection. The route regex on platform_id pre-empts traversal, so in
+        # practice this branch only fires on the byte cap. Either way, the
+        # client sent a payload we cannot store — 413 is the correct verdict.
+        raise HTTPException(
+            status_code=413,
+            detail=f"Content too large: {MAX_CONTENT_LENGTH} bytes max",
+        )
     ctx = _detail_context(request, platform_id, content)
     return templates.TemplateResponse(request, "platforms/_content_area.html", ctx)
 
