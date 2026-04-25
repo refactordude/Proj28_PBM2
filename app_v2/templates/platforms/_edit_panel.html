@@ -1,0 +1,67 @@
+{# app_v2/templates/platforms/_edit_panel.html — UI-SPEC §6 edit view.
+   Returned by POST /platforms/{pid}/edit; replaces #content-area via outerHTML.
+   data-cancel-html holds the original rendered-view HTML for client-side Cancel
+   (D-10) — Jinja2 `| e` autoescape makes attribute injection impossible (T-03-02-04). #}
+<div class="panel" id="content-area" data-cancel-html="{{ stashed_render_or_empty | e }}">
+  <div class="panel-header">
+    <ul class="nav nav-pills" role="tablist" id="edit-tabs">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active"
+                id="write-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#write-pane"
+                type="button"
+                role="tab"
+                aria-selected="true">Write</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                id="preview-tab"
+                data-bs-toggle="pill"
+                data-bs-target="#preview-pane"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                hx-post="/platforms/{{ platform_id }}/preview"
+                hx-include="closest form"
+                hx-target="#preview-pane"
+                hx-swap="innerHTML"
+                hx-trigger="click, keyup changed delay:500ms from:#md-textarea">Preview</button>
+      </li>
+    </ul>
+    <span class="tag ms-auto" id="char-count">{{ raw_md | length }} / 65536</span>
+  </div>
+
+  <form hx-post="/platforms/{{ platform_id }}"
+        hx-target="#content-area"
+        hx-swap="outerHTML"
+        class="panel-body">
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="write-pane" role="tabpanel" aria-labelledby="write-tab">
+        <textarea name="content"
+                  id="md-textarea"
+                  class="form-control font-monospace"
+                  rows="20"
+                  maxlength="65536"
+                  placeholder="# {{ platform_id }}&#10;&#10;Write notes in markdown…"
+                  aria-label="Markdown content">{{ raw_md }}</textarea>
+      </div>
+      <div class="tab-pane fade" id="preview-pane" role="tabpanel" aria-labelledby="preview-tab">
+        <article class="markdown-content text-muted">
+          <em>Click Preview to render, or start typing — preview will refresh after 500ms.</em>
+        </article>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <button type="button"
+              class="btn btn-sec btn-sm"
+              hx-on:click="const wrap = this.closest('#content-area'); wrap.outerHTML = wrap.dataset.cancelHtml;">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary btn-sm" hx-disabled-elt="this">
+        <i class="bi bi-check2"></i> Save
+      </button>
+    </div>
+  </form>
+</div>

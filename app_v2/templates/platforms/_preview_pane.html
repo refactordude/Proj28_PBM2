@@ -1,0 +1,6 @@
+{# app_v2/templates/platforms/_preview_pane.html — UI-SPEC §6 preview pane fragment.
+   Returned by POST /platforms/{pid}/preview; swapped into #preview-pane via innerHTML.
+   NOTE: this is a FRAGMENT — no <html>/<body>; just the inner article. #}
+<article class="markdown-content">
+  {{ rendered_html | safe }}
+</article>

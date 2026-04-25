@@ -1,0 +1,25 @@
+{# app_v2/templates/platforms/_content_area.html — UI-SPEC §4 + §5.
+   Single fragment for both states; outerHTML swap target #content-area.
+   The same template is rendered standalone (by save/delete routes) and as
+   {% include %} inside detail.html (by GET /platforms/{pid}). #}
+{% if has_content %}
+<div class="panel" id="content-area">
+  <div class="panel-body">
+    <article class="markdown-content">
+      {{ rendered_html | safe }}
+    </article>
+  </div>
+</div>
+{% else %}
+<div class="panel" id="content-area">
+  <div class="panel-body py-5 text-center">
+    <p class="text-muted mb-3" style="font-size: 16px;">No content yet — Add some.</p>
+    <button class="btn btn-primary"
+            hx-post="/platforms/{{ platform_id }}/edit"
+            hx-target="#content-area"
+            hx-swap="outerHTML">
+      <i class="bi bi-plus-lg"></i> Add Content
+    </button>
+  </div>
+</div>
+{% endif %}
