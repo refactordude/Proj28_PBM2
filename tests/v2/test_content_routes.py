@@ -164,11 +164,20 @@ def test_post_preview_renders_markdown(isolated_content):
 
 
 def test_post_preview_xss_safe(isolated_content):
-    """Preview escapes raw <img onerror=...> via js-default."""
+    """Preview escapes raw <img onerror=...> via js-default.
+
+    js-default escapes the angle brackets so the output reads
+    ``&lt;img onerror=x&gt;`` (inert text, not an executable tag). The literal
+    substring ``onerror=x`` survives as text but the executing form
+    ``<img onerror=`` does NOT.
+    """
     client, cd = isolated_content
     r = client.post(f"/platforms/{_PID}/preview", data={"content": "<img onerror=x>"})
     assert r.status_code == 200
-    assert 'onerror=x' not in r.text  # raw HTML escaped
+    # The raw <img tag must be escaped — no executable opening tag in the output.
+    assert "<img onerror" not in r.text
+    # And the angle brackets surrounding the would-be tag must be HTML-escaped.
+    assert "&lt;img onerror" in r.text
 
 
 def test_post_preview_too_large_returns_422(isolated_content):
@@ -307,14 +316,12 @@ def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
     body = r.text
     assert 'class="ai-btn ms-2"' in body
     assert f'hx-post="/platforms/{_PID}/summary"' in body
-    # The disabled+tooltip combo should NOT appear when content exists.
-    # Specifically the *button* should not have a `disabled` attribute. We
-    # search for the ai-btn block and assert no 'disabled' inside it.
-    ai_idx = body.find('class="ai-btn ms-2"')
-    assert ai_idx >= 0
-    btn_close = body.find(">", ai_idx)
-    btn_attrs = body[ai_idx:btn_close]
-    assert "disabled" not in btn_attrs
+    # The standalone `disabled` HTML attribute + tooltip combo should NOT
+    # appear when content exists. Note hx-disabled-elt="this" contains the
+    # substring "disabled" — that's HTMX wiring, not the disabled-attribute,
+    # so we assert against the tooltip copy that is only rendered when the
+    # row is disabled.
+    assert "Content page must exist first" not in body
 
 
 def test_overview_row_has_summary_slot(isolated_content):
