@@ -39,7 +39,7 @@
 
 ### Content Pages
 
-- [ ] **CONTENT-01**: Each curated platform has an optional markdown content page at `content/platforms/<PLATFORM_ID>.md`. The `content/` directory is gitignored; `content/platforms/.gitkeep` is committed.
+- [x] **CONTENT-01**: Each curated platform has an optional markdown content page at `content/platforms/<PLATFORM_ID>.md`. The `content/` directory is gitignored; `content/platforms/.gitkeep` is committed.
 - [ ] **CONTENT-02**: `PLATFORM_ID` path parameter is validated with a strict regex (`^[A-Za-z0-9_\-]{1,128}$`) via FastAPI `Path(..., pattern=...)`. Before any filesystem I/O, `pathlib.Path.resolve()` asserts the resolved path is inside the `content/platforms/` directory (defense in depth against path traversal).
 - [ ] **CONTENT-03**: Navigating to `/platforms/<id>` renders the content page. If the file exists, markdown is rendered safely via `MarkdownIt("js-default")` (HTML passthrough disabled) with the view toolbar showing Edit and Delete buttons. If the file does not exist, an empty-state page shows "No content yet — Add some" with a single "Add Content" button that opens the Edit view.
 - [ ] **CONTENT-04**: Edit view replaces the rendered content area via HTMX `hx-swap="outerHTML"` with a `<textarea>` pre-filled with the raw markdown (empty if new), a Write/Preview tab nav above it, Save and Cancel buttons below.
@@ -121,7 +121,7 @@
 | FILTER-02 | Phase 2 | Complete |
 | FILTER-03 | Phase 2 | Complete |
 | FILTER-04 | Phase 2 | Complete |
-| CONTENT-01 | Phase 3 | Pending |
+| CONTENT-01 | Phase 3 | Complete |
 | CONTENT-02 | Phase 3 | Pending |
 | CONTENT-03 | Phase 3 | Pending |
 | CONTENT-04 | Phase 3 | Pending |

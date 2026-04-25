@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-04-25T02:41:23.123Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-04-25T13:56:11.739Z"
 last_activity: 2026-04-25
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_plans: 11
+  completed_plans: 8
+  percent: 73
 ---
 
 # Project State
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 02 — overview-tab-filters
+**Current focus:** Phase 03 — content-pages-ai-summary
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 03 (content-pages-ai-summary) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
 Last activity: 2026-04-25
 
@@ -63,6 +63,11 @@ Progress: [██████████] 100%
 - 02-03: has_content_file uses Path.resolve() + Path.relative_to() (Pitfall 2 defense); ValueError is the documented traversal signal
 - 02-03: CONTENT_DIR is module-level Path constant on app_v2.routers.overview (tests monkeypatch it); service stays pure with content_dir injected
 - 02-03: POST /overview/filter/reset is stateless — no server-side filter selection cache; route returns unfiltered list with active_filter_count=0
+- 03-01: atomic_write_bytes shared helper extracted (D-30) — overview_store and content_store both delegate to `app_v2/data/atomic_write.py`; default_mode parameter (0o644 default; 0o666 for overview YAML to preserve umask-applied 0o644)
+- 03-01: llm_resolver shared module (Q2 RESOLVED) — `app_v2/services/llm_resolver.py` exposes resolve_active_llm + resolve_active_backend_name; eliminates 3-way duplication of inline _resolve_* helpers across overview/platforms/summary routers (Plans 03-02 / 03-03 consume)
+- 03-01: Pitfall-18 deviation (RESEARCH.md Q3) — NO Ollama warmup ping in lifespan; rely solely on summary_service 60s read timeout (rationale comment in main.py makes the deviation auditable)
+- 03-01: Dashboard CSS tokens.css + app.css wired in base.html — tokens BEFORE app for var(--*) ordering; .ai-btn / .panel / .markdown-content / .nav-pills overrides available globally for Phase 03 templates
+- 03-01: Gitignore rescue rules for content/ — bare `content/` rule short-circuits descent; added `!content/` + `!content/platforms/` + `content/platforms/*` so the `!content/platforms/.gitkeep` negation actually applies (Rule-1 plan bug fix; deviation documented in 03-01-SUMMARY.md)
 
 ### Pending Todos
 
@@ -74,7 +79,7 @@ None — roadmap complete, all 46 requirements mapped, research gaps noted in SU
 
 ## Session Continuity
 
-Last session: 2026-04-25T01:27:07.421Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-04-25T13:56:11.694Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
 Next action: `/gsd-plan-phase 1`
