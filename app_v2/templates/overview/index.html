@@ -31,20 +31,28 @@
            {% if filters_open %}open{% endif %}>
     <summary class="d-flex align-items-center gap-2 user-select-none" style="cursor:pointer">
       Filters
-      {# WR-01: visible summary badge has its OWN id (filter-count-summary).
-         The OOB-swap target id `filter-count-badge` is rendered exactly once
-         inside the entity_list block below — keeping IDs unique per HTML spec
-         and avoiding stray duplicate badges after htmx OOB swaps. #}
-      <span id="filter-count-summary"
-            class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
-        {{ active_filter_count }}
-      </span>
-      <a id="clear-filters-link"
-         class="ms-auto small {% if active_filter_count == 0 %}d-none{% endif %}"
-         href="#"
-         hx-post="/overview/filter/reset"
-         hx-target="#overview-list"
-         hx-swap="innerHTML">Clear all</a>
+      {# WR-01R: the visible summary badge IS the OOB swap target. A single
+         element with id `filter-count-badge` lives in <summary> (visible to the
+         user) and carries hx-swap-oob="true" so filter responses update it
+         in-place. The "Clear all" link is OOB-swapped the same way so its
+         d-none toggle stays in sync. The `filter_oob` block lets fragment
+         routes (POST /overview/filter, /overview/filter/reset) render BOTH
+         this OOB pair AND the entity_list via block_names=[...]. On initial
+         GET / the OOB attribute is harmless — htmx only acts on responses. #}
+      {% block filter_oob %}
+        <span id="filter-count-badge"
+              hx-swap-oob="true"
+              class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
+          {{ active_filter_count }}
+        </span>
+        <a id="clear-filters-link"
+           hx-swap-oob="true"
+           class="ms-auto small {% if active_filter_count == 0 %}d-none{% endif %}"
+           href="#"
+           hx-post="/overview/filter/reset"
+           hx-target="#overview-list"
+           hx-swap="innerHTML">Clear all</a>
+      {% endblock filter_oob %}
     </summary>
     <form id="filter-form"
           class="row g-2 mt-2"
@@ -88,12 +96,12 @@
   {# ---- Entity list — HTMX fragment target. Block name 'entity_list' per UI-SPEC. ---- #}
   <ul id="overview-list" class="list-group list-group-flush">
     {% block entity_list %}
-      {# OOB swap element — returned on every filter/add/remove response (UI-SPEC). #}
-      <span id="filter-count-badge" hx-swap-oob="true"
-            class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
-        {{ active_filter_count }}
-      </span>
-
+      {# WR-01R: the OOB-swap target for filter count moved into <summary> as
+         the `filter_oob` block (single visible+OOB element). Filter routes now
+         render block_names=["filter_oob", "entity_list"] so this block stays
+         focused on entity rows and the OOB pair is emitted exactly once,
+         positioned BEFORE <ul id="overview-list"> by virtue of block ordering
+         in the route response. #}
       {% if entities %}
         {% for entity in entities %}
           {% include "overview/_entity_row.html" %}

@@ -202,8 +202,13 @@ def filter_overview(
 ):
     """Apply Brand / SoC / Year / Has-content filters (FILTER-01, FILTER-02, FILTER-03).
 
-    Returns the entity_list block fragment only (NOT the full page). The response
-    includes an OOB swap element for #filter-count-badge reflecting the active count.
+    Returns a fragment composed of TWO blocks (NOT the full page):
+    - `filter_oob`: OOB-swap span+link inside <summary> — keeps the visible
+      filter-count badge and "Clear all" link in sync after every filter change
+      (WR-01R). The badge id `filter-count-badge` and link id
+      `clear-filters-link` are unique in the DOM and live in <summary>, so
+      htmx's OOB swap updates the user-visible elements directly.
+    - `entity_list`: the <li> rows (or empty/no-match alert).
 
     All routes are def (INFRA-05) — sync SQLAlchemy must never run inside async def
     (Pitfall 4). FastAPI dispatches def to threadpool.
@@ -237,12 +242,15 @@ def filter_overview(
         selected_has_content=has_content_bool,
         active_filter_count=count,
     )
-    # Fragment render — block_name targets the entity_list block only.
+    # Fragment render — emit BOTH the OOB pair (filter-count-badge + clear-link)
+    # and the entity rows. Order matters: filter_oob first so the OOB span lives
+    # outside <ul id="overview-list">, ensuring htmx swaps the visible <summary>
+    # badge in place (WR-01R).
     return templates.TemplateResponse(
         request,
         "overview/index.html",
         ctx,
-        block_name="entity_list",
+        block_names=["filter_oob", "entity_list"],
     )
 
 
@@ -251,8 +259,8 @@ def reset_filters(request: Request, db: DBAdapter | None = Depends(get_db)):
     """Clear all filters and return the full entity_list with count=0 OOB badge (D-17).
 
     Filters are stateless on the server — there is no session-stored filter selection
-    to clear. This route just returns the unfiltered list rendered as the entity_list
-    fragment with active_filter_count=0 (which makes the OOB badge get d-none).
+    to clear. This route just returns the unfiltered list with active_filter_count=0
+    (which makes the OOB badge re-acquire d-none and the OOB clear-link disappear).
     """
     entities_raw = load_overview()
     entities = [_entity_dict(e) for e in entities_raw]
@@ -272,5 +280,5 @@ def reset_filters(request: Request, db: DBAdapter | None = Depends(get_db)):
         request,
         "overview/index.html",
         ctx,
-        block_name="entity_list",
+        block_names=["filter_oob", "entity_list"],
     )
