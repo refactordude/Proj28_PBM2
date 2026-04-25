@@ -32,9 +32,9 @@
 
 ### Overview Filters
 
-- [ ] **FILTER-01**: Overview page shows faceted filter controls: Brand (select with unique values parsed from curated `PLATFORM_IDs`), SoC (select), Year (select populated from SoC→year lookup table; excludes entries where year is `None`), "Has content page" toggle (checkbox).
-- [ ] **FILTER-02**: Changing any filter triggers an HTMX swap of the entity list only (not full page). `hx-include="[data-filter]"` pattern to aggregate all filter inputs into a single request; `change` trigger for selects, `change` for checkbox.
-- [ ] **FILTER-03**: Active filter badge shows the count of currently-active filters. "Clear all" link resets all filters and triggers a fresh list swap.
+- [x] **FILTER-01**: Overview page shows faceted filter controls: Brand (select with unique values parsed from curated `PLATFORM_IDs`), SoC (select), Year (select populated from SoC→year lookup table; excludes entries where year is `None`), "Has content page" toggle (checkbox).
+- [x] **FILTER-02**: Changing any filter triggers an HTMX swap of the entity list only (not full page). `hx-include="[data-filter]"` pattern to aggregate all filter inputs into a single request; `change` trigger for selects, `change` for checkbox.
+- [x] **FILTER-03**: Active filter badge shows the count of currently-active filters. "Clear all" link resets all filters and triggers a fresh list swap.
 - [x] **FILTER-04**: `PLATFORM_ID` parser splits on `_` with `maxsplit=2` to yield `(brand, model, soc_raw)`. A `SoC→year` lookup table (shipped in `app_v2/data/soc_year.py`) maps known SoCs to release years; unknown SoCs return `year=None` and display "Unknown" in the Year badge. Entities with `year=None` are excluded from the Year filter dropdown options (they still appear in results if no Year filter is active).
 
 ### Content Pages
@@ -117,9 +117,9 @@
 | OVERVIEW-04 | Phase 2 | Complete |
 | OVERVIEW-05 | Phase 2 | Complete |
 | OVERVIEW-06 | Phase 2 | Complete |
-| FILTER-01 | Phase 2 | Pending |
-| FILTER-02 | Phase 2 | Pending |
-| FILTER-03 | Phase 2 | Pending |
+| FILTER-01 | Phase 2 | Complete |
+| FILTER-02 | Phase 2 | Complete |
+| FILTER-03 | Phase 2 | Complete |
 | FILTER-04 | Phase 2 | Complete |
 | CONTENT-01 | Phase 3 | Pending |
 | CONTENT-02 | Phase 3 | Pending |

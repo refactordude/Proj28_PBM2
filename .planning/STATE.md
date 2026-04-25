@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-04-24T21:34:40.388Z"
-last_activity: 2026-04-24
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-04-25T01:27:07.493Z"
+last_activity: 2026-04-25
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 86
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 02 — Overview Tab + Filters
+**Current focus:** Phase 02 — overview-tab-filters
 
 ## Current Position
 
-Phase: 02 (Overview Tab + Filters) — EXECUTING
-Plan: 3 of 3
+Phase: 02 (overview-tab-filters) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-04-24
+Last activity: 2026-04-25
 
 Progress: [██████████] 100%
 
@@ -59,6 +59,10 @@ Progress: [██████████] 100%
 - Per-cache threading.Lock instances (not shared) — reduces contention under concurrent route access
 - list_platforms called unconditionally (try/except) in overview routes — monkeypatch works in tests without real DB; production degrades to empty datalist
 - Phase 1 GET / stub removed from root.py; overview router owns /; root.py retains /browse and /ask only
+- 02-03: year filter normalization accepts str/int; unparseable strings map to sentinel year_int=-1 producing zero matches (safer than ignoring filter)
+- 02-03: has_content_file uses Path.resolve() + Path.relative_to() (Pitfall 2 defense); ValueError is the documented traversal signal
+- 02-03: CONTENT_DIR is module-level Path constant on app_v2.routers.overview (tests monkeypatch it); service stays pure with content_dir injected
+- 02-03: POST /overview/filter/reset is stateless — no server-side filter selection cache; route returns unfiltered list with active_filter_count=0
 
 ### Pending Todos
 
@@ -70,7 +74,7 @@ None — roadmap complete, all 46 requirements mapped, research gaps noted in SU
 
 ## Session Continuity
 
-Last session: 2026-04-24T21:34:40.353Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-04-25T01:27:07.421Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
 Next action: `/gsd-plan-phase 1`
