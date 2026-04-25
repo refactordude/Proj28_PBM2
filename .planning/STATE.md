@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
-status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-04-25T21:02:01.780Z"
+status: verifying
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-04-25T21:16:50.223Z"
 last_activity: 2026-04-25
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 03 — content-pages-ai-summary
+**Current focus:** Phase 03 — content-pages-ai-summary (COMPLETE)
 
 ## Current Position
 
-Phase: 03 (content-pages-ai-summary) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
+Phase: 03 (content-pages-ai-summary) — COMPLETE
+Plan: 4 of 4 (all four delivered)
+Status: Phase complete — ready for verification
 Last activity: 2026-04-25
 
 Progress: [██████████] 100%
@@ -81,6 +81,13 @@ Progress: [██████████] 100%
 - 03-03: APITimeoutError ordered BEFORE APIConnectionError in _classify_error — APITimeoutError is a subclass of APIConnectionError in openai 2.x, so reversing would misclassify every timeout. Comment in classifier documents the constraint
 - 03-03: `_build_client(cfg)` factory dispatches on cfg.type — Ollama (base_url=…/v1, api_key="ollama", 60s timeout) vs OpenAI (api_key from cfg or OPENAI_API_KEY env, 30s timeout). Pitfall 18 deviation comment in both summary_service.py and main.py
 - 03-03: summary route NEVER imports `pathlib.Path` — collides with `fastapi.Path` (path-parameter validator); reaches pathlib paths transitively via `platforms_router.CONTENT_DIR`. Module docstring documents the choice; acceptance criterion enforces
+- 03-04: Cross-process race test (D-24) uses fork-only POSIX semantics with module-top-level `_save_in_worker` (A5 picklability constraint). `@pytest.mark.slow` + `@pytest.mark.skipif(sys.platform == "win32")` keeps Windows CI green while Linux/macOS runs the real fork test. 3 explicit assertions verified on Linux ext4: file content equals one of two payloads in full (no hybrid), no leftover `.{pid}.md.*.tmp` tempfile, file mode is 0o644.
+- 03-04: `tests/v2/conftest.py` registers the `slow` pytest marker via `pytest_configure` + `addinivalue_line` — directory-scoped registration avoids creating a project-level `pyproject.toml [tool.pytest.ini_options]` section. `-m "not slow"` opt-out works equivalently.
+- 03-04: Per-call MagicMock response queue uses a closure with index list (`idx = [0]; idx[0] += 1`) to drive stateful `side_effect` — `type(r)()` cloning fails because MagicMock instances are not callable as types; closure pattern is the canonical pytest-mock idiom.
+- 03-04: `test_summary_route_never_returns_5xx` uses `\braise\s+HTTPException\b` (word-boundary regex) so the docstring phrase "NEVER raises HTTPException" cannot trigger a false-positive on the static guard.
+- 03-04: `test_no_banned_libraries_imported_in_app_v2` anchors `^\s*(import|from)\s+<lib>\b` so docstring/comment occurrences cannot trip the guard — only actual import statements at line start (with optional indent) are checked. Parametrized over langchain, litellm, vanna, llama_index per CLAUDE.md "What NOT to Use".
+- 03-04: Integration fixture replaces `app.state.settings = Settings(...)` AFTER lifespan ran (mirrors `test_summary_routes.py::isolated_summary` proven pattern) instead of mutating sub-attributes — robust against future Pydantic v2 `frozen=True` schema tightening.
+- 03-04: Codebase-level static-analysis grep guards as automated CI policy enforcement — pattern reusable in Phase 04+ for any locked decision (INFRA-05, Pitfall 1, UI-SPEC contracts, banned libs, D-numbers, atomic_write_bytes single-source-of-truth).
 
 ### Pending Todos
 
@@ -92,7 +99,7 @@ None — roadmap complete, all 46 requirements mapped, research gaps noted in SU
 
 ## Session Continuity
 
-Last session: 2026-04-25T21:02:01.760Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-04-25T21:16:50.203Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
 Next action: `/gsd-plan-phase 1`

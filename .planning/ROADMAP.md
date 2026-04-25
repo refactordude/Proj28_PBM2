@@ -76,7 +76,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 03-01-PLAN.md — Wave 0 infrastructure: atomic_write_bytes extraction + Dashboard tokens.css/app.css + lifespan content/platforms mkdir + .gitignore (CONTENT-01)
 - [x] 03-02-PLAN.md — Wave 1: content_store + 5 platforms routes + 4 templates + Overview row AI Summary wiring (CONTENT-02..08, SUMMARY-01)
 - [x] 03-03-PLAN.md — Wave 2: summary_prompt + summary_service (TTLCache + openai SDK + classify_error) + summary route + success/error templates (SUMMARY-02..07)
-- [ ] 03-04-PLAN.md — Wave 3: D-24 cross-process race test + end-to-end integration tests + Phase 03 codebase invariant guards
+- [x] 03-04-PLAN.md — Wave 3: D-24 cross-process race test + end-to-end integration tests + Phase 03 codebase invariant guards (completed 2026-04-25)
 **UI hint**: yes
 
 ### Phase 4: Browse Tab Port
