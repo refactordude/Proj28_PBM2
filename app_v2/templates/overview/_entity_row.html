@@ -1,5 +1,7 @@
-{# app_v2/templates/overview/_entity_row.html
-   Single list-group-item per entity. D-01..D-06, AI Summary disabled in Phase 2 per D-06. #}
+{# app_v2/templates/overview/_entity_row.html — Phase 03 wired AI Summary + summary slot.
+   Diff vs Phase 02: disabled stub replaced by .ai-btn (D-13); per-row summary slot
+   added below as a separate <li> so the multiline summary content renders cleanly
+   beneath the entity row instead of cramming inside the flex row. #}
 <li class="list-group-item d-flex align-items-center">
   <span class="fw-bold fs-5">{{ entity.platform_id }}</span>
 
@@ -19,10 +21,15 @@
     <i class="bi bi-arrow-right-circle"></i>
   </a>
 
-  {# AI Summary — disabled in Phase 2 per D-06; Phase 3 removes `disabled` + wires the handler. #}
-  <button class="btn btn-outline-primary btn-sm ms-2"
-          disabled
-          title="Content page must exist first (Phase 3)">
+  {# AI Summary — Phase 03 wired. Disabled when no content file exists (D-13). #}
+  <button class="ai-btn ms-2"
+          hx-post="/platforms/{{ entity.platform_id }}/summary"
+          hx-target="#summary-{{ entity.platform_id }}"
+          hx-swap="innerHTML"
+          hx-indicator="#summary-{{ entity.platform_id }}-spinner"
+          hx-disabled-elt="this"
+          aria-label="Generate AI summary for {{ entity.platform_id }}"
+          {% if not entity.has_content %}disabled title="Content page must exist first — open the platform to Add some"{% endif %}>
     <i class="bi bi-stars"></i> AI Summary
   </button>
 
@@ -34,4 +41,18 @@
           hx-confirm="Remove {{ entity.platform_id }} from your overview?">
     <i class="bi bi-x"></i>
   </button>
+</li>
+{# Per-row summary slot — initially empty; htmx-indicator pre-seeded.
+   Below-the-row visual placement (UI-SPEC §9 rationale: multiline content). #}
+<li class="list-group-item p-0" id="summary-row-{{ entity.platform_id }}">
+  <div id="summary-{{ entity.platform_id }}" class="px-3 pb-2" aria-live="polite" aria-atomic="true">
+    <div id="summary-{{ entity.platform_id }}-spinner"
+         class="htmx-indicator d-flex align-items-center gap-2 py-2"
+         style="color: var(--violet); font-size: 13px;">
+      <div class="spinner-border spinner-border-sm" role="status">
+        <span class="visually-hidden">Loading…</span>
+      </div>
+      <span>Summarizing… (using {{ backend_name }})</span>
+    </div>
+  </div>
 </li>

@@ -256,9 +256,15 @@ def test_get_root_after_add_shows_entity_row_with_correct_badges(isolated_overvi
 
 
 def test_get_root_ai_summary_button_disabled(isolated_overview):
-    """AI Summary button is rendered but disabled with the Phase 3 tooltip."""
+    """AI Summary button rendered but disabled when no content file exists (D-13).
+
+    Phase 03 wired the .ai-btn (replaces Phase 02 stub); the disabled tooltip
+    now points users to open the platform page to Add content. Without the
+    isolated_overview fixture monkeypatching CONTENT_DIR, the default
+    content/platforms/ has no file for Samsung_S22Ultra_SM8450 → has_content=False.
+    """
     isolated_overview.post("/overview/add", data={"platform_id": "Samsung_S22Ultra_SM8450"})
     r = isolated_overview.get("/")
     assert "AI Summary" in r.text
-    assert "Content page must exist first (Phase 3)" in r.text
+    assert "Content page must exist first" in r.text
     assert "disabled" in r.text

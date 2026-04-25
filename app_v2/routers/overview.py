@@ -25,9 +25,11 @@ from app.adapters.db.base import DBAdapter
 from app_v2.data.platform_parser import parse_platform_id
 from app_v2.data.soc_year import get_year
 from app_v2.services.cache import list_platforms
+from app_v2.services.llm_resolver import resolve_active_backend_name  # Plan 03-01 — single source of truth
 from app_v2.services.overview_filter import (
     apply_filters,
     count_active_filters,
+    has_content_file,
 )
 from app_v2.services.overview_store import (
     DuplicateEntityError,
@@ -54,13 +56,19 @@ def get_db(request: Request) -> DBAdapter | None:
 
 
 def _entity_dict(entity) -> dict:
-    """Enrich an OverviewEntity with brand/soc_raw/year for template rendering."""
+    """Enrich an OverviewEntity with brand/soc_raw/year/has_content for template rendering.
+
+    has_content is computed via has_content_file() against the module-level
+    CONTENT_DIR (tests monkeypatch this); drives the AI Summary button's
+    enable/disable state in _entity_row.html (D-13, SUMMARY-01).
+    """
     brand, _model, soc_raw = parse_platform_id(entity.platform_id)
     return {
         "platform_id": entity.platform_id,
         "brand": brand,
         "soc_raw": soc_raw,
         "year": get_year(soc_raw),
+        "has_content": has_content_file(entity.platform_id, CONTENT_DIR),
     }
 
 
@@ -72,12 +80,17 @@ def _build_overview_context(
     selected_year: str | None = None,
     selected_has_content: bool = False,
     active_filter_count: int = 0,
+    backend_name: str = "Ollama",
 ) -> dict:
     """Build the full template context for GET / and any filter/add fragment render.
 
     Filter dropdown options are derived from the CURRENT curated list (not the full DB
     catalog) so dropdowns only show brands/SoCs/years actually present. Year dropdown
     is sorted DESCENDING (newest first) per UI-SPEC Specifics.
+
+    backend_name (D-19 default 'Ollama') is rendered in each entity row's spinner
+    text "Summarizing… (using {backend_name})". Resolved via the shared
+    llm_resolver module (Plan 03-01).
     """
     filter_brands = sorted({e["brand"] for e in entities if e["brand"]})
     filter_socs = sorted({e["soc_raw"] for e in entities if e["soc_raw"]})
@@ -97,6 +110,7 @@ def _build_overview_context(
         "selected_has_content": selected_has_content,
         "active_filter_count": active_filter_count,
         "filters_open": True,  # Server-rendered default; localStorage overrides client-side.
+        "backend_name": backend_name,
     }
 
 
@@ -114,7 +128,12 @@ def overview_page(request: Request, db: DBAdapter | None = Depends(get_db)):
         all_platform_ids = list(list_platforms(db, db_name=""))  # type: ignore[arg-type]
     except Exception:  # noqa: BLE001 — catalog load is non-fatal (UI degrades gracefully)
         all_platform_ids = []
-    ctx = _build_overview_context(entities=entities, all_platform_ids=all_platform_ids)
+    backend_name = resolve_active_backend_name(getattr(request.app.state, "settings", None))
+    ctx = _build_overview_context(
+        entities=entities,
+        all_platform_ids=all_platform_ids,
+        backend_name=backend_name,
+    )
     return templates.TemplateResponse(request, "overview/index.html", ctx)
 
 
@@ -164,10 +183,11 @@ def add_platform(
         )
 
     # Success — return ONE <li> entity row fragment (hx-swap="afterbegin" prepends it).
+    backend_name = resolve_active_backend_name(getattr(request.app.state, "settings", None))
     return templates.TemplateResponse(
         request,
         "overview/_entity_row.html",
-        {"entity": _entity_dict(entity)},
+        {"entity": _entity_dict(entity), "backend_name": backend_name},
     )
 
 
@@ -233,6 +253,7 @@ def filter_overview(
     except Exception:  # noqa: BLE001 — catalog load is non-fatal
         all_platform_ids = []
 
+    backend_name = resolve_active_backend_name(getattr(request.app.state, "settings", None))
     ctx = _build_overview_context(
         entities=filtered,
         all_platform_ids=all_platform_ids,
@@ -241,6 +262,7 @@ def filter_overview(
         selected_year=year or None,
         selected_has_content=has_content_bool,
         active_filter_count=count,
+        backend_name=backend_name,
     )
     # Fragment render — emit BOTH the OOB pair (filter-count-badge + clear-link)
     # and the entity rows. Order matters: filter_oob first so the OOB span lives
@@ -271,10 +293,12 @@ def reset_filters(request: Request, db: DBAdapter | None = Depends(get_db)):
     except Exception:  # noqa: BLE001 — catalog load is non-fatal
         all_platform_ids = []
 
+    backend_name = resolve_active_backend_name(getattr(request.app.state, "settings", None))
     ctx = _build_overview_context(
         entities=entities,
         all_platform_ids=all_platform_ids,
         active_filter_count=0,
+        backend_name=backend_name,
     )
     return templates.TemplateResponse(
         request,
