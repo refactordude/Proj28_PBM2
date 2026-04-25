@@ -21,6 +21,7 @@ import logging
 import os
 import stat
 import tempfile
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,6 +32,15 @@ _log = logging.getLogger(__name__)
 
 # Module-level path constant — tests monkeypatch this; production value unchanged.
 OVERVIEW_YAML: Path = Path("config/overview.yaml")
+
+# Module-level lock guarding the read-modify-write critical section in
+# add_overview / remove_overview. FastAPI dispatches def routes to a threadpool
+# (INFRA-05 / Pitfall 4), so two concurrent POST /overview/add requests can run
+# in parallel threads. Without this lock, both threads would load_overview()
+# before either _atomic_write()s, and the second write silently wipes the first.
+# Per-process lock is sufficient (single-uvicorn-process intranet deployment).
+# If multi-worker deployment is added, switch to fcntl.flock on the YAML file.
+_store_lock = threading.Lock()
 
 
 class OverviewEntity(BaseModel):
@@ -136,29 +146,37 @@ def add_overview(platform_id: str) -> OverviewEntity:
 
     D-22: insertion order preserved in the YAML list (newest at top).
     D-24: atomic write; DuplicateEntityError raised without modifying disk.
+
+    Thread-safe: the read-modify-write sequence is guarded by `_store_lock` so
+    concurrent threadpool requests cannot wipe each other's adds.
     """
-    current = load_overview()
-    if any(e.platform_id == platform_id for e in current):
-        raise DuplicateEntityError(
-            f"platform_id already exists in overview: {platform_id}"
+    with _store_lock:
+        current = load_overview()
+        if any(e.platform_id == platform_id for e in current):
+            raise DuplicateEntityError(
+                f"platform_id already exists in overview: {platform_id}"
+            )
+        new_entity = OverviewEntity(
+            platform_id=platform_id,
+            added_at=datetime.now(timezone.utc),
         )
-    new_entity = OverviewEntity(
-        platform_id=platform_id,
-        added_at=datetime.now(timezone.utc),
-    )
-    # Prepend — newest at top of file AND newest at index 0 of load_overview().
-    _atomic_write([new_entity, *current])
-    return new_entity
+        # Prepend — newest at top of file AND newest at index 0 of load_overview().
+        _atomic_write([new_entity, *current])
+        return new_entity
 
 
 def remove_overview(platform_id: str) -> bool:
     """Remove platform_id if present. Return True if removed, False if not found.
 
     D-24: no write happens when platform_id is not found (no-op).
+
+    Thread-safe: the read-modify-write sequence is guarded by `_store_lock` so
+    a concurrent add cannot resurrect a just-deleted entity (or vice versa).
     """
-    current = load_overview()
-    remaining = [e for e in current if e.platform_id != platform_id]
-    if len(remaining) == len(current):
-        return False
-    _atomic_write(remaining)
-    return True
+    with _store_lock:
+        current = load_overview()
+        remaining = [e for e in current if e.platform_id != platform_id]
+        if len(remaining) == len(current):
+            return False
+        _atomic_write(remaining)
+        return True
