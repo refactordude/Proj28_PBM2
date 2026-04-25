@@ -40,17 +40,17 @@
 ### Content Pages
 
 - [x] **CONTENT-01**: Each curated platform has an optional markdown content page at `content/platforms/<PLATFORM_ID>.md`. The `content/` directory is gitignored; `content/platforms/.gitkeep` is committed.
-- [ ] **CONTENT-02**: `PLATFORM_ID` path parameter is validated with a strict regex (`^[A-Za-z0-9_\-]{1,128}$`) via FastAPI `Path(..., pattern=...)`. Before any filesystem I/O, `pathlib.Path.resolve()` asserts the resolved path is inside the `content/platforms/` directory (defense in depth against path traversal).
-- [ ] **CONTENT-03**: Navigating to `/platforms/<id>` renders the content page. If the file exists, markdown is rendered safely via `MarkdownIt("js-default")` (HTML passthrough disabled) with the view toolbar showing Edit and Delete buttons. If the file does not exist, an empty-state page shows "No content yet — Add some" with a single "Add Content" button that opens the Edit view.
-- [ ] **CONTENT-04**: Edit view replaces the rendered content area via HTMX `hx-swap="outerHTML"` with a `<textarea>` pre-filled with the raw markdown (empty if new), a Write/Preview tab nav above it, Save and Cancel buttons below.
-- [ ] **CONTENT-05**: The Preview tab in edit view fetches the rendered HTML via HTMX `hx-post` to a `/platforms/<id>/preview` endpoint with debounce (`keyup changed delay:500ms`). Preview uses the same safe `MarkdownIt("js-default")` pipeline. Preview never writes to disk.
-- [ ] **CONTENT-06**: Save commits the edit to disk atomically: write to a tempfile in the same directory as the target, `fsync`, then `os.replace` — guarantees atomic update on POSIX. Uses `def` route so FastAPI dispatches to threadpool. Successful save swaps the editor back to the rendered view.
-- [ ] **CONTENT-07**: Cancel is client-side (swap back from the stored view fragment); does not hit the server. No dirty-check prompt — autosave is explicitly NOT implemented (anti-feature for shared-credential intranet).
-- [ ] **CONTENT-08**: Delete requires confirmation (`hx-confirm="Delete content page for {PLATFORM_ID}?"`). On confirm, deletes the file and swaps the view to the empty state. Delete is reversible only via editing history (no undo button; files are recreated by Add).
+- [x] **CONTENT-02**: `PLATFORM_ID` path parameter is validated with a strict regex (`^[A-Za-z0-9_\-]{1,128}$`) via FastAPI `Path(..., pattern=...)`. Before any filesystem I/O, `pathlib.Path.resolve()` asserts the resolved path is inside the `content/platforms/` directory (defense in depth against path traversal).
+- [x] **CONTENT-03**: Navigating to `/platforms/<id>` renders the content page. If the file exists, markdown is rendered safely via `MarkdownIt("js-default")` (HTML passthrough disabled) with the view toolbar showing Edit and Delete buttons. If the file does not exist, an empty-state page shows "No content yet — Add some" with a single "Add Content" button that opens the Edit view.
+- [x] **CONTENT-04**: Edit view replaces the rendered content area via HTMX `hx-swap="outerHTML"` with a `<textarea>` pre-filled with the raw markdown (empty if new), a Write/Preview tab nav above it, Save and Cancel buttons below.
+- [x] **CONTENT-05**: The Preview tab in edit view fetches the rendered HTML via HTMX `hx-post` to a `/platforms/<id>/preview` endpoint with debounce (`keyup changed delay:500ms`). Preview uses the same safe `MarkdownIt("js-default")` pipeline. Preview never writes to disk.
+- [x] **CONTENT-06**: Save commits the edit to disk atomically: write to a tempfile in the same directory as the target, `fsync`, then `os.replace` — guarantees atomic update on POSIX. Uses `def` route so FastAPI dispatches to threadpool. Successful save swaps the editor back to the rendered view.
+- [x] **CONTENT-07**: Cancel is client-side (swap back from the stored view fragment); does not hit the server. No dirty-check prompt — autosave is explicitly NOT implemented (anti-feature for shared-credential intranet).
+- [x] **CONTENT-08**: Delete requires confirmation (`hx-confirm="Delete content page for {PLATFORM_ID}?"`). On confirm, deletes the file and swaps the view to the empty state. Delete is reversible only via editing history (no undo button; files are recreated by Add).
 
 ### AI Summary
 
-- [ ] **SUMMARY-01**: Each Overview entity row has an "AI Summary" button. Button is disabled (greyed + tooltip "No content page to summarize yet") when the platform has no content file. Button is enabled when a file exists.
+- [x] **SUMMARY-01**: Each Overview entity row has an "AI Summary" button. Button is disabled (greyed + tooltip "No content page to summarize yet") when the platform has no content file. Button is enabled when a file exists.
 - [ ] **SUMMARY-02**: Clicking AI Summary triggers `hx-post` to `/platforms/<id>/summary`. The response fills a dedicated `<div id="summary-{id}">` via `hx-swap="innerHTML"` — the entity row itself is never replaced. Button uses `hx-disabled-elt="this"` during the request to prevent double-submit.
 - [ ] **SUMMARY-03**: Loading indicator: Bootstrap `spinner-border` with `htmx-indicator` class inside the summary div, hidden by default, shown during the request via HTMX's `htmx-request` parent class CSS.
 - [ ] **SUMMARY-04**: Summary is generated by a single-shot call to the active LLM backend (Ollama default, OpenAI if selected). Uses v1.0's `openai` SDK with `base_url` and `api_key` from the active `LLMConfig`. Prompt template lives in `app_v2/data/summary_prompt.py`: "Summarize the following platform notes in 2–3 concise bullets focusing on notable characteristics, quirks, or decisions. Do not add information not present in the notes." Content is wrapped in `<notes>...</notes>` tags; system prompt instructs the model to treat tag contents as untrusted text.
@@ -122,14 +122,14 @@
 | FILTER-03 | Phase 2 | Complete |
 | FILTER-04 | Phase 2 | Complete |
 | CONTENT-01 | Phase 3 | Complete |
-| CONTENT-02 | Phase 3 | Pending |
-| CONTENT-03 | Phase 3 | Pending |
-| CONTENT-04 | Phase 3 | Pending |
-| CONTENT-05 | Phase 3 | Pending |
-| CONTENT-06 | Phase 3 | Pending |
-| CONTENT-07 | Phase 3 | Pending |
-| CONTENT-08 | Phase 3 | Pending |
-| SUMMARY-01 | Phase 3 | Pending |
+| CONTENT-02 | Phase 3 | Complete |
+| CONTENT-03 | Phase 3 | Complete |
+| CONTENT-04 | Phase 3 | Complete |
+| CONTENT-05 | Phase 3 | Complete |
+| CONTENT-06 | Phase 3 | Complete |
+| CONTENT-07 | Phase 3 | Complete |
+| CONTENT-08 | Phase 3 | Complete |
+| SUMMARY-01 | Phase 3 | Complete |
 | SUMMARY-02 | Phase 3 | Pending |
 | SUMMARY-03 | Phase 3 | Pending |
 | SUMMARY-04 | Phase 3 | Pending |

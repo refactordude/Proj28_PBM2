@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-04-25T13:56:11.739Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-04-25T14:17:22.103Z"
 last_activity: 2026-04-25
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 11
-  completed_plans: 8
-  percent: 73
+  completed_plans: 9
+  percent: 82
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 03 (content-pages-ai-summary) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-25
 
@@ -68,6 +68,13 @@ Progress: [██████████] 100%
 - 03-01: Pitfall-18 deviation (RESEARCH.md Q3) — NO Ollama warmup ping in lifespan; rely solely on summary_service 60s read timeout (rationale comment in main.py makes the deviation auditable)
 - 03-01: Dashboard CSS tokens.css + app.css wired in base.html — tokens BEFORE app for var(--*) ordering; .ai-btn / .panel / .markdown-content / .nav-pills overrides available globally for Phase 03 templates
 - 03-01: Gitignore rescue rules for content/ — bare `content/` rule short-circuits descent; added `!content/` + `!content/platforms/` + `content/platforms/*` so the `!content/platforms/.gitkeep` negation actually applies (Rule-1 plan bug fix; deviation documented in 03-01-SUMMARY.md)
+- 03-02: content_store stays content_dir-injected (pure); routes hold the single CONTENT_DIR module-level constant tests monkeypatch — service module reusable for any future caller (CLI dump, Plan 03-03 summary)
+- 03-02: pathlib alias pattern (`from pathlib import Path as _Path`) mirrors overview.py:18 to avoid collision with fastapi.Path; module-level path-typed constants reference `_Path`
+- 03-02: data-cancel-html stash via `templates.env.get_template().render(ctx)` + Jinja2 `| e` autoescape — D-10 client-side Cancel without server round-trip; T-03-02-04 attribute injection blocked
+- 03-02: path traversal hardened at TWO layers — FastAPI `Path(pattern=...)` at HTTP entry returns 422; `content_store._safe_target` Path.resolve()+relative_to() at filesystem boundary; 15 parametrized tests (3 attacks × 5 routes)
+- 03-02: standalone `disabled` HTML attribute coexists with `hx-disabled-elt="this"` on the AI button — `disabled` blocks click natively when no content file (D-13); hx-disabled-elt is for in-flight loading state when enabled
+- 03-02: `_entity_dict` enriched with `has_content` (computed via `has_content_file(pid, CONTENT_DIR)`) — drives Phase 03 .ai-btn enable/disable replacing the Phase 02 disabled stub
+- 03-02: backend_name (D-19 default 'Ollama') threaded through every overview-context-builder + per-row entity_row template via shared llm_resolver — single source of truth across overview/platforms
 
 ### Pending Todos
 
@@ -79,7 +86,7 @@ None — roadmap complete, all 46 requirements mapped, research gaps noted in SU
 
 ## Session Continuity
 
-Last session: 2026-04-25T13:56:11.694Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-04-25T14:17:22.041Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
 Next action: `/gsd-plan-phase 1`
