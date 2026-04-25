@@ -62,10 +62,19 @@ def test_safe_target_inside_content_dir(tmp_path: Path):
 
 
 def test_safe_target_rejects_traversal(tmp_path: Path):
-    """A traversal-shaped platform_id raises ValueError (defense-in-depth)."""
+    """A traversal-shaped platform_id (../../etc/passwd) raises ValueError.
+
+    Note: bare ``..`` does NOT trigger the check because ``f"{'..'}.md"`` is the
+    perfectly valid filename ``"..md"`` inside the dir. The real attack vector
+    is a path-segment string like ``../../etc/passwd`` which produces
+    ``../../etc/passwd.md`` after concatenation — that escapes ``content_dir``
+    on resolve(), and ``relative_to`` raises ValueError. (Routes regex-block
+    every input that would reach _safe_target this way; the test proves
+    defense-in-depth still kicks in if the regex is ever bypassed.)
+    """
     from app_v2.services.content_store import _safe_target
     with pytest.raises(ValueError):
-        _safe_target("..", tmp_path)
+        _safe_target("../../etc/passwd", tmp_path)
 
 
 # ---------------------------------------------------------------------------
