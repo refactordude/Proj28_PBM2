@@ -31,7 +31,11 @@
            {% if filters_open %}open{% endif %}>
     <summary class="d-flex align-items-center gap-2 user-select-none" style="cursor:pointer">
       Filters
-      <span id="filter-count-badge"
+      {# WR-01: visible summary badge has its OWN id (filter-count-summary).
+         The OOB-swap target id `filter-count-badge` is rendered exactly once
+         inside the entity_list block below — keeping IDs unique per HTML spec
+         and avoiding stray duplicate badges after htmx OOB swaps. #}
+      <span id="filter-count-summary"
             class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
         {{ active_filter_count }}
       </span>
