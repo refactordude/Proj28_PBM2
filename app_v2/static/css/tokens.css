@@ -1,0 +1,43 @@
+/* Phase 03 — Dashboard token layer (UI-SPEC §Design System).
+   All custom properties for surfaces, ink, accent, semantic, AI-violet, radii, shadow.
+   Loaded by base.html before app.css so .panel/.ai-btn etc. can use var(--*). */
+:root {
+  /* Surfaces */
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  /* Ink hierarchy */
+  --ink: #171c24;
+  --ink-2: #4a5361;
+  --mute: #8b93a0;
+  --dim: #b4bac3;
+  /* Borders */
+  --line: #eaecef;
+  --line-2: #e1e4e8;
+  /* Accent (actions) */
+  --accent: #3366ff;
+  --accent-soft: #ebf1ff;
+  --accent-ink: #1f4dcf;
+  /* Semantic */
+  --green: #17a963; --green-soft: #e5f7ee;
+  --red: #ef3e4a;   --red-soft: #fde8ea;
+  --amber: #f59e0b; --amber-soft: #fef3d9;
+  /* AI affordance */
+  --violet: #7a5af8; --violet-soft: #efebfe;
+  /* Radii */
+  --radius-panel: 22px;
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --radius-pill: 999px;
+  /* Shadow */
+  --shadow-panel: 0 1px 2px rgba(16,24,40,.04);
+}
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: "JetBrains Mono", ui-monospace, monospace; letter-spacing: 0; }

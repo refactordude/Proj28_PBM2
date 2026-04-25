@@ -1,0 +1,78 @@
+/* Phase 03 — Component classes (UI-SPEC §Component Inventory).
+   Tokens loaded from tokens.css; this file uses var(--*). */
+
+/* §1 Page Shell */
+.shell { max-width: 1280px; margin: 0 auto; padding: 18px 24px 56px; }
+
+/* §2 Page Head (detail page header row) */
+.page-head { display: flex; align-items: end; justify-content: space-between; margin: 26px 4px 16px; }
+.page-title { font-size: 28px; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin: 0 0 4px; }
+.page-sub { color: var(--mute); font-size: 14px; }
+.page-actions { display: flex; gap: 8px; }
+.btn-white { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); border: 0; }
+.btn-white:hover { background: #fafbfc; }
+
+/* §3 Primary card container */
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+.panel-body { padding: 26px 32px; }
+.panel-header { padding: 18px 26px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.panel-header b { font-size: 18px; font-weight: 700; letter-spacing: -.015em; }
+.panel-header .tag { font-size: 12px; color: var(--mute); background: #f4f6f8; padding: 3px 10px; border-radius: var(--radius-pill); font-weight: 500; }
+
+/* §6 Edit-view nav-pills + secondary button */
+.nav-pills .nav-link {
+  color: var(--ink-2);
+  border-radius: var(--radius-btn);
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+}
+.nav-pills .nav-link.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.btn-sec { background: #eef1f5; color: var(--ink); border: 0; }
+.btn-sec:hover { background: #e4e8ed; }
+
+/* §7 AI Summary button — Dashboard verbatim (Dashboard_v2.html line 216) */
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #f3eeff, #e8eeff);
+  color: var(--violet);
+  font-size: 12px;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(122, 90, 248, .18);
+  letter-spacing: -.005em;
+  font-family: inherit;
+}
+.ai-btn:hover { box-shadow: inset 0 0 0 1px rgba(122, 90, 248, .36); }
+.ai-btn:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.ai-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: inset 0 0 0 1px rgba(122, 90, 248, .12); }
+.ai-btn.htmx-request { pointer-events: none; opacity: 0.6; }
+.ai-btn.regen { padding: 0 12px; height: 26px; }
+.ai-btn.ai-btn-md { height: 32px; padding: 0 14px; font-size: 13px; }
+
+/* §Markdown content rendering rules */
+.markdown-content { max-width: 800px; margin: 0 auto; line-height: 1.6; }
+.markdown-content h1 { font-size: 24px; font-weight: 700; line-height: 1.3; margin-top: 1.5em; margin-bottom: 0.5em; }
+.markdown-content h2 { font-size: 20px; font-weight: 700; line-height: 1.3; margin-top: 1.4em; margin-bottom: 0.5em; }
+.markdown-content h3 { font-size: 17px; font-weight: 600; line-height: 1.4; margin-top: 1.2em; margin-bottom: 0.4em; }
+.markdown-content p { margin: 0 0 1em; }
+.markdown-content code { font-family: "JetBrains Mono", monospace; font-size: 13.5px; background: #f4f6f8; padding: 1px 5px; border-radius: 4px; }
+.markdown-content pre { background: #f4f6f8; padding: 14px 16px; border-radius: 10px; overflow-x: auto; }
+.markdown-content pre code { background: transparent; padding: 0; }
+.markdown-content ul, .markdown-content ol { padding-left: 1.4em; margin: 0 0 1em; }
+.markdown-content blockquote { border-left: 3px solid var(--accent-soft); padding-left: 14px; color: var(--ink-2); margin: 0 0 1em; }
