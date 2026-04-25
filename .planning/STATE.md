@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-04-25T14:17:22.103Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-04-25T21:02:01.780Z"
 last_activity: 2026-04-25
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 03 (content-pages-ai-summary) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-04-25
 
@@ -75,6 +75,12 @@ Progress: [██████████] 100%
 - 03-02: standalone `disabled` HTML attribute coexists with `hx-disabled-elt="this"` on the AI button — `disabled` blocks click natively when no content file (D-13); hx-disabled-elt is for in-flight loading state when enabled
 - 03-02: `_entity_dict` enriched with `has_content` (computed via `has_content_file(pid, CONTENT_DIR)`) — drives Phase 03 .ai-btn enable/disable replacing the Phase 02 disabled stub
 - 03-02: backend_name (D-19 default 'Ollama') threaded through every overview-context-builder + per-row entity_row template via shared llm_resolver — single source of truth across overview/platforms
+- 03-03: ALWAYS-200 contract for summary route — every error returns the amber-warning fragment with HTTP 200 (UI-SPEC mandate); HTMX swap lands inline in #summary-{pid}, never escalating to global #htmx-error-container
+- 03-03: cache key uses hashkey(pid, mtime_ns, llm_name, llm_model) — mtime_ns (int) NOT mtime (float) per Pitfall 13; lock guards only dict get/set (NEVER held during LLM call) per Pitfall 11 — explicit smoke test verifies non-blocking acquire from inside chat.completions.create side_effect
+- 03-03: 8th error vocabulary entry "LLM not configured — set one in Settings" added at the route level (resolve_active_llm returning None gates this BEFORE _classify_error). UI-SPEC §8c's 7 entries all assume a backend exists; the empty-settings.llms case needs its own copy
+- 03-03: APITimeoutError ordered BEFORE APIConnectionError in _classify_error — APITimeoutError is a subclass of APIConnectionError in openai 2.x, so reversing would misclassify every timeout. Comment in classifier documents the constraint
+- 03-03: `_build_client(cfg)` factory dispatches on cfg.type — Ollama (base_url=…/v1, api_key="ollama", 60s timeout) vs OpenAI (api_key from cfg or OPENAI_API_KEY env, 30s timeout). Pitfall 18 deviation comment in both summary_service.py and main.py
+- 03-03: summary route NEVER imports `pathlib.Path` — collides with `fastapi.Path` (path-parameter validator); reaches pathlib paths transitively via `platforms_router.CONTENT_DIR`. Module docstring documents the choice; acceptance criterion enforces
 
 ### Pending Todos
 
@@ -86,7 +92,7 @@ None — roadmap complete, all 46 requirements mapped, research gaps noted in SU
 
 ## Session Continuity
 
-Last session: 2026-04-25T14:17:22.041Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-04-25T21:02:01.760Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
 Next action: `/gsd-plan-phase 1`
