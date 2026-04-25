@@ -184,3 +184,235 @@ def test_has_content_never_raises_on_weird_inputs(content_dir):
     assert has_content_file("", content_dir) is False
     assert has_content_file("   ", content_dir) is False
     assert has_content_file("\x00null", content_dir) is False
+
+
+# ===========================================================================
+# Task 2: TestClient tests for POST /overview/filter and POST /overview/filter/reset
+# ===========================================================================
+
+from fastapi.testclient import TestClient
+
+from app_v2.main import app
+import app_v2.services.overview_store as overview_store_mod
+
+
+# Fake catalog matching the four entities used in the filter route tests.
+# All IDs use 3-part brand_model_soc so parse_platform_id correctly extracts soc_raw.
+_FILTER_CATALOG = [
+    "Samsung_S22Ultra_SM8450",
+    "Samsung_S23Ultra_SM8550",
+    "Pixel8_GoogleTensor_GS301",
+    "Xiaomi_Mix4_UnknownSoc",
+]
+
+
+@pytest.fixture()
+def isolated_filter(tmp_path, monkeypatch):
+    """Isolation fixture for filter route tests.
+
+    Mirrors test_overview_routes.isolated_overview but additionally:
+    - monkeypatches CONTENT_DIR in app_v2.routers.overview to tmp_path/content/platforms
+    - pre-seeds overview.yaml with the four FILTER_CATALOG entities so load_overview
+      returns a stable fixture across all filter route tests.
+    """
+    # 1. Point overview_store at a temp YAML.
+    yaml_path = tmp_path / "overview.yaml"
+    monkeypatch.setattr(overview_store_mod, "OVERVIEW_YAML", yaml_path)
+
+    # 2. Patch list_platforms in routers.overview.
+    import app_v2.routers.overview as overview_mod
+
+    monkeypatch.setattr(
+        overview_mod, "list_platforms", lambda db, db_name="": list(_FILTER_CATALOG)
+    )
+
+    # 3. Patch CONTENT_DIR to a tmp directory.
+    fake_content_dir = tmp_path / "content" / "platforms"
+    fake_content_dir.mkdir(parents=True)
+    monkeypatch.setattr(overview_mod, "CONTENT_DIR", fake_content_dir)
+
+    # 4. Clear caches between test runs.
+    from app_v2.services.cache import clear_all_caches
+
+    clear_all_caches()
+
+    # 5. Pre-seed overview.yaml with all four entities (via the public API).
+    with TestClient(app) as client:
+        for pid in _FILTER_CATALOG:
+            r = client.post("/overview/add", data={"platform_id": pid})
+            assert r.status_code == 200, f"seed add failed for {pid}: {r.status_code}"
+        yield client, fake_content_dir
+
+
+# ---------------------------------------------------------------------------
+# POST /overview/filter — happy paths
+# ---------------------------------------------------------------------------
+
+def test_post_filter_no_active_filters_returns_all_entities(isolated_filter):
+    """Empty form (all filters inactive) → full list + OOB badge with d-none."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/html")
+    body = r.text
+    for pid in _FILTER_CATALOG:
+        assert pid in body, f"Expected {pid} in unfiltered list"
+    # OOB badge must be present
+    assert 'id="filter-count-badge"' in body
+    assert 'hx-swap-oob="true"' in body
+    # When count is 0 the badge gets d-none
+    assert "d-none" in body
+
+
+def test_post_filter_brand_samsung_narrows_to_samsung_entities(isolated_filter):
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"brand": "Samsung"})
+    assert r.status_code == 200
+    body = r.text
+    assert "Samsung_S22Ultra_SM8450" in body
+    assert "Samsung_S23Ultra_SM8550" in body
+    assert "Pixel8_GoogleTensor_GS301" not in body
+    assert "Xiaomi_Mix4_UnknownSoc" not in body
+
+
+def test_post_filter_soc_narrows_by_soc_raw(isolated_filter):
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"soc": "SM8550"})
+    assert r.status_code == 200
+    body = r.text
+    assert "Samsung_S23Ultra_SM8550" in body
+    assert "Samsung_S22Ultra_SM8450" not in body
+    assert "Pixel8_GoogleTensor_GS301" not in body
+
+
+def test_post_filter_year_2022_excludes_year_none_entity(isolated_filter):
+    """D-21: year=2022 returns 2022 entities; entity with year=None is NOT in body."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"year": "2022"})
+    assert r.status_code == 200
+    body = r.text
+    assert "Samsung_S22Ultra_SM8450" in body  # year=2022
+    assert "Pixel8_GoogleTensor_GS301" in body  # year=2022 via GS301
+    assert "Samsung_S23Ultra_SM8550" not in body  # year=2023
+    assert "Xiaomi_Mix4_UnknownSoc" not in body  # year=None — D-21
+
+
+def test_post_filter_empty_year_includes_year_none_entity(isolated_filter):
+    """D-21: no year filter → entity with year=None IS in body."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"year": ""})
+    assert r.status_code == 200
+    body = r.text
+    assert "Xiaomi_Mix4_UnknownSoc" in body, "year=None entity must be present when year filter empty"
+
+
+def test_post_filter_multiple_filters_apply_and_semantics(isolated_filter):
+    """brand=Samsung + year=2023 → exactly one entity."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"brand": "Samsung", "year": "2023"})
+    assert r.status_code == 200
+    body = r.text
+    assert "Samsung_S23Ultra_SM8550" in body
+    assert "Samsung_S22Ultra_SM8450" not in body
+    assert "Pixel8_GoogleTensor_GS301" not in body
+
+
+def test_post_filter_zero_matches_returns_no_platforms_match_copy(isolated_filter):
+    """A filter combination matching nothing returns the verbatim copy."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"brand": "Samsung", "year": "2099"})
+    assert r.status_code == 200
+    body = r.text
+    assert "No platforms match the current filters." in body
+
+
+def test_post_filter_response_is_fragment_not_full_page(isolated_filter):
+    """block_name='entity_list' fragment should NOT include the navbar shell."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"brand": "Samsung"})
+    assert r.status_code == 200
+    body = r.text
+    assert '<nav class="navbar' not in body
+    assert "<html" not in body.lower()
+
+
+def test_post_filter_response_contains_oob_badge_with_active_count(isolated_filter):
+    """Body must contain the OOB span with id and hx-swap-oob attribute, and the count.
+
+    The badge is rendered twice (once outside the block via the <details> shell,
+    once inside the block as the OOB swap). For a fragment response we only get
+    the OOB copy. The count value 1 (single brand filter) appears in the rendered span.
+    """
+    client, _ = isolated_filter
+    r = client.post("/overview/filter", data={"brand": "Samsung"})
+    body = r.text
+    assert 'id="filter-count-badge"' in body
+    assert 'hx-swap-oob="true"' in body
+    # Active count is 1 (just the brand filter)
+    # The OOB badge content must be 1 (not d-none)
+    assert "d-none" not in body or body.count("d-none") < body.count("filter-count-badge")
+    # Stronger check: the rendered text "1" must appear inside a filter-count-badge span.
+    import re as _re
+    m = _re.search(
+        r'<span\s+id="filter-count-badge"[^>]*>\s*(\d+)\s*</span>',
+        body,
+    )
+    assert m is not None, f"OOB badge span not found in body. Body excerpt: {body[:500]}"
+    assert m.group(1) == "1"
+
+
+def test_post_filter_has_content_true_narrows_to_entities_with_md_file(isolated_filter):
+    """has_content=1 → only entities whose <pid>.md exists in CONTENT_DIR."""
+    client, content_dir = isolated_filter
+    # Create .md only for two of the four
+    (content_dir / "Samsung_S22Ultra_SM8450.md").write_text("hello", encoding="utf-8")
+    (content_dir / "Pixel8_GoogleTensor_GS301.md").write_text("hello", encoding="utf-8")
+
+    r = client.post("/overview/filter", data={"has_content": "1"})
+    assert r.status_code == 200
+    body = r.text
+    assert "Samsung_S22Ultra_SM8450" in body
+    assert "Pixel8_GoogleTensor_GS301" in body
+    assert "Samsung_S23Ultra_SM8550" not in body
+    assert "Xiaomi_Mix4_UnknownSoc" not in body
+
+
+def test_post_filter_has_content_defense_against_traversal_in_pid_storage(isolated_filter, tmp_path):
+    """Even if a pid in the curated list pretended to traverse, has_content_file rejects it.
+
+    This is a unit-level sanity check: the route already regex-validates at add time,
+    but if someone hand-edited overview.yaml the filter must remain safe.
+    """
+    client, content_dir = isolated_filter
+    # Place a tempting .md file outside content_dir
+    outside = tmp_path / "outside.md"
+    outside.write_text("secret", encoding="utf-8")
+    # Direct call to has_content_file with a traversal pid — must return False.
+    assert has_content_file("../outside", content_dir) is False
+
+
+def test_post_filter_reset_returns_full_list_with_count_zero_badge(isolated_filter):
+    """POST /overview/filter/reset returns the full unfiltered list + count=0 OOB badge."""
+    client, _ = isolated_filter
+    r = client.post("/overview/filter/reset")
+    assert r.status_code == 200
+    body = r.text
+    for pid in _FILTER_CATALOG:
+        assert pid in body, f"Expected {pid} in reset full list"
+    assert 'id="filter-count-badge"' in body
+    assert 'hx-swap-oob="true"' in body
+    assert "d-none" in body  # count=0 → badge has d-none class
+    # Reset response is a fragment, not a full page.
+    assert '<nav class="navbar' not in body
+
+
+def test_post_filter_regression_add_and_delete_still_work(isolated_filter):
+    """Adding/deleting in combination with filtering still works (sanity)."""
+    client, _ = isolated_filter
+    # All four already pre-seeded. Delete Pixel8 then verify filter result.
+    r = client.delete("/overview/Pixel8_GoogleTensor_GS301")
+    assert r.status_code == 200
+    r = client.post("/overview/filter", data={"year": "2022"})
+    body = r.text
+    assert "Samsung_S22Ultra_SM8450" in body  # still here, year 2022
+    assert "Pixel8_GoogleTensor_GS301" not in body  # deleted
