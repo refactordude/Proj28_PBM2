@@ -15,6 +15,7 @@ sets derived from the curated list) so 02-03's filter route is purely a re-rende
 """
 from __future__ import annotations
 
+from pathlib import Path as _Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Path, Request
@@ -24,6 +25,11 @@ from app.adapters.db.base import DBAdapter
 from app_v2.data.platform_parser import parse_platform_id
 from app_v2.data.soc_year import get_year
 from app_v2.services.cache import list_platforms
+from app_v2.services.overview_filter import (
+    apply_filters,
+    count_active_filters,
+    has_content_file,  # imported for test-surface parity (tests may monkeypatch)
+)
 from app_v2.services.overview_store import (
     DuplicateEntityError,
     add_overview,
@@ -36,6 +42,11 @@ router = APIRouter()
 
 # Pitfall 2: strict PLATFORM_ID regex — rejects `../` and any non-alnum-underscore-hyphen.
 PLATFORM_ID_PATTERN = r"^[A-Za-z0-9_\-]{1,128}$"
+
+# Base directory for per-platform markdown content pages (Phase 3 CRUD target).
+# Phase 2 only stat()s existence to drive the has_content filter (FILTER-01..03).
+# Tests monkeypatch this to a tmp_path/content/platforms location.
+CONTENT_DIR: _Path = _Path("content/platforms")
 
 
 def get_db(request: Request) -> DBAdapter | None:
@@ -179,3 +190,88 @@ def remove_platform(
     if not removed:
         raise HTTPException(status_code=404, detail=f"Not in overview: {platform_id}")
     return Response(status_code=200, content="")
+
+
+@router.post("/overview/filter", response_class=HTMLResponse)
+def filter_overview(
+    request: Request,
+    brand: Annotated[str, Form()] = "",
+    soc: Annotated[str, Form()] = "",
+    year: Annotated[str, Form()] = "",
+    has_content: Annotated[str, Form()] = "",
+    db: DBAdapter | None = Depends(get_db),
+):
+    """Apply Brand / SoC / Year / Has-content filters (FILTER-01, FILTER-02, FILTER-03).
+
+    Returns the entity_list block fragment only (NOT the full page). The response
+    includes an OOB swap element for #filter-count-badge reflecting the active count.
+
+    All routes are def (INFRA-05) — sync SQLAlchemy must never run inside async def
+    (Pitfall 4). FastAPI dispatches def to threadpool.
+    """
+    has_content_bool = has_content == "1"
+    count = count_active_filters(brand, soc, year, has_content_bool)
+
+    entities_raw = load_overview()
+    entities = [_entity_dict(e) for e in entities_raw]
+    filtered = apply_filters(
+        entities,
+        brand=brand or None,
+        soc=soc or None,
+        year=year or None,
+        has_content=has_content_bool,
+        content_dir=CONTENT_DIR,
+    )
+
+    all_platform_ids: list[str] = []
+    try:
+        all_platform_ids = list(list_platforms(db, db_name=""))  # type: ignore[arg-type]
+    except Exception:  # noqa: BLE001 — catalog load is non-fatal
+        all_platform_ids = []
+
+    ctx = _build_overview_context(
+        entities=filtered,
+        all_platform_ids=all_platform_ids,
+        selected_brand=brand or None,
+        selected_soc=soc or None,
+        selected_year=year or None,
+        selected_has_content=has_content_bool,
+        active_filter_count=count,
+    )
+    # Fragment render — block_name targets the entity_list block only.
+    return templates.TemplateResponse(
+        request,
+        "overview/index.html",
+        ctx,
+        block_name="entity_list",
+    )
+
+
+@router.post("/overview/filter/reset", response_class=HTMLResponse)
+def reset_filters(request: Request, db: DBAdapter | None = Depends(get_db)):
+    """Clear all filters and return the full entity_list with count=0 OOB badge (D-17).
+
+    Filters are stateless on the server — there is no session-stored filter selection
+    to clear. This route just returns the unfiltered list rendered as the entity_list
+    fragment with active_filter_count=0 (which makes the OOB badge get d-none).
+    """
+    entities_raw = load_overview()
+    entities = [_entity_dict(e) for e in entities_raw]
+
+    all_platform_ids: list[str] = []
+    try:
+        all_platform_ids = list(list_platforms(db, db_name=""))  # type: ignore[arg-type]
+    except Exception:  # noqa: BLE001 — catalog load is non-fatal
+        all_platform_ids = []
+
+    ctx = _build_overview_context(
+        entities=entities,
+        all_platform_ids=all_platform_ids,
+        active_filter_count=0,
+    )
+    return templates.TemplateResponse(
+        request,
+        "overview/index.html",
+        ctx,
+        block_name="entity_list",
+    )
