@@ -1,0 +1,23 @@
+{# app_v2/templates/summary/_error.html — UI-SPEC §8c. innerHTML of #summary-{pid}.
+
+   Rendered with HTTP 200 (NOT 5xx) on every kind of LLM failure so the swap
+   lands inline in the per-row summary slot — never escalating to the global
+   #htmx-error-container. The {{ reason }} value comes from the route's
+   call to summary_service._classify_error which maps every openai 2.x /
+   httpx exception to the fixed 7-string vocabulary (UI-SPEC §8c). Raw
+   exception text NEVER reaches this template. #}
+<div class="alert alert-warning d-flex justify-content-between align-items-center mt-2"
+     role="alert">
+  <div>
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Summary unavailable: {{ reason }}. Try again or switch LLM backend in Settings.
+  </div>
+  <button class="btn btn-sm btn-outline-warning"
+          hx-post="/platforms/{{ platform_id }}/summary"
+          hx-target="#summary-{{ platform_id }}"
+          hx-swap="innerHTML"
+          hx-indicator="#summary-{{ platform_id }}-spinner"
+          hx-disabled-elt="this">
+    <i class="bi bi-arrow-clockwise"></i> Retry
+  </button>
+</div>

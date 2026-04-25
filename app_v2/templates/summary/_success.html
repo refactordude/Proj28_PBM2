@@ -1,0 +1,37 @@
+{# app_v2/templates/summary/_success.html — UI-SPEC §8b. innerHTML of #summary-{pid}.
+
+   Rendered after a successful POST /platforms/{pid}/summary call. Shows the
+   LLM's markdown-rendered summary inside a .panel mini-card with a metadata
+   footer (backend name + model + cache age) and a Regenerate button.
+
+   The Regenerate button sends X-Regenerate: true so the route bypasses the
+   cache lookup but writes the new result back (D-18). #}
+<div class="panel mt-2">
+  <div class="panel-body" style="padding: 18px 22px;">
+    <article class="markdown-content" style="max-width: 720px; line-height: 1.55;">
+      {{ summary_html | safe }}
+    </article>
+    <div class="d-flex justify-content-between align-items-center mt-2 pt-2"
+         style="border-top: 1px solid var(--line);">
+      <small class="text-muted">
+        <span class="mono">{{ llm_name }} · {{ llm_model }}</span>
+        {% if cached_age_s == 0 %}
+          · (fresh)
+        {% else %}
+          · cached {{ cached_age_s }}s ago
+        {% endif %}
+      </small>
+      <button class="ai-btn regen"
+              hx-post="/platforms/{{ platform_id }}/summary"
+              hx-target="#summary-{{ platform_id }}"
+              hx-swap="innerHTML"
+              hx-indicator="#summary-{{ platform_id }}-spinner"
+              hx-headers='{"X-Regenerate": "true"}'
+              hx-disabled-elt="this"
+              title="Regenerate ignoring cache"
+              aria-label="Regenerate AI summary for {{ platform_id }} ignoring cache">
+        <i class="bi bi-arrow-clockwise"></i> Regenerate
+      </button>
+    </div>
+  </div>
+</div>
