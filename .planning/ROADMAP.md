@@ -72,7 +72,11 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   4. The AI Summary button on an Overview entity is enabled only when a content file exists; clicking it swaps a concise summary in-place within 30 seconds; the loading spinner is visible during the request
   5. If the LLM call fails, a Bootstrap alert with the failure reason and a Retry button appears in the summary area — never a blank or a spinner that never resolves
   6. A second click on AI Summary (before content has changed) returns the cached result instantly; the Regenerate button bypasses the cache and triggers a fresh LLM call
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 03-01-PLAN.md — Wave 0 infrastructure: atomic_write_bytes extraction + Dashboard tokens.css/app.css + lifespan content/platforms mkdir + .gitignore (CONTENT-01)
+- [ ] 03-02-PLAN.md — Wave 1: content_store + 5 platforms routes + 4 templates + Overview row AI Summary wiring (CONTENT-02..08, SUMMARY-01)
+- [ ] 03-03-PLAN.md — Wave 2: summary_prompt + summary_service (TTLCache + openai SDK + classify_error) + summary route + success/error templates (SUMMARY-02..07)
+- [ ] 03-04-PLAN.md — Wave 3: D-24 cross-process race test + end-to-end integration tests + Phase 03 codebase invariant guards
 **UI hint**: yes
 
 ### Phase 4: Browse Tab Port
@@ -106,6 +110,6 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 |-------|-----------|----------------|--------|-----------|
 | 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
 | 2. Overview Tab + Filters | v2.0 | 0/3 | Not started | - |
-| 3. Content Pages + AI Summary | v2.0 | 0/? | Not started | - |
+| 3. Content Pages + AI Summary | v2.0 | 0/4 | Not started | - |
 | 4. Browse Tab Port | v2.0 | 0/? | Not started | - |
 | 5. Ask Tab Port | v2.0 | 0/? | Not started | - |
