@@ -18,15 +18,14 @@ Defensive reads (CONTEXT.md specifics): missing file = [], malformed YAML = [] (
 from __future__ import annotations
 
 import logging
-import os
-import stat
-import tempfile
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
+
+from app_v2.data.atomic_write import atomic_write_bytes
 
 _log = logging.getLogger(__name__)
 
@@ -94,22 +93,17 @@ def load_overview() -> list[OverviewEntity]:
 
 
 def _atomic_write(entities: list[OverviewEntity]) -> None:
-    """Write entities to OVERVIEW_YAML atomically (tempfile + os.replace).
+    """YAML-serialize entities and write atomically to OVERVIEW_YAML.
 
-    Creates parent directory if missing. Serializes added_at as ISO-8601 with Z.
-    Preserves the existing file mode (or computes new-file mode from umask) so
-    that operator-applied chmod values survive across writes — tempfile.mkstemp
-    defaults to 0o600 which would otherwise silently tighten the YAML to user-only.
+    Delegates the POSIX-atomic write + mode preservation to the shared helper
+    ``app_v2.data.atomic_write.atomic_write_bytes`` (single source of truth —
+    same idiom used by Phase 03 content_store for markdown files).
+
+    ``default_mode=0o666`` preserves the prior overview_store new-file behavior
+    (umask-applied 0o644 on a typical Linux system); the helper handles the
+    ``& ~umask`` calculation and existing-mode preservation.
     """
     path = OVERVIEW_YAML
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # Capture target mode BEFORE writing so a successful os.replace can restore it.
-    if path.exists():
-        target_mode = stat.S_IMODE(path.stat().st_mode)
-    else:
-        umask = os.umask(0)
-        os.umask(umask)
-        target_mode = 0o666 & ~umask
     doc = {
         "entities": [
             {
@@ -120,25 +114,8 @@ def _atomic_write(entities: list[OverviewEntity]) -> None:
             for e in entities
         ],
     }
-    # Tempfile in SAME directory so os.replace is a rename within one filesystem.
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=".overview.", suffix=".yaml.tmp", dir=str(path.parent)
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            yaml.safe_dump(doc, fh, sort_keys=False, default_flow_style=False)
-            fh.flush()
-            os.fsync(fh.fileno())
-        os.replace(tmp_name, path)
-        # Restore original file permissions after replace (mkstemp creates 0o600).
-        os.chmod(path, target_mode)
-    except Exception:
-        # Clean up tempfile on any failure before re-raising.
-        try:
-            os.unlink(tmp_name)
-        except FileNotFoundError:
-            pass
-        raise
+    payload = yaml.safe_dump(doc, sort_keys=False, default_flow_style=False).encode("utf-8")
+    atomic_write_bytes(path, payload, default_mode=0o666)
 
 
 def add_overview(platform_id: str) -> OverviewEntity:
