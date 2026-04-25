@@ -73,11 +73,21 @@ PLATFORM_ID_PATTERN = r"^[A-Za-z0-9_\-]{1,128}$"
 
 
 def _render_error(request: Request, platform_id: str, reason: str) -> HTMLResponse:
-    """Render the amber-warning error fragment with a classified reason."""
+    """Render the amber-warning error fragment with a classified reason.
+
+    Always status 200 — UI-SPEC mandate (WR-03). The error fragment swaps
+    inline into the per-row summary slot (``#summary-{pid}``), NEVER into
+    the global ``#htmx-error-container``. Explicit ``status_code=200`` so
+    the always-200 contract is encoded at the call site, not inherited from
+    the ``TemplateResponse`` default. A future maintainer extending this
+    helper cannot silently break the contract by routing through a path
+    where the status default differs.
+    """
     return templates.TemplateResponse(
         request,
         "summary/_error.html",
         {"platform_id": platform_id, "reason": reason},
+        status_code=200,
     )
 
 
