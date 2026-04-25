@@ -136,11 +136,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 # Router registration — keep imports at the bottom to avoid circular deps
 # ORDER MATTERS: overview first (owns GET /); platforms next (prefix=/platforms,
-# Phase 03 detail page + content CRUD); root last (only has /browse and /ask).
+# Phase 03 detail page + content CRUD); summary AFTER platforms (also prefix
+# =/platforms, owns POST /platforms/{pid}/summary); root last (only has /browse
+# and /ask).
 from app_v2.routers import overview  # noqa: E402
 from app_v2.routers import platforms  # noqa: E402
+from app_v2.routers import summary  # noqa: E402
 from app_v2.routers import root  # noqa: E402
 
 app.include_router(overview.router)
 app.include_router(platforms.router)
+app.include_router(summary.router)
 app.include_router(root.router)
