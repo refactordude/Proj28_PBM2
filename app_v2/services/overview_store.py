@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import stat
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -86,9 +87,19 @@ def _atomic_write(entities: list[OverviewEntity]) -> None:
     """Write entities to OVERVIEW_YAML atomically (tempfile + os.replace).
 
     Creates parent directory if missing. Serializes added_at as ISO-8601 with Z.
+    Preserves the existing file mode (or computes new-file mode from umask) so
+    that operator-applied chmod values survive across writes — tempfile.mkstemp
+    defaults to 0o600 which would otherwise silently tighten the YAML to user-only.
     """
     path = OVERVIEW_YAML
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Capture target mode BEFORE writing so a successful os.replace can restore it.
+    if path.exists():
+        target_mode = stat.S_IMODE(path.stat().st_mode)
+    else:
+        umask = os.umask(0)
+        os.umask(umask)
+        target_mode = 0o666 & ~umask
     doc = {
         "entities": [
             {
@@ -109,6 +120,8 @@ def _atomic_write(entities: list[OverviewEntity]) -> None:
             fh.flush()
             os.fsync(fh.fileno())
         os.replace(tmp_name, path)
+        # Restore original file permissions after replace (mkstemp creates 0o600).
+        os.chmod(path, target_mode)
     except Exception:
         # Clean up tempfile on any failure before re-raising.
         try:
