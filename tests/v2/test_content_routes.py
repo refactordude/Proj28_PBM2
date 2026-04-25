@@ -149,6 +149,29 @@ def test_post_edit_includes_data_cancel_html(isolated_content):
     assert 'data-cancel-html="' in r.text
 
 
+def test_post_edit_preview_tab_uses_id_selector_for_hx_include(isolated_content):
+    """WR-01 regression: Preview tab MUST reference textarea by id, not 'closest form'.
+
+    The Preview <button> sits in the panel-header above the <form>, so it has
+    NO ancestor <form>. ``hx-include="closest form"`` resolves to nothing and
+    the textarea content is never sent to /preview. Use the unique id selector
+    ``#md-textarea`` instead — htmx accepts any CSS selector and the textarea
+    has ``id="md-textarea"`` (line 42 of _edit_panel.html).
+    """
+    client, cd = isolated_content
+    (cd / f"{_PID}.md").write_text("raw md", encoding="utf-8")
+    r = client.post(f"/platforms/{_PID}/edit")
+    assert r.status_code == 200
+    body = r.text
+    assert 'hx-include="#md-textarea"' in body, (
+        "Preview tab must use id selector — 'closest form' has no matching "
+        "ancestor (button is sibling of form, not descendant)."
+    )
+    assert 'hx-include="closest form"' not in body, (
+        "WR-01 regression: 'closest form' broken — button is not inside form."
+    )
+
+
 # ---------------------------------------------------------------------------
 # POST /platforms/{pid}/preview — preview pane
 # ---------------------------------------------------------------------------

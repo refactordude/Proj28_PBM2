@@ -23,7 +23,7 @@
                 role="tab"
                 aria-selected="false"
                 hx-post="/platforms/{{ platform_id }}/preview"
-                hx-include="closest form"
+                hx-include="#md-textarea"
                 hx-target="#preview-pane"
                 hx-swap="innerHTML"
                 hx-trigger="click, keyup changed delay:500ms from:#md-textarea">Preview</button>
