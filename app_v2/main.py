@@ -66,6 +66,25 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001 — startup resilience
             _log.warning("Failed to build DB adapter at startup: %s", exc)
 
+    # D-27: ensure content/platforms/ exists for Phase 03 markdown CRUD.
+    # Creating it at startup means content_store.read/write/delete never has
+    # to handle a "directory missing" branch. Same idiom as overview_store
+    # YAML directory creation in _atomic_write.
+    content_dir = Path("content/platforms")
+    try:
+        content_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:  # noqa: BLE001 — startup resilience
+        _log.warning("Failed to create content/platforms/: %s", exc)
+
+    # NOTE on Pitfall 18 (Ollama cold-start) — DEVIATION from RESEARCH.md Q3:
+    # RESEARCH.md recommended a lifespan-time Ollama warmup ping. We deviate
+    # and rely solely on the 60s read timeout configured in summary_service
+    # _build_client (see plan 03-03). Rationale: the app must start cleanly
+    # even if Ollama is unreachable; a first-request cold start is acceptable
+    # for an internal tool with low concurrency. Lifespan warmup is deferred
+    # until cold-start latency proves user-visible. NO warmup call is added
+    # here — this comment exists to make the deviation auditable.
+
     try:
         yield
     finally:

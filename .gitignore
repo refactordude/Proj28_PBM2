@@ -5,6 +5,18 @@ config/starter_prompts.yaml
 config/overview.yaml
 .env
 
+# Phase 03: per-platform markdown content pages (D-28 — gitignored, .gitkeep retained)
+# NOTE: a bare `content/` rule alone would block `!content/platforms/.gitkeep` from
+# matching (git short-circuits descent into ignored directories). The two
+# `!content/` and `!content/platforms/` re-includes restore traversal so the
+# negation on .gitkeep actually applies. All other files inside content/ remain
+# ignored thanks to the wildcard match below.
+content/
+!content/
+!content/platforms/
+content/platforms/*
+!content/platforms/.gitkeep
+
 # Python
 __pycache__/
 *.pyc

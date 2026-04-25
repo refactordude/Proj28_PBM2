@@ -146,3 +146,23 @@ def test_lifespan_initializes_app_state(client):
     assert isinstance(app.state.agent_registry, dict)
     # app.state.db may be None if no databases are configured — acceptable in Phase 1
     assert hasattr(app.state, "db")
+
+
+def test_lifespan_creates_content_platforms_directory(tmp_path, monkeypatch):
+    """D-27: lifespan must mkdir content/platforms/ on startup.
+
+    Runs the app from a temp working directory so we can assert the mkdir
+    landed in `tmp_path/content/platforms/` and not in the real repo.
+    """
+    monkeypatch.chdir(tmp_path)
+    from fastapi.testclient import TestClient as _TC
+    from app_v2.main import app as _app
+
+    # Before lifespan runs, the directory should not exist in tmp_path.
+    assert not (tmp_path / "content" / "platforms").exists()
+
+    with _TC(_app):
+        # TestClient context-enters lifespan — mkdir runs before yield.
+        assert (tmp_path / "content" / "platforms").is_dir(), (
+            "lifespan must create content/platforms/ on startup (D-27)"
+        )
