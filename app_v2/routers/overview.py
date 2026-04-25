@@ -28,7 +28,6 @@ from app_v2.services.cache import list_platforms
 from app_v2.services.overview_filter import (
     apply_filters,
     count_active_filters,
-    has_content_file,  # imported for test-surface parity (tests may monkeypatch)
 )
 from app_v2.services.overview_store import (
     DuplicateEntityError,
