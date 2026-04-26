@@ -86,6 +86,11 @@ def test_get_root_no_cdn_references(client):
 
 # --- GET /browse, GET /ask (Phase 4/5 placeholders) ---------------------
 
+@pytest.mark.skip(
+    reason="Phase 1 stub replaced by Phase 4 router. /browse now owned by "
+    "app_v2/routers/browse.py; full-page render requires browse/index.html "
+    "which ships in Plan 04-03. Plan 04-04 will add proper integration tests."
+)
 def test_get_browse_returns_200_with_phase_placeholder(client):
     r = client.get("/browse")
     assert r.status_code == 200

@@ -1,4 +1,4 @@
-"""Root full-page routes for /browse and /ask stubs.
+"""Root full-page routes for the /ask stub. Phase 4 owns /browse via routers/browse.py.
 
 NOTE: GET / is owned by routers/overview.py as of Phase 2.
 
@@ -12,16 +12,6 @@ from fastapi.responses import HTMLResponse
 from app_v2.templates import templates
 
 router = APIRouter()
-
-
-@router.get("/browse", response_class=HTMLResponse)
-def browse_page(request: Request):
-    """Browse tab. Phase 4 replaces this with the pivot grid."""
-    return templates.TemplateResponse(request, "base.html", {
-        "active_tab": "browse",
-        "page_title": "Browse",
-        "placeholder_message": "Coming in Phase 4 — pivot grid port from v1.0.",
-    })
 
 
 @router.get("/ask", response_class=HTMLResponse)
