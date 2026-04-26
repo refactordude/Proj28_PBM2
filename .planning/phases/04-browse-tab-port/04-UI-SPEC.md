@@ -43,6 +43,19 @@ established in Phase 03. No shadcn, no npm packages.
 
 ---
 
+## Visuals / Layout
+
+**Primary visual anchor:** the filter bar — the Apply button is the single accent CTA on the page; the
+pivot grid below is the content area.
+
+The Browse page uses a single `.panel` that splits into two vertical zones:
+1. **Filter zone** — `.panel-header` (Browse heading + count caption) + `.browse-filter-bar` (pickers,
+   swap toggle, clear-all). Always visible; does not scroll.
+2. **Grid zone** — `.browse-grid-body` scroll container holding warnings + pivot table (or empty state).
+   Scrolls vertically at `max-height: 70vh`; horizontal overflow handled by `.table-responsive` inside.
+
+---
+
 ## Spacing Scale
 
 Bootstrap 5 base-4 scale (`$spacer = 1rem = 16px`) remains the source of truth, as inherited from Phase 03.
@@ -64,6 +77,8 @@ Phase 04 adds one new context-specific spacing entry.
 | Popover min-width | 320px | Minimum width for both pickers (Claude's Discretion) |
 | Popover max-width | 480px | Maximum width for both pickers (Claude's Discretion) |
 | Page shell max-width | 1280px | `.shell` outer container — matches Dashboard / Phase 03 |
+| Pivot cell padding | `8px 16px` | `.pivot-table td` and `.pivot-table thead th` — grid-aligned (py-2 px-3 equivalent) |
+| First-column padding-left | `24px` | `.pivot-table thead th:first-child`, `.pivot-table tbody td:first-child` |
 
 **Exceptions:**
 - `.panel-body` on the Browse page overrides Phase 03's `padding: 26px 32px` with
@@ -75,28 +90,33 @@ Phase 04 adds one new context-specific spacing entry.
 
 ## Typography
 
-Phase 04 inherits the full Phase 03 typographic scale. No new sizes or weights are introduced.
+### Inherited from Phase 03 — see `03-UI-SPEC.md §Typography`
 
-| Role | Selector / Class | Size | Weight | Line Height | Used For |
-|------|-----------------|------|--------|-------------|----------|
-| Panel header | `<b>` inside `.panel-header` | 18px | 700 | 1.3 | "Browse" heading inside the panel header row |
-| Body (filter chrome) | default | 15px | 400 | 1.5 | Filter bar labels, dropdown labels, count caption |
-| Filter button (trigger) | `btn btn-outline-secondary btn-sm` | 14px (Bootstrap btn-sm) | 600 (inherited) | — | Platforms / Parameters trigger buttons |
-| Popover search input | `form-control form-control-sm` | 14px | 400 | — | Search-in-popover input field |
-| Popover checklist rows | `dropdown-item` | 14px | 400 | 1.5 | Checklist option labels |
-| Pivot cell (mono) | `.pivot-table td` | 13px | 400 | — | EAV `Result` values (JetBrains Mono, D-27) |
-| Pivot column header | `.pivot-table thead th` | 12px | 600 | — | Parameter column headers (uppercase via custom CSS) |
-| Cap-warning copy | `.alert.small` | 13px | 400 | 1.5 | Row-cap / col-cap warning alerts (D-24) |
-| Count caption | `.text-muted.small` | 13px | 400 | 1.5 | "{N} platforms × {K} parameters" (D-06) |
-| Empty state | `.alert.alert-info` | 15px | 400 | 1.5 | "Select platforms and parameters above…" (D-25) |
-| Badge (selection count) | `.badge` | 11px | 600 | — | Count badge on picker trigger buttons (D-08) |
+All sizes and weights used by Phase 04 components draw from the Phase 03 typographic scale (approved).
+Do not re-specify inherited values here. Phase 04 component-to-Phase-03-entry mappings:
 
-**Source:** D-05, D-06, D-26, D-27 (CONTEXT.md); Phase 03 UI-SPEC §Typography (inherited scale).
+| Phase 04 component | Phase 03 entry |
+|--------------------|---------------|
+| Browse panel heading (`<b>Browse</b>`) | Panel header — 18px / 700 |
+| Filter bar labels, picker trigger button text | Body (filter chrome) — 15px / 400; btn-sm inherits ~14px from Bootstrap |
+| Popover search input, checklist option labels | Edit textarea / helper — 14px / 400 |
+| Cap-warning copy, count caption | Helper / muted — 13px / 400 |
+| Empty state alert copy | Body (UI chrome) — 15px / 400 |
+| Selection-count badge | Tag / chip — 12px range; badge rendered at Bootstrap 0.75em (~11px) |
+
+### Phase 04 additions
+
+Phase 04 introduces two new typographic tokens not present in Phase 03:
+
+| Role | Size | Weight | Font | Used For |
+|------|------|--------|------|---------|
+| Pivot cell (mono) | 13px | 400 | JetBrains Mono | EAV `Result` values inside `.pivot-table td` (D-27) |
+| Pivot column header | 12px | 600 | Inter Tight | `<thead>` parameter column labels (`.pivot-table thead th`) |
 
 **Pivot cell typography rule:**
 - Font: `"JetBrains Mono", ui-monospace, monospace` (D-27)
 - Size: 13px (denser than 15px body for wide-form readability at 30 columns)
-- `white-space: nowrap` — prevents cell wrapping; horizontal scroll on the table-responsive container handles overflow
+- `white-space: nowrap` — prevents cell wrapping; horizontal scroll on `.table-responsive` handles overflow
 - No color override — cells render `var(--ink)` (#171c24); blank/null cells render empty string (not "null" or "—")
 
 **Column header typography rule:**
@@ -181,7 +201,7 @@ Using `var(--accent)` here would imply a CTA or primary action, which the empty 
     {% include "browse/_filter_bar.html" %}
 
     {# Pivot grid scroll container — vertical scroll here; horizontal inside table-responsive #}
-    <div class="panel-body browse-grid-body">
+    <div class="panel-body browse-grid-body" tabindex="0" aria-label="Pivot grid results">
       <div id="browse-grid">
         {% block grid %}
           {% include "browse/_warnings.html" %}
@@ -199,7 +219,7 @@ Using `var(--accent)` here would imply a CTA or primary action, which the empty 
 
 {# OOB count caption — swapped by POST /browse/grid response #}
 {% block count_oob %}
-  <span id="grid-count" hx-swap-oob="true" class="text-muted small">
+  <span id="grid-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">
     {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
   </span>
 {% endblock count_oob %}
@@ -253,12 +273,12 @@ Using `var(--accent)` here would imply a CTA or primary action, which the empty 
   color: var(--mute);
   white-space: nowrap;
   border-bottom: 2px solid var(--line-2);
-  padding: 10px 14px;
+  padding: 8px 16px;
 }
-.pivot-table thead th:first-child { padding-left: 20px; }
-.pivot-table tbody td { padding: 10px 14px; }
+.pivot-table thead th:first-child { padding-left: 24px; }
+.pivot-table tbody td { padding: 8px 16px; }
 .pivot-table tbody td:first-child {
-  padding-left: 20px;
+  padding-left: 24px;
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -428,12 +448,12 @@ load (D-11). Client-side substring filter via `popover-search.js` (D-10).
       {% endfor %}
     </ul>
 
-    {# Footer: Clear + Apply (D-09, D-14, D-15) #}
+    {# Footer: Clear selection + Apply (D-09, D-14, D-15) #}
     <div class="p-2 border-top d-flex justify-content-between align-items-center bg-light sticky-bottom">
       <button type="button"
               class="btn btn-link btn-sm popover-clear-btn text-secondary"
               aria-label="Clear {{ label | lower }} selection">
-        Clear
+        Clear selection
       </button>
       <button type="button"
               class="btn btn-primary btn-sm popover-apply-btn"
@@ -608,14 +628,14 @@ Lives in the `.panel-header` right zone AND is OOB-swapped by every POST `/brows
 
 **Persistent shell (always in DOM, in `panel-header`):**
 ```html
-<span id="grid-count" class="text-muted small">
+<span id="grid-count" class="text-muted small" aria-live="polite">
   {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
 </span>
 ```
 
 **OOB swap element (emitted in grid POST response body):**
 ```html
-<span id="grid-count" hx-swap-oob="true" class="text-muted small">
+<span id="grid-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">
   {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
 </span>
 ```
@@ -656,7 +676,7 @@ the canonical `/browse` URL, not `/browse/grid`.
 **Swap animation:** `hx-swap="innerHTML swap:200ms"` on all grid-swapping elements produces a subtle 200ms
 fade (Claude's Discretion from CONTEXT.md accepted).
 
-**No `hx-push-url` on popover internal Clear button** — Clear does not fire HTMX at all (D-15).
+**No `hx-push-url` on popover internal Clear selection button** — Clear selection does not fire HTMX at all (D-15).
 
 **Source:** D-14, D-16, D-17, D-18, D-32 (CONTEXT.md); Pattern 3 (RESEARCH.md).
 
@@ -683,7 +703,7 @@ canonical `/browse?...` URL (D-32). User can copy the URL from the address bar a
 
 ---
 
-## Spacing Scale
+## Spacing Scale (Summary Table)
 
 | Token / Class | Value | Usage in Phase 4 |
 |---------------|-------|-----------------|
@@ -697,28 +717,28 @@ canonical `/browse?...` URL (D-32). User can copy the URL from the address bar a
 | Popover checklist max-height | 320px | Scrollable options list |
 | Popover min-width | 320px | Both pickers |
 | Popover max-width | 480px | Both pickers |
-| Pivot cell padding | `10px 14px` | `.pivot-table td` rule |
-| Pivot thead padding | `10px 14px` | `.pivot-table thead th` rule |
+| Pivot cell padding | `8px 16px` | `.pivot-table td` and `.pivot-table thead th` (grid-aligned) |
+| First-column padding-left | `24px` | `.pivot-table thead th:first-child`, `.pivot-table tbody td:first-child` |
 
 ---
 
-## Typography
+## Typography (Summary Table)
+
+### Inherited from Phase 03 — see `03-UI-SPEC.md §Typography`
+
+All sizes and weights used by Phase 04 components draw from the Phase 03 typographic scale (approved).
+State: "All sizes and weights used by Phase 04 components draw from the Phase 03 typographic scale (approved)."
+
+### Phase 04 additions only
 
 | Role | Size | Weight | Font | Used For |
 |------|------|--------|------|---------|
-| Panel header label | 18px | 700 | Inter Tight | "Browse" heading in `.panel-header` |
-| Body / filter chrome | 15px | 400 | Inter Tight | Filter bar labels, dropdown text |
-| Filter button | 14px | 600 | Inter Tight | `btn btn-outline-secondary btn-sm` |
-| Popover rows | 14px | 400 | Inter Tight | Checklist option labels |
 | Pivot cell | 13px | 400 | JetBrains Mono | EAV Result values (D-27) |
-| Column header | 12px | 600 | Inter Tight | `<thead>` parameter labels |
-| Cap warnings | 13px | 400 | Inter Tight | `.alert.small` (D-24) |
-| Count caption | 13px | 400 | Inter Tight | `.text-muted.small` (D-06) |
-| Badge | 11px | 600 | Inter Tight | Selection count badge on triggers |
+| Pivot column header | 12px | 600 | Inter Tight | `<thead>` parameter labels |
 
 ---
 
-## Color
+## Color (Summary Table)
 
 | Role | Value | Usage |
 |------|-------|-------|
@@ -749,7 +769,7 @@ All copy strings verbatim. `{N}` and `{K}` indicate Jinja2 or server substitutio
 | Platforms search placeholder | `Search platforms…` |
 | Parameters search placeholder | `Search parameters…` |
 | Apply button | `Apply {N}` (where {N} is the live checkbox count) |
-| Clear button (popover-internal) | `Clear` |
+| Clear button (popover-internal) | `Clear selection` |
 | Swap axes toggle label | `Swap axes` |
 | Clear all link | `Clear all` |
 | Empty state | `Select platforms and parameters above to build the pivot grid.` |
@@ -790,11 +810,11 @@ All icons from Bootstrap Icons 1.13.1 (vendored). Phase 04 additions in bold.
 | `bi-stars` | AI Summary button (Phase 03 inherited) | Overview / detail |
 
 **No `bi-x` on picker popover items** — clearing individual selections is done via unchecking the checkbox;
-the popover-level Clear button removes all. No per-chip-style removal in this design (D-07 chose
+the popover-level Clear selection button removes all. No per-chip-style removal in this design (D-07 chose
 popover-checklist explicitly over chip-add pattern).
 
 **Source:** D-05 (CONTEXT.md): `bi-chevron-down`, `bi-arrow-left-right` specified; `bi-x` for clear chips
-listed as replaceable (not used here — design uses popover-level Clear instead).
+listed as replaceable (not used here — design uses popover-level Clear selection instead).
 
 ---
 
@@ -904,14 +924,14 @@ These rules are appended to `app_v2/static/css/app.css`. No existing rules are m
   color: var(--mute);
   white-space: nowrap;
   border-bottom: 2px solid var(--line-2);
-  padding: 10px 14px;
+  padding: 8px 16px;
 }
-.pivot-table thead th:first-child { padding-left: 20px; }
+.pivot-table thead th:first-child { padding-left: 24px; }
 
 /* Pivot table body cell padding */
-.pivot-table tbody td { padding: 10px 14px; }
+.pivot-table tbody td { padding: 8px 16px; }
 .pivot-table tbody td:first-child {
-  padding-left: 20px;
+  padding-left: 24px;
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -934,11 +954,11 @@ These rules are appended to `app_v2/static/css/app.css`. No existing rules are m
 | Search input labelled | `aria-label="Search platforms…"` / `aria-label="Search parameters…"` on the `<input type="search">` |
 | Table column headers | `<th scope="col">` on all header cells |
 | Table body index column | First `<td>` of each row is a cell (not a header); no `scope` needed since headers cover columns not rows |
-| Count caption live region | `#grid-count` is updated via HTMX OOB swap; add `aria-live="polite"` so screen readers announce the updated count |
+| Count caption live region | `#grid-count` carries `aria-live="polite"` so screen readers announce the updated count after HTMX OOB swap |
 | Color not sole differentiator | Cap warnings have `bi-exclamation-triangle` icon + "Result capped…" prefix text; empty state has descriptive copy — no color-only signaling |
 | Keyboard popover navigation | Bootstrap dropdown provides keyboard navigation (Enter to open, Esc to close, arrow keys within menu) |
 | Focus management after swap | After grid swap, HTMX does not move focus (correct — the filter bar stays in view and focus remains on the Apply button that was just clicked) |
-| Pivot table scrolling | `<div class="table-responsive">` + `.browse-grid-body` are scrollable via keyboard (they become scroll containers; `tabindex="0"` should be added to `.browse-grid-body` to make keyboard scrolling discoverable) |
+| Pivot table scrolling | `<div class="table-responsive">` + `.browse-grid-body` are scrollable via keyboard; `tabindex="0"` on `.browse-grid-body` makes keyboard scrolling discoverable |
 | Font size floor | 13px minimum in pivot cells — above the 12px WCAG floor; 15px for chrome text |
 
 **`tabindex="0"` on `.browse-grid-body`:**
