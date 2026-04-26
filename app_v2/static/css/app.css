@@ -87,6 +87,12 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* Allow Bootstrap dropdown popovers (Platforms / Parameters pickers) to escape
+   the Phase 03 .panel { overflow: hidden } clipping when the panel is short.
+   Scoped via :has() so only the Browse panel is affected — Phase 03 panels
+   keep their rounded-corner clipping unchanged. */
+.panel:has(.browse-filter-bar) { overflow: visible; }
+
 /* Browse grid scroll container — vertical scroll for sticky-thead to work (Pitfall 1).
    The Browse panel applies BOTH .panel-body and .browse-grid-body to the same element;
    CSS source order means these declarations win for `padding`, so the browse panel
