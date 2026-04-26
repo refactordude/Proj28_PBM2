@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
-status: verifying
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-26T05:58:21.397Z"
-last_activity: 2026-04-25
+status: executing
+stopped_at: Completed 04-01-PLAN.md (upstream doc trim per D-19..D-22)
+last_updated: "2026-04-26T13:13:39.781Z"
+last_activity: 2026-04-26
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 15
+  completed_plans: 12
+  percent: 80
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 03 — content-pages-ai-summary (COMPLETE)
+**Current focus:** Phase 04 — browse-tab-port
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-25
+Phase: 04 (browse-tab-port) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-04-26
 
 Progress: [██████████] 100%
 
@@ -88,18 +88,24 @@ Progress: [██████████] 100%
 - 03-04: `test_no_banned_libraries_imported_in_app_v2` anchors `^\s*(import|from)\s+<lib>\b` so docstring/comment occurrences cannot trip the guard — only actual import statements at line start (with optional indent) are checked. Parametrized over langchain, litellm, vanna, llama_index per CLAUDE.md "What NOT to Use".
 - 03-04: Integration fixture replaces `app.state.settings = Settings(...)` AFTER lifespan ran (mirrors `test_summary_routes.py::isolated_summary` proven pattern) instead of mutating sub-attributes — robust against future Pydantic v2 `frozen=True` schema tightening.
 - 03-04: Codebase-level static-analysis grep guards as automated CI policy enforcement — pattern reusable in Phase 04+ for any locked decision (INFRA-05, Pitfall 1, UI-SPEC contracts, banned libs, D-numbers, atomic_write_bytes single-source-of-truth).
+- 04-01: v2.0 Browse is view-only by design (D-19..D-22) — BROWSE-V2-04 (Excel/CSV export) removed from REQUIREMENTS / ROADMAP / PROJECT. Phase 4 scope locked to BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05 (4 reqs + 3 success criteria). v1.0 Streamlit Browse remains the export surface until v1.0 sunset; v1.0's app/components/export_dialog.py is NOT touched, copied, or imported by app_v2/.
+- 04-01: BROWSE-V2-01 `/?tab=browse` alias trimmed (Issue 1 plan-checker fix) — primary `/browse` path covers the requirement. No Phase 4 plan implements the alias as a 302 redirect.
+- 04-01: REQUIREMENTS.md Totals reconciled to 45 v2.0 reqs (Phase 4 mapped count = 4); PROJECT.md Key Decisions table now contains the "Drop v2.0 Browse export to keep the port view-only" row with `⚠️ Revisit at v1.0 sunset planning` status.
+- 04-01: 4 Rule-1 doc-bug fixes applied beyond literal plan body (Phase 4 summary line + Phase 4 Goal + plan-list narrative in ROADMAP.md; v2.0 milestone target features in PROJECT.md) — kept upstream docs internally consistent post-trim. Project intro paragraph and v1.0 milestone Excel claim preserved verbatim per plan directives.
 
 ### Pending Todos
 
-- Run `/gsd-plan-phase 1` to create the execution plan for Phase 1 (Pre-work + Foundation)
+- Execute Plan 04-02: browse_service + browse router (GET /browse + POST /browse/grid + HX-Push-Url)
+- Execute Plan 04-03: Templates + popover-search.js + Phase 04 CSS
+- Execute Plan 04-04: Integration tests + codebase invariant guards
 
 ### Blockers/Concerns
 
-None — roadmap complete, all 46 requirements mapped, research gaps noted in SUMMARY.md for phases 2, 3, 5.
+None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19..D-22). Research gaps noted in SUMMARY.md for phases 2, 3, 5.
 
 ## Session Continuity
 
-Last session: 2026-04-26T05:58:21.360Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-browse-tab-port/04-CONTEXT.md
+Last session: 2026-04-26T13:13:39.758Z
+Stopped at: Completed 04-01-PLAN.md (upstream doc trim per D-19..D-22)
+Resume file: None
 Next action: `/gsd-plan-phase 1`

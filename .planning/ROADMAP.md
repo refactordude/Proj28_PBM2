@@ -88,7 +88,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   2. The 30-column cap warning and 200-row cap warning appear when the respective limits are reached — matching v1.0 behavior exactly
   3. A Browse URL with query params (e.g. `?platforms=...&params=...&swap=1`) renders the correct filtered pivot grid when opened directly — the link is shareable
 **Plans**: 4 plans
-- [ ] 04-01-PLAN.md — Upstream doc edits (move v2.0 Browse export to Out of Scope per D-19..D-22)
+- [x] 04-01-PLAN.md — Upstream doc edits (move v2.0 Browse export to Out of Scope per D-19..D-22)
 - [ ] 04-02-PLAN.md — browse_service + browse router (GET /browse + POST /browse/grid + HX-Push-Url) (BROWSE-V2-01, BROWSE-V2-03, BROWSE-V2-05)
 - [ ] 04-03-PLAN.md — Templates (Jinja macro + filter bar + grid + warnings + empty state) + popover-search.js + Phase 04 CSS (BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05)
 - [ ] 04-04-PLAN.md — Integration tests (TestClient + URL round-trip + caps + XSS) + codebase invariant guards (BROWSE-V2-01..03, -05)
