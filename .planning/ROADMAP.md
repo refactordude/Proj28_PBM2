@@ -24,7 +24,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] **Phase 1: Pre-work + Foundation** - v1.0 refactors (ufs_service, nl_service) + FastAPI shell, static vendor, cache layer, deps (completed 2026-04-24)
 - [ ] **Phase 2: Overview Tab + Filters** - Curated platform list, add/remove, HTMX-swapped faceted filters
 - [ ] **Phase 3: Content Pages + AI Summary** - Per-platform markdown CRUD, safe rendering, in-place LLM summary
-- [ ] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps, Excel/CSV export under Bootstrap
+- [ ] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps under Bootstrap (export deferred per D-19..D-22)
 - [ ] **Phase 5: Ask Tab Port** - NL agent, two-turn confirmation, history, LLM backend selector, safety harness
 
 ## Phase Details
@@ -80,16 +80,15 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 **UI hint**: yes
 
 ### Phase 4: Browse Tab Port
-**Goal**: Users can access the full v1.0 pivot-grid experience (platform × parameter wide-form table, swap-axes, row/col caps, export) under the new Bootstrap shell via the Browse tab — with shareable URLs and no full page reload on filter changes.
+**Goal**: Users can access the v1.0 pivot-grid experience (platform × parameter wide-form table, swap-axes, row/col caps) under the new Bootstrap shell via the Browse tab — with shareable URLs and no full page reload on filter changes. (Export remains on v1.0 Streamlit per D-19..D-22.)
 **Depends on**: Phase 1
-**Requirements**: BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-04, BROWSE-V2-05
+**Requirements**: BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05
 **Success Criteria** (what must be TRUE):
   1. User can select platforms and parameters, and the pivot grid updates in the Browse tab without a full page reload; the sticky header remains visible while scrolling
   2. The 30-column cap warning and 200-row cap warning appear when the respective limits are reached — matching v1.0 behavior exactly
-  3. User can download the current pivot grid as Excel (.xlsx) or CSV; the export reflects the active filter state and respects the row/col caps
-  4. A Browse URL with query params (e.g. `?platforms=...&params=...&swap=1`) renders the correct filtered pivot grid when opened directly — the link is shareable
+  3. A Browse URL with query params (e.g. `?platforms=...&params=...&swap=1`) renders the correct filtered pivot grid when opened directly — the link is shareable
 **Plans**: 4 plans
-- [ ] 04-01-PLAN.md — Upstream doc edits (move BROWSE-V2-04 to Out of Scope per D-19..D-22)
+- [ ] 04-01-PLAN.md — Upstream doc edits (move v2.0 Browse export to Out of Scope per D-19..D-22)
 - [ ] 04-02-PLAN.md — browse_service + browse router (GET /browse + POST /browse/grid + HX-Push-Url) (BROWSE-V2-01, BROWSE-V2-03, BROWSE-V2-05)
 - [ ] 04-03-PLAN.md — Templates (Jinja macro + filter bar + grid + warnings + empty state) + popover-search.js + Phase 04 CSS (BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05)
 - [ ] 04-04-PLAN.md — Integration tests (TestClient + URL round-trip + caps + XSS) + codebase invariant guards (BROWSE-V2-01..03, -05)
