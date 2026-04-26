@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 04-01-PLAN.md (upstream doc trim per D-19..D-22)
-last_updated: "2026-04-26T13:13:39.781Z"
+stopped_at: Completed 04-02-PLAN.md (browse_service + browse router + HX-Push-Url)
+last_updated: "2026-04-26T13:32:59.626Z"
 last_activity: 2026-04-26
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 15
-  completed_plans: 12
-  percent: 80
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 04 (browse-tab-port) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-26
 
-Progress: [██████████] 100%
+Progress: [█████████░] 87%
 
 ## Accumulated Context
 
@@ -92,12 +92,18 @@ Progress: [██████████] 100%
 - 04-01: BROWSE-V2-01 `/?tab=browse` alias trimmed (Issue 1 plan-checker fix) — primary `/browse` path covers the requirement. No Phase 4 plan implements the alias as a 302 redirect.
 - 04-01: REQUIREMENTS.md Totals reconciled to 45 v2.0 reqs (Phase 4 mapped count = 4); PROJECT.md Key Decisions table now contains the "Drop v2.0 Browse export to keep the port view-only" row with `⚠️ Revisit at v1.0 sunset planning` status.
 - 04-01: 4 Rule-1 doc-bug fixes applied beyond literal plan body (Phase 4 summary line + Phase 4 Goal + plan-list narrative in ROADMAP.md; v2.0 milestone target features in PROJECT.md) — kept upstream docs internally consistent post-trim. Project intro paragraph and v1.0 milestone Excel claim preserved verbatim per plan directives.
+- 04-02: BrowseViewModel single-orchestrator pattern — `build_view_model` is the ONE source of truth consumed by both GET /browse (full-page) and POST /browse/grid (block_names fragment). Routes only differ at the Jinja2 layer. Pure-Python service module — no FastAPI/Starlette imports inside `app_v2/services/browse_service.py`.
+- 04-02: PARAM_LABEL_SEP=' · ' (UTF-8 bytes b' \xc2\xb7 ') with surrounding spaces is the SINGLE source of truth for InfoCategory/Item label format (D-13). Garbage labels silently dropped via `_parse_param_label` returning None — empty strings never reach SQL bind (T-04-02-02 mitigation).
+- 04-02: ROW_CAP=200 / COL_CAP=30 module-level constants on `browse_service.py` (D-23) — not hardcoded in routes. `pivot_to_wide_core` reused unmodified for aggfunc='first' (D-29). `fetch_cells` (TTLCache wrapper) called with `row_cap=ROW_CAP` and `db_name` keyword.
+- 04-02: Pydantic v2.13.x + FastAPI 0.136.x reject `Query(default_factory=list)` AND literal '= []' default together (TypeError: cannot specify both default and default_factory). Use `default_factory` only for GET query params; POST `Form()` params keep '= []' (Pydantic accepts Form with literal default). Plan acceptance grep regex still matches the canonical idiom.
+- 04-02: browse router registered BEFORE root in main.py (lines 145-155) — defense-in-depth ordering. Even if a future commit accidentally re-adds a /browse stub to root.py, the real browse router still wins. Phase 1 stub-test in test_main.py marked `@pytest.mark.skip` with tombstone reason pointing to Plan 04-03 (templates) and Plan 04-04 (integration tests).
+- 04-02: POST /browse/grid sets HX-Push-Url response header to canonical /browse?... URL composed via `urllib.parse.urlencode(..., quote_via=urllib.parse.quote)` for %20 spaces (Pitfall 6) — NOT the form-style + that urlencode emits by default. Address bar shows shareable URL, not the POST URL (which would 405 on reload, Pitfall 2).
+- 04-02: build_view_model accepts db=None gracefully — returns fully-empty BrowseViewModel without DB call. Phase 1 lifespan contract permits no-database startup; route stays responsive. Catalog calls (`list_platforms`/`list_parameters`) ALWAYS run on non-None db so popovers render full lists; only `fetch_cells` (the SQL hit) is gated by the empty-selection short-circuit.
 
 ### Pending Todos
 
-- Execute Plan 04-02: browse_service + browse router (GET /browse + POST /browse/grid + HX-Push-Url)
-- Execute Plan 04-03: Templates + popover-search.js + Phase 04 CSS
-- Execute Plan 04-04: Integration tests + codebase invariant guards
+- Execute Plan 04-03: Templates + popover-search.js + Phase 04 CSS (browse/index.html with named blocks: grid, count_oob, warnings_oob)
+- Execute Plan 04-04: Integration tests + codebase invariant guards (TestClient → GET /browse with full query string → assert pre-rendered grid HTML)
 
 ### Blockers/Concerns
 
@@ -105,7 +111,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-26T13:13:39.758Z
-Stopped at: Completed 04-01-PLAN.md (upstream doc trim per D-19..D-22)
+Last session: 2026-04-26T13:30:00Z
+Stopped at: Completed 04-02-PLAN.md (browse_service + browse router + HX-Push-Url)
 Resume file: None
-Next action: `/gsd-plan-phase 1`
+Next action: `/gsd-execute-phase` to continue with Plan 04-03 (templates + popover-search.js + CSS)

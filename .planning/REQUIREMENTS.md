@@ -60,10 +60,10 @@
 
 ### Browse Tab (Port)
 
-- [ ] **BROWSE-V2-01**: Browse tab at `/browse` re-implements v1.0's pivot grid (platform × parameter) under Bootstrap + HTMX. Filter selectors (platform multiselect, parameter multiselect, swap-axes toggle) are HTMX-swapped on change — no full page reload.
+- [x] **BROWSE-V2-01**: Browse tab at `/browse` re-implements v1.0's pivot grid (platform × parameter) under Bootstrap + HTMX. Filter selectors (platform multiselect, parameter multiselect, swap-axes toggle) are HTMX-swapped on change — no full page reload.
 - [ ] **BROWSE-V2-02**: Pivot grid uses Bootstrap's `table table-striped table-hover` with `<thead class="sticky-top">` for frozen header row. Every cell rendered as text (mirrors v1.0's TextColumn-only approach because EAV Results are heterogeneous).
-- [ ] **BROWSE-V2-03**: Row-count and column-count indicators, 30-column cap warning, 200-row cap warning — all mirror v1.0's BROWSE-04, BROWSE-06 behavior with exact copy preserved.
-- [ ] **BROWSE-V2-05**: Filter state round-trips via URL query params so links are shareable (`/browse?platforms=...&params=...&swap=1`).
+- [x] **BROWSE-V2-03**: Row-count and column-count indicators, 30-column cap warning, 200-row cap warning — all mirror v1.0's BROWSE-04, BROWSE-06 behavior with exact copy preserved.
+- [x] **BROWSE-V2-05**: Filter state round-trips via URL query params so links are shareable (`/browse?platforms=...&params=...&swap=1`).
 
 ### Ask Tab (Port)
 
@@ -136,10 +136,10 @@
 | SUMMARY-05 | Phase 3 | Complete |
 | SUMMARY-06 | Phase 3 | Complete |
 | SUMMARY-07 | Phase 3 | Complete |
-| BROWSE-V2-01 | Phase 4 | Pending |
+| BROWSE-V2-01 | Phase 4 | Complete |
 | BROWSE-V2-02 | Phase 4 | Pending |
-| BROWSE-V2-03 | Phase 4 | Pending |
-| BROWSE-V2-05 | Phase 4 | Pending |
+| BROWSE-V2-03 | Phase 4 | Complete |
+| BROWSE-V2-05 | Phase 4 | Complete |
 | ASK-V2-01 | Phase 5 | Pending |
 | ASK-V2-02 | Phase 5 | Pending |
 | ASK-V2-03 | Phase 5 | Pending |
