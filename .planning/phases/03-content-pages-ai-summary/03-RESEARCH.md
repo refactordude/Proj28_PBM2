@@ -778,23 +778,23 @@ def test_cache_ttl_expiry(mocker):
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **D-30: Extract atomic_write to shared module — should we?**
    - What we know: Phase 02 has `_atomic_write` in `overview_store.py`; Phase 03 needs the same logic for `content_store.py`. CONTEXT.md flags this as "TBD in plan".
-   - Recommendation: **Extract NOW.** Two callers is the canonical YAGNI threshold; the existing function already handles the file-mode-preservation gotcha (Phase 02 WR-03), and copy-paste would require maintaining that fix in two places. Net diff is ~30 lines moved + 5 lines of wrapper in overview_store.
+   - **RESOLVED:** Extract NOW. Two callers is the canonical YAGNI threshold; the existing function already handles the file-mode-preservation gotcha (Phase 02 WR-03), and copy-paste would require maintaining that fix in two places. Net diff is ~30 lines moved + 5 lines of wrapper in overview_store.
 
 2. **A8: Default LLM lookup — `settings.llms[0]` or `settings.app.default_llm`?**
    - What we know: Phase 1 `Settings` model has both `llms: list[LLMConfig]` AND `app.default_llm: str` (the name).
-   - Recommendation: **lookup pattern:** `next((l for l in settings.llms if l.name == settings.app.default_llm), settings.llms[0] if settings.llms else None)`. Plan must include a fallback for the case where `settings.llms == []` (returns 503 with "LLM not configured" alert in summary slot).
+   - **RESOLVED:** lookup pattern: `next((l for l in settings.llms if l.name == settings.app.default_llm), settings.llms[0] if settings.llms else None)`. Plan must include a fallback for the case where `settings.llms == []` (returns 503 with "LLM not configured" alert in summary slot).
 
 3. **Pitfall 18 mitigation — Ollama warmup at lifespan: opt-in or always?**
    - What we know: Cold-start can hit 30s timeout. Warmup adds ~5s to startup time.
-   - Recommendation: **Always warm IF `settings.llm.type == "ollama"` AND a default LLM is configured.** Catch all exceptions during warmup (don't block app startup if Ollama is down — degrade to cold-start on first request). Single trivial call: `messages=[{"role":"user","content":"ok"}], max_tokens=1`.
+   - **RESOLVED (deviation):** Apply 60s read-timeout mitigation only — see plan 03-01 lifespan task and 03-03 _build_client. Lifespan warmup deferred. Original recommendation: Always warm IF settings.llm.type == "ollama" AND a default LLM is configured. Catch all exceptions during warmup (don't block app startup if Ollama is down — degrade to cold-start on first request). Single trivial call: `messages=[{"role":"user","content":"ok"}], max_tokens=1`.
 
 4. **Cache key — strict D-17 (4-tuple) or sharper (5-tuple with size)?**
    - What we know: D-17 says "(platform_id, content_mtime, llm_name, llm_model)". Pitfall 13 argues for adding `size` for FS edge cases.
-   - Recommendation: **Use D-17 verbatim BUT switch `mtime` (float) → `mtime_ns` (int).** This addresses sub-second resolution without changing the tuple shape. Adding `size` is over-engineering for the intranet single-server target environment.
+   - **RESOLVED:** Use D-17 verbatim BUT switch `mtime` (float) → `mtime_ns` (int). This addresses sub-second resolution without changing the tuple shape. Adding `size` is over-engineering for the intranet single-server target environment.
 
 ---
 
