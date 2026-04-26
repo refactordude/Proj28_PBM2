@@ -18,6 +18,11 @@
   <script src="{{ url_for('static', path='vendor/htmx/htmx.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='vendor/bootstrap/bootstrap.bundle.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='js/htmx-error-handler.js') }}" defer></script>
+  {# Phase 04: popover-search.js handles the Browse picker popover behavior
+     (search filter, Apply close, Clear, restore-on-close). Loaded with defer
+     AFTER bootstrap.bundle.min.js so bootstrap.Dropdown.getInstance(...) is
+     available; defer order matches document source order at parse time. #}
+  <script src="{{ url_for('static', path='js/popover-search.js') }}" defer></script>
 </head>
 <body>
   {# Horizontal top-nav tabs (INFRA-02). hx-boost is NOT applied here per
