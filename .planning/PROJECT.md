@@ -19,7 +19,7 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - Interactive filters (Brand / SoC / Year + "has content page" toggle) driving HTMX-swapped overview list
 - Per-platform markdown content pages at `content/platforms/<PLATFORM_ID>.md` — addable / editable / deletable via HTMX forms; rendered with markdown-it-py
 - "AI Summary" calls the v1.0 LLM adapter (single-shot completion) on the content-page markdown, returns a short summary, swapped in-place
-- Browse tab: re-implements v1.0's wide-form pivot grid (platform × parameter) under Bootstrap — swap-axes, row/col caps, Excel/CSV export
+- Browse tab: re-implements v1.0's wide-form pivot grid (platform × parameter) under Bootstrap — swap-axes, row/col caps (export remains on v1.0 Streamlit per D-19..D-22)
 - Ask tab: carries v1.0 NL agent forward (PydanticAI, dual OpenAI/Ollama, SAFE-02..06 harness intact) under the new UI shell
 
 **Key context:**
@@ -98,7 +98,6 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 #### Browse carry-over (v2.0)
 - [ ] Wide-form pivot grid (platform × parameter) re-rendered in Bootstrap tables
 - [ ] Same filter / swap-axes / row-cap / col-cap behavior as v1.0
-- [ ] Excel + CSV export
 
 #### Ask carry-over (v2.0)
 - [ ] NL agent (PydanticAI + dual OpenAI/Ollama) reachable from the Ask tab
@@ -115,6 +114,7 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - **Multi-table / cross-table joins** — The entire domain is the single-table EAV `ufs_data`. Supporting arbitrary schemas is a different product.
 - **Editing / correcting platform data from the UI** — DB is read-only by contract; any correction flow lives upstream in the system that populates `ufs_data`.
 - **Training / fine-tuning an in-house LLM** — v1 relies on the LLM adapters already scaffolded (OpenAI cloud or Ollama local).
+- **v2.0 Browse Excel/CSV export** — v1.0 Streamlit Browse remains the export surface until v1.0 sunset; v2.0 Browse is view-only by design choice (2026-04-26 user decision). The v1.0 export_dialog component remains in place and is NOT touched, copied, or imported by app_v2/.
 
 ## Context
 
@@ -170,6 +170,7 @@ All three contribute equally, so solving only one is not enough.
 | NL-05 uses `st.multiselect` pre-checked with agent candidates; "Run Query" to execute | Preserves Browse-page mental model; user can add/remove candidates before committing | ✓ Good |
 | Path scrub (`/sys/`, `/proc/`, `/dev/`) applied only when OpenAI backend active | Local Ollama sees raw data; cloud LLM gets scrubbed data — protects sensitive filesystem paths from leaving the intranet | ✓ Good — re-review caught case-insensitive miss (uppercase paths) and fixed |
 | Phase 1 auth deferred to pre-deployment phase per D-04 | Team agreed to skip auth during core app build so the data-browsing value could be validated first; gitignore still in place so scaffold cannot leak demo creds | — Pending — revisit when preparing for team-wide rollout |
+| Drop v2.0 Browse export to keep the port view-only | Simpler shell migration; v1.0 Streamlit Browse still serves the export workflow until v1.0 sunset | ⚠️ Revisit at v1.0 sunset planning |
 
 ## Evolution
 
