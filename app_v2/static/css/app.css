@@ -76,3 +76,62 @@
 .markdown-content pre code { background: transparent; padding: 0; }
 .markdown-content ul, .markdown-content ol { padding-left: 1.4em; margin: 0 0 1em; }
 .markdown-content blockquote { border-left: 3px solid var(--accent-soft); padding-left: 14px; color: var(--ink-2); margin: 0 0 1em; }
+
+/* ============================================================
+   Phase 04 — Browse Tab (UI-SPEC §Components, D-26..D-28)
+   ============================================================ */
+
+/* Filter bar spacing above pivot grid */
+.browse-filter-bar {
+  padding: 12px 26px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Browse grid scroll container — vertical scroll for sticky-thead to work (Pitfall 1).
+   The Browse panel applies BOTH .panel-body and .browse-grid-body to the same element;
+   CSS source order means these declarations win for `padding`, so the browse panel
+   body has no inner padding (the table reaches the panel edges). */
+.browse-grid-body {
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+/* Breathing room for alert states inside the scroll container */
+.browse-grid-body .alert { margin: 16px; }
+
+/* Pivot table — cell density and mono rendering (D-27) */
+.pivot-table { margin-bottom: 0; }
+.pivot-table td {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  white-space: nowrap;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.pivot-table td:empty::after {
+  content: "\2014";
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+/* Pivot table header — sticky + visual weight (D-26) */
+.pivot-table thead.sticky-top { z-index: 2; }
+.pivot-table thead th {
+  background: var(--bs-light);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  white-space: nowrap;
+  border-bottom: 2px solid var(--line-2);
+  padding: 8px 16px;
+}
+.pivot-table thead th:first-child { padding-left: 24px; }
+
+/* Pivot table body cell padding */
+.pivot-table tbody td { padding: 8px 16px; }
+.pivot-table tbody td:first-child {
+  padding-left: 24px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
