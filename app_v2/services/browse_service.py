@@ -7,7 +7,7 @@ construct context dicts from the returned dataclass.
 Contracts (from 04-CONTEXT.md):
 - D-12: full DB catalog source for both pickers (NOT the curated Overview list)
 - D-13: parameter labels use ' · ' (middle dot U+00B7), sorted alphabetically
-        by combined label. NEVER ' / ' — that is v1.0 (Pitfall 3).
+        by combined label. NEVER the v1.0 slash separator (Pitfall 3).
 - D-23: row_cap=200, col_cap=30 (server-enforced, mirrors v1.0 BROWSE-04)
 - D-29: aggfunc='first' for pivot duplicates (delegated to pivot_to_wide_core)
 - D-30..D-33: URL round-trip via repeated keys + swap='1'/omitted
@@ -68,8 +68,8 @@ def _parse_param_label(label: str) -> tuple[str, str] | None:
     Item half — we never lose data, but we also never emit empty strings into
     the SQL bind parameters.
 
-    Pitfall 3: NEVER use partition(' / ') here — that is the v1.0 separator
-    and would silently drop every v2.0 label.
+    Pitfall 3: NEVER use the v1.0 slash separator here — it would silently
+    drop every v2.0 label.
     """
     parts = label.split(PARAM_LABEL_SEP, 1)
     return (parts[0], parts[1]) if len(parts) == 2 else None
