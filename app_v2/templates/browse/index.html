@@ -1,0 +1,82 @@
+{# app_v2/templates/browse/index.html
+   Browse tab full page + named-block fragments (BROWSE-V2-01, D-04..D-06).
+
+   This single template is consumed two ways:
+   1. GET /browse renders the full page (browse_page route).
+   2. POST /browse/grid renders block_names=["grid", "count_oob",
+      "warnings_oob"] — concatenated fragment containing the grid swap
+      target, the OOB count caption, and a reserved warnings OOB slot
+      (Pattern 6 of 04-RESEARCH.md).
+
+   Layout zones inside the .panel:
+   - .panel-header: "Browse" title + "Pivot grid" tag + count caption (right).
+     The #grid-count span lives here, OUTSIDE #browse-grid, so OOB swaps
+     from POST responses land in a stable element that is NEVER replaced by
+     the primary innerHTML swap on #browse-grid (Pitfall 7).
+   - .browse-filter-bar (filter zone): not scrollable, always visible.
+   - .browse-grid-body (grid zone): vertical-scroll container with
+     max-height: 70vh so thead.sticky-top engages (Pattern 5 / Pitfall 1).
+     Contains #browse-grid, the HTMX innerHTML swap target.
+
+   The empty <form id="browse-filter-form"> is positioned BEFORE the filter
+   bar include so picker checkboxes inside dropdown menus can associate via
+   form="browse-filter-form" (Pitfall 4). #}
+{% extends "base.html" %}
+{% block content %}
+<div class="shell">
+  <div class="panel">
+
+    <div class="panel-header" id="browse-panel-header">
+      <b>Browse</b>
+      <span class="tag">Pivot grid</span>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <span id="grid-count" class="text-muted small" aria-live="polite">
+          {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
+        </span>
+      </div>
+    </div>
+
+    {# Empty form for hx-include selectors to find checkboxes inside dropdowns
+       (Pitfall 4). visually-hidden + aria-hidden keeps it out of layout and
+       AT trees while still being a valid form-association target. #}
+    <form id="browse-filter-form" autocomplete="off" class="visually-hidden" aria-hidden="true"></form>
+
+    {# Filter bar — ABOVE the scroll container, always visible. #}
+    {% include "browse/_filter_bar.html" %}
+
+    {# Pivot grid scroll container. Vertical scroll lives HERE so
+       <thead class="sticky-top"> engages (Pitfall 1). The .browse-grid-body
+       padding:0 (Phase 04 CSS) overrides Phase 03's .panel-body padding so
+       the table reaches the panel edges. tabindex=0 makes the scroll region
+       keyboard-focusable (UI-SPEC Accessibility). #}
+    <div class="panel-body browse-grid-body" tabindex="0" aria-label="Pivot grid results">
+      <div id="browse-grid">
+        {% block grid %}
+          {% include "browse/_warnings.html" %}
+          {% if vm.is_empty_selection %}
+            {% include "browse/_empty_state.html" %}
+          {% else %}
+            {% include "browse/_grid.html" %}
+          {% endif %}
+        {% endblock grid %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# OOB count caption — emitted by POST /browse/grid alongside the primary
+   grid swap. HTMX detaches this element from the response body and merges
+   it into the existing <span id="grid-count"> in .panel-header (the
+   persistent shell element above). Uses &times; (HTML entity) for the
+   multiplication sign per UI-SPEC §9 — NOT the ASCII letter "x". #}
+{% block count_oob %}
+  <span id="grid-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">
+    {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
+  </span>
+{% endblock count_oob %}
+
+{# Reserved for future "above the panel" cap-warning OOBs; currently empty.
+   Cap-warning alerts render INSIDE #browse-grid via the grid block above. #}
+{% block warnings_oob %}{% endblock warnings_oob %}
+{% endblock %}

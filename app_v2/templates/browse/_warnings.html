@@ -1,0 +1,18 @@
+{# app_v2/templates/browse/_warnings.html
+   Cap-warning alerts for the pivot grid (D-23, D-24, BROWSE-V2-03).
+
+   Verbatim copy contract — DO NOT reword. The strings below are the
+   externally-visible contract carried from v1.0 UI-SPEC and pinned by D-24.
+   Plan 04-04 invariant tests check the literal substrings. #}
+{% if vm.row_capped %}
+  <div class="alert alert-warning py-2 small mb-2" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    Result capped at 200 rows. Narrow your platform or parameter selection to see all data.
+  </div>
+{% endif %}
+{% if vm.col_capped %}
+  <div class="alert alert-warning py-2 small mb-2" role="alert">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    Showing first 30 of {{ vm.n_value_cols_total }} parameters. Narrow your selection to see all.
+  </div>
+{% endif %}
