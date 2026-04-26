@@ -60,10 +60,9 @@
 
 ### Browse Tab (Port)
 
-- [ ] **BROWSE-V2-01**: Browse tab at `/browse` (or `/?tab=browse`) re-implements v1.0's pivot grid (platform × parameter) under Bootstrap + HTMX. Filter selectors (platform multiselect, parameter multiselect, swap-axes toggle) are HTMX-swapped on change — no full page reload.
+- [ ] **BROWSE-V2-01**: Browse tab at `/browse` re-implements v1.0's pivot grid (platform × parameter) under Bootstrap + HTMX. Filter selectors (platform multiselect, parameter multiselect, swap-axes toggle) are HTMX-swapped on change — no full page reload.
 - [ ] **BROWSE-V2-02**: Pivot grid uses Bootstrap's `table table-striped table-hover` with `<thead class="sticky-top">` for frozen header row. Every cell rendered as text (mirrors v1.0's TextColumn-only approach because EAV Results are heterogeneous).
 - [ ] **BROWSE-V2-03**: Row-count and column-count indicators, 30-column cap warning, 200-row cap warning — all mirror v1.0's BROWSE-04, BROWSE-06 behavior with exact copy preserved.
-- [ ] **BROWSE-V2-04**: Excel (openpyxl) and CSV (utf-8-sig, single BOM) export via dedicated endpoints (`/browse/export/xlsx`, `/browse/export/csv`). Export respects current filter state.
 - [ ] **BROWSE-V2-05**: Filter state round-trips via URL query params so links are shareable (`/browse?platforms=...&params=...&swap=1`).
 
 ### Ask Tab (Port)
@@ -91,6 +90,7 @@
 
 - **SPA frontend (React/Vue/Svelte)** — HTMX satisfies the interactivity needs; no-build-step model keeps operational simplicity.
 - **litellm** — same reasoning as v1.0; `openai` SDK with `base_url` covers both backends natively.
+- **Excel/CSV export under v2.0 shell** — v1.0 Streamlit Browse remains the export surface until v1.0 sunset; v2.0 Browse is view-only by design choice (2026-04-26). v1.0's app/components/export_dialog.py is the reference implementation if/when this returns.
 - **WYSIWYG markdown editor (TipTap / ProseMirror)** — textarea with Preview tab is sufficient; WYSIWYG editors introduce significant complexity for marginal UX gain on an internal tool.
 - **Autosave on content pages** — explicit anti-feature per research: shared-credential intranet has no conflict detection; autosave makes it trivial to silently overwrite a colleague's work.
 - **Async SQLAlchemy migration** — existing sync engine works; `def` FastAPI routes dispatch to threadpool; migration is risk without benefit.
@@ -139,7 +139,6 @@
 | BROWSE-V2-01 | Phase 4 | Pending |
 | BROWSE-V2-02 | Phase 4 | Pending |
 | BROWSE-V2-03 | Phase 4 | Pending |
-| BROWSE-V2-04 | Phase 4 | Pending |
 | BROWSE-V2-05 | Phase 4 | Pending |
 | ASK-V2-01 | Phase 5 | Pending |
 | ASK-V2-02 | Phase 5 | Pending |
@@ -151,6 +150,6 @@
 | ASK-V2-08 | Phase 5 | Pending |
 
 **Totals:**
-- v2.0 Requirements: **46** (9 INFRA + 6 OVERVIEW + 4 FILTER + 8 CONTENT + 7 SUMMARY + 5 BROWSE-V2 + 8 ASK-V2)
+- v2.0 Requirements: **45** (9 INFRA + 6 OVERVIEW + 4 FILTER + 8 CONTENT + 7 SUMMARY + 4 BROWSE-V2 + 8 ASK-V2)
 - Deferred: 7
-- Mapped to phases: 46 / 46 (Phase 1: 9, Phase 2: 10, Phase 3: 15, Phase 4: 5, Phase 5: 8)
+- Mapped to phases: 45 / 45 (Phase 1: 9, Phase 2: 10, Phase 3: 15, Phase 4: 4, Phase 5: 8)
