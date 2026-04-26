@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
-status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-04-26T13:49:59.244Z"
+status: verifying
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-04-26T14:10:34.369Z"
 last_activity: 2026-04-26
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 04 (browse-tab-port) — EXECUTING
+Phase: 04 (browse-tab-port) — COMPLETE
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-26
 
-Progress: [█████████░] 87%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -99,11 +99,18 @@ Progress: [█████████░] 87%
 - 04-02: browse router registered BEFORE root in main.py (lines 145-155) — defense-in-depth ordering. Even if a future commit accidentally re-adds a /browse stub to root.py, the real browse router still wins. Phase 1 stub-test in test_main.py marked `@pytest.mark.skip` with tombstone reason pointing to Plan 04-03 (templates) and Plan 04-04 (integration tests).
 - 04-02: POST /browse/grid sets HX-Push-Url response header to canonical /browse?... URL composed via `urllib.parse.urlencode(..., quote_via=urllib.parse.quote)` for %20 spaces (Pitfall 6) — NOT the form-style + that urlencode emits by default. Address bar shows shareable URL, not the POST URL (which would 405 on reload, Pitfall 2).
 - 04-02: build_view_model accepts db=None gracefully — returns fully-empty BrowseViewModel without DB call. Phase 1 lifespan contract permits no-database startup; route stays responsive. Catalog calls (`list_platforms`/`list_parameters`) ALWAYS run on non-None db so popovers render full lists; only `fetch_cells` (the SQL hit) is gated by the empty-selection short-circuit.
+- 04-03: 6 Jinja templates + 79-line popover-search.js + 53-line Phase 04 CSS append + 1-line base.html script wire-up. Issue 5 fix in `_grid.html` — `<tbody>` rows mirror `<thead>` structure (index cell explicit FIRST, then non-index loop) so header/body parity does NOT depend on pandas df_wide.columns order. Defense-in-depth `| e` on every dynamic Jinja2 output (autoescape + explicit filter). OOB count caption lives in `.panel-header` outside `#browse-grid` so OOB swap target is stable (Pitfall 7). Empty `<form id="browse-filter-form">` placed BEFORE filter-bar include so picker checkboxes inside dropdown menus participate via form= attribute (Pitfall 4).
+- 04-04: 12 end-to-end TestClient integration tests + 13 static-analysis invariant guards. Issue 2 fix VERIFIED — garbage-params test introspects `mock_fetch_cells.call_args` and asserts `items` and `infocategories` tuples are empty when URL carries a label without ` · ` separator (proves `_parse_param_label` filtered it out before SQL bind, NOT a tautological assertion).
+- 04-04: httpx 0.28 dropped list-of-tuples support on `data=` (raises TypeError: sequence item 0: expected a bytes-like object, tuple found). Helper `_post_form_pairs(client, url, pairs)` uses `urllib.parse.urlencode` + `content=body` + explicit `Content-Type: application/x-www-form-urlencoded` — supported escape hatch for repeated form keys. Future tests for routes consuming `Annotated[list[str], Form()]` reuse this helper.
+- 04-04: Two-plane SQLi/XSS test pattern — POST `/browse/grid` verifies the injection string flows to `fetch_cells` as a literal tuple element (SQLi defense via `sa.bindparam(expanding=True)`); GET `/browse` verifies the SAME string is HTML-escaped in the picker checkbox `value=` attribute (XSS defense via Jinja2 autoescape + explicit `| e`). Single test exercises both attack surfaces with one injection string.
+- 04-04: Static-analysis tests construct forbidden literals at runtime (`'"' + ' / ' + '"'`, `"/browse/" + "export"`, `"| " + "safe"`) so the test file ITSELF does not contain the substring it scans for under `app_v2/`. Eliminates self-match false-positive risk; no carve-out logic needed.
+- 04-04: 4 deviations — 1 Rule-3 (httpx 0.28 form encoding), 3 Rule-1 acceptance compliance (SQLi test split into POST+GET planes; tautological-literal docstring rephrase in test_browse_routes.py; v1.0-slash-separator literals removed from browse_service.py docstrings). Same pattern as Plan 04-02 / 04-03 deviations 3-4. Zero scope creep, zero behavior change in production code.
 
 ### Pending Todos
 
-- Execute Plan 04-03: Templates + popover-search.js + Phase 04 CSS (browse/index.html with named blocks: grid, count_oob, warnings_oob)
-- Execute Plan 04-04: Integration tests + codebase invariant guards (TestClient → GET /browse with full query string → assert pre-rendered grid HTML)
+- `/gsd-verify-phase 4` — run Phase 4 verifier
+- `/gsd-uat-phase 4` — Phase 4 UAT against running app
+- Execute Phase 5 (ask-tab-nl-agent) when Phase 4 verification passes
 
 ### Blockers/Concerns
 
@@ -111,7 +118,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-26T13:49:59.225Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-04-26T14:10:34.345Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
-Next action: `/gsd-execute-phase` to continue with Plan 04-03 (templates + popover-search.js + CSS)
+Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
