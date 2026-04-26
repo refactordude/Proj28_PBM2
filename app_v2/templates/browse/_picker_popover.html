@@ -1,0 +1,92 @@
+{# app_v2/templates/browse/_picker_popover.html
+   Reusable Jinja macro for the popover-checklist multiselect (D-07..D-11, D-14, D-15).
+   Called identically for both Platforms and Parameters pickers from _filter_bar.html.
+
+   Behavior contract:
+   - Trigger button shows count badge ONLY when selection is non-empty (D-08)
+   - Popover stays open during checkbox interaction (data-bs-auto-close="outside") (D-09)
+   - Selections inside popover are LOCAL until Apply is clicked (D-14, D-15)
+   - Apply fires hx-post to /browse/grid; closes the dropdown via Bootstrap API
+   - Popover-internal Clear empties checkboxes only — does NOT fire HTMX (D-15)
+   - Closing the popover without Apply restores original selection (handled by
+     popover-search.js via data-original-selection)
+   - Each checkbox uses form="browse-filter-form" so it associates with the
+     filter form even though the dropdown menu is not a DOM-descendant of it
+     (Pitfall 4 of 04-RESEARCH.md)
+
+   Every dynamic output uses Jinja2 explicit-escape (autoescape is also
+   globally on for .html templates; the explicit filter is belt-and-suspenders
+   defense against XSS via PLATFORM_ID / parameter-label content from the DB
+   — T-04-03-01, T-04-03-02, T-04-03-04). NEVER bypass autoescape here.
+#}
+{% macro picker_popover(name, label, options, selected) %}
+<div class="dropdown">
+  <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+          type="button"
+          id="picker-{{ name }}-trigger"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false"
+          aria-label="Select {{ label | lower }}{% if selected %} ({{ selected | length }} selected){% endif %}">
+    {{ label }}{% if selected %} <span class="badge bg-secondary ms-1">{{ selected | length }}</span>{% endif %} <i class="bi bi-chevron-down ms-1"></i>
+  </button>
+
+  <div class="dropdown-menu p-0 popover-search-root"
+       style="min-width: 320px; max-width: 480px;"
+       aria-labelledby="picker-{{ name }}-trigger">
+
+    {# Header: search input — focused on open by popover-search.js (D-09) #}
+    <div class="p-2 border-bottom">
+      <input type="search"
+             class="form-control form-control-sm popover-search-input"
+             placeholder="Search {{ label | lower }}…"
+             autocomplete="off"
+             aria-label="Search {{ label | lower }}">
+    </div>
+
+    {# Body: scrollable checklist (D-09). Each <li> carries data-label for
+       client-side substring filter (D-10). #}
+    <ul class="list-unstyled m-0 popover-search-list"
+        style="max-height: 320px; overflow-y: auto;"
+        role="listbox"
+        aria-label="{{ label }} options">
+      {% for opt in options %}
+        <li data-label="{{ opt | e }}" role="option">
+          <label class="dropdown-item d-flex align-items-center gap-2"
+                 title="{{ opt | e }}">
+            <input type="checkbox"
+                   class="form-check-input flex-none"
+                   name="{{ name }}"
+                   value="{{ opt | e }}"
+                   form="browse-filter-form"
+                   {% if opt in selected %}checked{% endif %}>
+            <span class="text-truncate">{{ opt | e }}</span>
+          </label>
+        </li>
+      {% endfor %}
+    </ul>
+
+    {# Footer: Clear selection (left, no HTMX) + Apply (right, fires hx-post)
+       — D-09, D-14, D-15. NO client-side push-url on Apply; the server sets
+       HX-Push-Url response header from Plan 04-02 D-32. #}
+    <div class="p-2 border-top d-flex justify-content-between align-items-center bg-light sticky-bottom">
+      <button type="button"
+              class="btn btn-link btn-sm popover-clear-btn text-secondary"
+              aria-label="Clear {{ label | lower }} selection">
+        Clear selection
+      </button>
+      <button type="button"
+              class="btn btn-primary btn-sm popover-apply-btn"
+              hx-post="/browse/grid"
+              hx-include="#browse-filter-form input:checked"
+              hx-target="#browse-grid"
+              hx-swap="innerHTML swap:200ms"
+              hx-on:click="bootstrap.Dropdown.getInstance(document.getElementById('picker-{{ name }}-trigger')).hide()"
+              aria-label="Apply {{ label | lower }} selection">
+        Apply <span class="popover-apply-count badge bg-light text-primary ms-1">{{ selected | length }}</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+{% endmacro %}

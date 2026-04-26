@@ -1,0 +1,67 @@
+{# app_v2/templates/browse/_filter_bar.html
+   Single-row inline filter bar for the Browse panel (D-04, D-05).
+
+   Layout:
+     [Platforms picker] [Parameters picker] [Swap-axes toggle] ........ [Clear all]
+
+   The count caption (#grid-count) is NOT rendered here — it lives in the
+   .panel-header inside index.html. Placing it OUTSIDE #browse-grid is required
+   so HTMX OOB swaps from POST /browse/grid land in a stable, never-replaced
+   position (Pitfall 7 of 04-RESEARCH.md).
+
+   The empty <form id="browse-filter-form"> sits INSIDE .panel BEFORE this
+   include (in index.html) so checkboxes inside dropdown menus can associate
+   via form="browse-filter-form" (Pitfall 4).
+#}
+{% from 'browse/_picker_popover.html' import picker_popover %}
+
+<div class="browse-filter-bar">
+  <div class="d-flex align-items-center gap-2 mb-3" id="browse-filter-controls">
+
+    {# Platforms picker (D-07..D-11) — full DB catalog source (D-12) #}
+    {{ picker_popover("platforms", "Platforms", vm.all_platforms, vm.selected_platforms) }}
+
+    {# Parameters picker (D-07..D-11) — combined labels "InfoCategory · Item" (D-13) #}
+    {{ picker_popover("params", "Parameters", vm.all_param_labels, vm.selected_params) }}
+
+    {# Swap-axes toggle (D-16): immediate fire on change, NO Apply needed.
+       Pure view transform — re-pivots the cached DataFrame server-side.
+
+       hx-include uses name-specific selectors so the swap toggle can submit
+       the existing platform/param selection alongside the new swap value
+       without picking up unrelated form inputs. #}
+    <input type="checkbox"
+           class="btn-check"
+           id="browse-swap-axes"
+           name="swap"
+           value="1"
+           form="browse-filter-form"
+           {% if vm.swap_axes %}checked{% endif %}
+           hx-post="/browse/grid"
+           hx-include="#browse-filter-form input[name='platforms']:checked, #browse-filter-form input[name='params']:checked, #browse-swap-axes:checked"
+           hx-target="#browse-grid"
+           hx-swap="innerHTML swap:200ms"
+           hx-trigger="change"
+           aria-label="Swap axes (rows and columns)">
+    <label class="btn btn-outline-secondary btn-sm" for="browse-swap-axes">
+      <i class="bi bi-arrow-left-right"></i> Swap axes
+    </label>
+
+    {# Clear all (D-17, D-18): hidden via d-none when no selection; single
+       hx-post resets BOTH pickers AND the swap state. hx-vals='{}' sends an
+       empty form payload — the server's empty-selection branch renders the
+       empty-state alert. #}
+    <a href="#"
+       id="clear-all-link"
+       class="ms-auto small text-decoration-none {% if not vm.selected_platforms and not vm.selected_params %}d-none{% endif %}"
+       style="color: var(--ink-2);"
+       hx-post="/browse/grid"
+       hx-vals='{}'
+       hx-target="#browse-grid"
+       hx-swap="innerHTML swap:200ms"
+       aria-label="Clear all filters">
+      Clear all
+    </a>
+
+  </div>
+</div>
