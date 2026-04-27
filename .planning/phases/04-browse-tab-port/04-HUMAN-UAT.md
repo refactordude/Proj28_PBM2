@@ -1,14 +1,14 @@
 ---
-status: partial
+status: complete
 phase: 04-browse-tab-port
 source: [04-VERIFICATION.md]
 started: 2026-04-26T23:45:00Z
-updated: 2026-04-27T00:15:00Z
+updated: 2026-04-27T13:25:00Z
 ---
 
 ## Current Test
 
-[awaiting human re-test after dropdown-clipping fix]
+[testing complete]
 
 ## Tests
 
@@ -29,7 +29,10 @@ expected: |
   6. Confirm grid renders with pivot data and URL bar updates
   7. Toggle Swap-axes — grid re-renders with axes flipped (index column changes)
   8. Click Clear-all — grid swaps to empty-state alert
-result: [pending — blocked by gap-1 until 2026-04-27; gap-1 fixed, ready to retest]
+result: issue
+reported: "when I first select a few Platforms/Parameters and push Apply, 'Select platforms and parameters above to build the pivot grid.' is shown until I click Swap axes button, which works like a refresh."
+severity: major
+verified: 2026-04-27T13:25:00Z
 
 ### 2. Parameters/Platforms dropdown popover renders fully (gap-1)
 expected: |
@@ -45,18 +48,60 @@ expected: |
   3. Confirm at least ~8 items visible (or whole list if shorter than the
      320px max-height); search box + Apply/Clear footer visible
   4. Repeat for "Platforms" trigger
-result: [pending — fixed in commit, awaiting retest]
+result: pass
+verified: 2026-04-27T12:30:00Z
 
 ## Summary
 
 total: 2
-passed: 0
+passed: 1
 issues: 1
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
+
+### gap-2 — Apply button does not swap pivot grid; only Swap-axes triggers render
+status: open
+reported: 2026-04-27T13:25:00Z
+diagnosed: 2026-04-27T14:30:00Z
+test_ref: 1
+severity: major
+debug_session: .planning/debug/gap-2-apply-no-swap.md
+symptom: |
+  After ticking platforms+parameters in the pickers and clicking Apply, the
+  grid region keeps showing the empty-state alert ("Select platforms and
+  parameters above to build the pivot grid."). The grid only renders after
+  clicking Swap-axes, which appears to act as a refresh. Suggests the
+  POST /browse/grid HTMX swap is not landing in the grid container on the
+  first Apply click — but the swap-axes interaction (which hits the same
+  view-model path) does land correctly.
+root_cause: |
+  The Apply button in _picker_popover.html is a <button type="button"> with
+  no form= attribute and no <form> ancestor in its DOM tree. Its hx-include
+  uses the CSS selector "#browse-filter-form input:checked", which is a
+  descendant combinator resolved via document.querySelectorAll(). Because the
+  picker checkboxes live inside .dropdown-menu elements (not as DOM descendants
+  of #browse-filter-form), this selector returns zero elements — the POST body
+  arrives at /browse/grid with empty platforms/params, triggering is_empty_selection=True
+  and the empty-state alert.
+
+  The Swap-axes checkbox works because it carries form="browse-filter-form".
+  HTMX's getInputValues (dn() in htmx.min.js) auto-includes the triggering
+  element's associated form (via element.form DOM property) for all non-GET
+  requests. form.elements (the browser DOM API) populates with ALL
+  form-associated controls — including those linked via the form= attribute
+  even when not DOM descendants. This gives Swap-axes access to all checked
+  platform/param checkboxes automatically, without any explicit hx-include
+  for them.
+
+  Fix direction: add form="browse-filter-form" to the Apply button element, OR
+  change hx-include to "#browse-filter-form" (the form element itself) so HTMX
+  processes it as HTMLFormElement and iterates form.elements rather than the
+  CSS descendant path.
+fix: |
+  [pending diagnosis — owned by gap-closure planner]
 
 ### gap-1 — Parameters/Platforms popover clipped by .panel { overflow: hidden }
 status: resolved
