@@ -24,7 +24,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] **Phase 1: Pre-work + Foundation** - v1.0 refactors (ufs_service, nl_service) + FastAPI shell, static vendor, cache layer, deps (completed 2026-04-24)
 - [ ] **Phase 2: Overview Tab + Filters** - Curated platform list, add/remove, HTMX-swapped faceted filters
 - [ ] **Phase 3: Content Pages + AI Summary** - Per-platform markdown CRUD, safe rendering, in-place LLM summary
-- [ ] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps under Bootstrap (export deferred per D-19..D-22)
+- [x] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps under Bootstrap (export deferred per D-19..D-22)
 - [ ] **Phase 5: Ask Tab Port** - NL agent, two-turn confirmation, history, LLM backend selector, safety harness
 
 ## Phase Details
@@ -114,5 +114,5 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
 | 2. Overview Tab + Filters | v2.0 | 0/3 | Not started | - |
 | 3. Content Pages + AI Summary | v2.0 | 0/4 | Not started | - |
-| 4. Browse Tab Port | v2.0 | 0/? | Not started | - |
+| 4. Browse Tab Port | v2.0 | 5/5 | Complete   | 2026-04-27 |
 | 5. Ask Tab Port | v2.0 | 0/? | Not started | - |

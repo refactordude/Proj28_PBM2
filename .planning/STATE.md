@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
-status: verifying
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-04-27T13:15:00.000Z"
+status: executing
+stopped_at: Completed 04-05-PLAN.md (gap-2 closure)
+last_updated: "2026-04-27T23:55:03.803Z"
 last_activity: 2026-04-27
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 16
+  completed_plans: 16
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 04 (browse-tab-port) — COMPLETE
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-04-27 - Completed quick task 260427-uoh: Add SQLite DB adapter and demo data seeder
+Phase: 04 (browse-tab-port) — COMPLETE (gap-2 closed)
+Plan: 5 of 5
+Status: Phase complete — ready for UAT replay + verification
+Last activity: 2026-04-27 — Plan 04-05 closed gap-2 (Apply button form-association)
 
 Progress: [██████████] 100%
 
@@ -105,6 +105,7 @@ Progress: [██████████] 100%
 - 04-04: Two-plane SQLi/XSS test pattern — POST `/browse/grid` verifies the injection string flows to `fetch_cells` as a literal tuple element (SQLi defense via `sa.bindparam(expanding=True)`); GET `/browse` verifies the SAME string is HTML-escaped in the picker checkbox `value=` attribute (XSS defense via Jinja2 autoescape + explicit `| e`). Single test exercises both attack surfaces with one injection string.
 - 04-04: Static-analysis tests construct forbidden literals at runtime (`'"' + ' / ' + '"'`, `"/browse/" + "export"`, `"| " + "safe"`) so the test file ITSELF does not contain the substring it scans for under `app_v2/`. Eliminates self-match false-positive risk; no carve-out logic needed.
 - 04-04: 4 deviations — 1 Rule-3 (httpx 0.28 form encoding), 3 Rule-1 acceptance compliance (SQLi test split into POST+GET planes; tautological-literal docstring rephrase in test_browse_routes.py; v1.0-slash-separator literals removed from browse_service.py docstrings). Same pattern as Plan 04-02 / 04-03 deviations 3-4. Zero scope creep, zero behavior change in production code.
+- 04-05: gap-2 closed via single-attribute fix in `_picker_popover.html` — Apply button now carries `form="browse-filter-form"` (mirrors Swap-axes pattern in `_filter_bar.html` line 38); broken `hx-include="#browse-filter-form input:checked"` CSS-descendant selector removed. HTMX's dn()/Nt() resolves element.form for non-GET requests and iterates form.elements (browser DOM API enumerates all form-associated controls regardless of DOM tree position). 2 regression tests added to `tests/v2/test_browse_routes.py` (smoke + recording-mock end-to-end) — file now has 14 tests. Full v2 suite green (272 passed, 1 skipped). Zero Python production-code changes — `git diff --quiet HEAD~2 -- routers/services/adapters/index.html/_filter_bar.html` returns 0. Plan executed exactly as written; zero deviations.
 
 ### Pending Todos
 
@@ -124,7 +125,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-26T14:10:34.345Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-04-27T23:55:03.783Z
+Stopped at: Completed 04-05-PLAN.md (gap-2 closure)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
