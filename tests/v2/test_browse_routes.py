@@ -436,3 +436,124 @@ def test_get_browse_with_garbage_params_returns_empty_grid(client, monkeypatch):
     assert ic_passed in (None, (), [], frozenset()), (
         f"garbage label leaked into infocategories: {ic_passed!r}"
     )
+
+
+# -----------------------------------------------------------------------
+# gap-2 regression — Apply button form-association (2026-04-27)
+# See: .planning/debug/gap-2-apply-no-swap.md
+#      .planning/phases/04-browse-tab-port/04-HUMAN-UAT.md gap-2
+# -----------------------------------------------------------------------
+
+def test_apply_button_carries_form_attribute(client, monkeypatch):
+    """gap-2 regression: Apply submit button MUST carry form="browse-filter-form".
+
+    This is the contract that lets HTMX's dn()/Nt() auto-include the
+    empty <form id="browse-filter-form"> for non-GET requests, which in
+    turn iterates form.elements (browser DOM API) — picking up every
+    form-associated checkbox in the picker dropdowns even though they
+    are NOT DOM descendants of the form.
+
+    Before the fix: the button used hx-include="#browse-filter-form input:checked",
+    a CSS descendant selector that matched zero elements. POST body was
+    empty -> empty-state alert. See .planning/debug/gap-2-apply-no-swap.md.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ])
+    r = client.get("/browse")
+    assert r.status_code == 200
+    # The popover-apply-btn class is the unique selector for the Apply button
+    assert "popover-apply-btn" in r.text, "Apply button missing from rendered popover"
+    # Locate the Apply button block and confirm form= attribute is present
+    # within it. Use the class as the anchor and slice ~600 chars forward
+    # (the button block is ~10 lines including the hx-* attributes).
+    i = r.text.index("popover-apply-btn")
+    block = r.text[i : i + 600]
+    assert 'form="browse-filter-form"' in block, (
+        "gap-2 regression: Apply button is missing form=\"browse-filter-form\". "
+        "Without it, HTMX cannot auto-include the picker checkboxes in the "
+        "POST /browse/grid body and the grid will not swap on Apply click. "
+        f"Got block: {block[:400]!r}"
+    )
+    # Defense-in-depth: the broken pre-fix hx-include selector must be gone.
+    # If it returns, the bug is back even if form= is also present.
+    assert 'hx-include="#browse-filter-form input:checked"' not in block, (
+        "gap-2 regression: the broken hx-include CSS-descendant selector "
+        "is back on the Apply button. Remove it — form= attribute is sufficient."
+    )
+
+
+def test_post_browse_grid_apply_button_payload_renders_populated_grid(client, monkeypatch):
+    """gap-2 regression: the form body that HTMX produces post-fix renders the grid.
+
+    Post-fix, when the user clicks Apply, HTMX's dn() function:
+      1. resolves Nt(applyButton) = applyButton.form (= the empty
+         #browse-filter-form, courtesy of the new form= attribute)
+      2. fn() iterates form.elements (which includes the form-associated
+         checkboxes inside the dropdown menus via the form= attr they
+         ALREADY have on the <input type="checkbox"> elements)
+      3. emits a POST body like:
+             platforms=P1&platforms=P2&params=attribute%20%C2%B7%20vendor_id
+
+    This test sends exactly that body and asserts:
+      - response is 200
+      - response contains the populated pivot table (NOT the empty-state alert)
+      - the platforms+params arrived at fetch_cells as a non-empty tuple
+        (proves the form-association actually carried the values, not that
+        the route handler accidentally tolerated the empty body).
+
+    Before the fix the same Apply click sent platforms=&params= (or rather,
+    no keys at all) -> is_empty_selection=True -> empty-state alert.
+    """
+    captured: dict = {}
+
+    def _capture_fetch(db, p, ic, i, row_cap=200, db_name=""):
+        captured["platforms"] = p
+        captured["infocategories"] = ic
+        captured["items"] = i
+        return (
+            pd.DataFrame({
+                "PLATFORM_ID": ["P1", "P2"],
+                "InfoCategory": ["attribute", "attribute"],
+                "Item": ["vendor_id", "vendor_id"],
+                "Result": ["0xA1", "0xB2"],
+            }),
+            False,
+        )
+
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1", "P2"],
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=_capture_fetch,
+    )
+
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("platforms", "P2"),
+        ("params", "attribute · vendor_id"),
+    ])
+    assert r.status_code == 200
+
+    # The populated grid renders — NOT the empty-state alert.
+    assert "Select platforms and parameters above to build the pivot grid." not in r.text, (
+        "gap-2 still open: Apply payload produced the empty-state alert. "
+        "Either the form-association fix in _picker_popover.html was reverted, "
+        "or the route handler regressed."
+    )
+    assert 'class="table table-striped table-hover table-sm pivot-table"' in r.text, (
+        "Populated pivot table missing from /browse/grid response"
+    )
+    assert "0xA1" in r.text and "0xB2" in r.text, (
+        "Pivot table cell values missing — fetch_cells return value did not reach the template"
+    )
+
+    # Affirmative invariant: fetch_cells received the actual selected values
+    # (not an empty tuple). This proves the form body carried platforms+params,
+    # which post-fix is what HTMX's element.form / form.elements path delivers.
+    assert captured.get("platforms") == ("P1", "P2"), (
+        f"fetch_cells received wrong platforms tuple: {captured.get('platforms')!r}"
+    )
+    assert captured.get("items") == ("vendor_id",), (
+        f"fetch_cells received wrong items tuple: {captured.get('items')!r}"
+    )

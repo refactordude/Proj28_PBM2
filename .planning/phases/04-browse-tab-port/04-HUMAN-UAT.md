@@ -63,9 +63,10 @@ blocked: 0
 ## Gaps
 
 ### gap-2 — Apply button does not swap pivot grid; only Swap-axes triggers render
-status: open
+status: resolved
 reported: 2026-04-27T13:25:00Z
 diagnosed: 2026-04-27T14:30:00Z
+resolved: 2026-04-27T23:50:00Z
 test_ref: 1
 severity: major
 debug_session: .planning/debug/gap-2-apply-no-swap.md
@@ -101,7 +102,19 @@ root_cause: |
   processes it as HTMLFormElement and iterates form.elements rather than the
   CSS descendant path.
 fix: |
-  [pending diagnosis — owned by gap-closure planner]
+  Added form="browse-filter-form" to the popover-apply-btn <button> in
+  app_v2/templates/browse/_picker_popover.html and removed the broken
+  hx-include="#browse-filter-form input:checked" CSS-descendant selector.
+  This puts Apply on the same form-association path that the Swap-axes
+  checkbox in _filter_bar.html already uses successfully — HTMX's dn()
+  resolves element.form for non-GET requests and iterates form.elements,
+  which the browser populates with all controls linked by the form=
+  attribute regardless of DOM tree position. Verified by two regression
+  tests in tests/v2/test_browse_routes.py
+  (test_apply_button_carries_form_attribute,
+  test_post_browse_grid_apply_button_payload_renders_populated_grid).
+  Closed by Plan 04-05; zero Python production-code changes. See
+  .planning/debug/gap-2-apply-no-swap.md for full root-cause evidence.
 
 ### gap-1 — Parameters/Platforms popover clipped by .panel { overflow: hidden }
 status: resolved
