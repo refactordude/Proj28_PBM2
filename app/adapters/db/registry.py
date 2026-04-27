@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from app.adapters.db.base import DBAdapter
 from app.adapters.db.mysql import MySQLAdapter
+from app.adapters.db.sqlite import SQLiteAdapter
 from app.core.config import DatabaseConfig
 
 _REGISTRY: dict[str, type[DBAdapter]] = {
     "mysql": MySQLAdapter,
+    "sqlite": SQLiteAdapter,
     # "postgres": PostgresAdapter,  # 확장 예시
 }
 

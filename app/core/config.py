@@ -20,7 +20,7 @@ _DEFAULT_SETTINGS_PATH = _REPO_ROOT / "config" / "settings.yaml"
 
 class DatabaseConfig(BaseModel):
     name: str
-    type: Literal["mysql", "postgres", "mssql", "bigquery", "snowflake"] = "mysql"
+    type: Literal["mysql", "sqlite", "postgres", "mssql", "bigquery", "snowflake"] = "mysql"
     host: str = "localhost"
     port: int = 3306
     database: str = ""
