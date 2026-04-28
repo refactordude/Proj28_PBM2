@@ -72,6 +72,13 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - ✓ Wide-form pivot grid (platform × parameter) re-rendered in Bootstrap tables — v2.0 (Phase 4)
 - ✓ Same filter / swap-axes / row-cap / col-cap behavior as v1.0; HTMX in-place swap, sticky header, shareable URLs (HX-Push-Url round-trip); Apply form-association + picker badge OOB-swap restored after gap closure (Plans 04-05, 04-06) — v2.0 (Phase 4). Export remains on v1.0 Streamlit per D-19..D-22.
 
+#### Overview redesign — v2.0
+- ✓ Sortable Bootstrap pivot table mirroring Phase 4 Browse styling; per-platform PM metadata (Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End) sourced from YAML frontmatter on `content/platforms/<PLATFORM_ID>.md` — em-dash sentinel for missing fields; Title falls back to PLATFORM_ID — v2.0 (Phase 5)
+- ✓ Six popover-checklist multi-filters (Status / Customer / AP Company / Device / Controller / Application) reusing Phase 4's `_picker_popover.html` macro with D-15b auto-commit + 250ms debounce; sort state survives URL round-trip — v2.0 (Phase 5)
+- ✓ Actions column unifies View + AI ✨ buttons with identical Bootstrap shape; AI Summary surface evolved during UAT to a global Bootstrap modal popup (D-OV-15 supersedes D-OV-10 inline-slot rendering) — v2.0 (Phase 5)
+- ✓ External `link:` frontmatter key surfaces as a per-row Link button (target="_blank" rel="noopener noreferrer"); URL sanitizer drops dangerous schemes (javascript:/data:/vbscript:/file:/about:) and promotes bare domains to https://; disabled state when missing (D-OV-16) — v2.0 (Phase 5)
+- ✓ Detail page renders frontmatter as an Obsidian-style properties table above the markdown body (fix(05.1)) — v2.0 (Phase 5)
+
 ### Active
 
 <!-- v2.0 Bootstrap Shell — rewrite UI onto FastAPI + Bootstrap + HTMX. -->
@@ -99,13 +106,8 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - [ ] Summary swapped in-place via HTMX — no navigation
 - [ ] Button disabled / hidden when no content file exists
 
-#### Overview redesign (v2.0)
-- [ ] Overview tab renders curated platform list as a sortable Bootstrap table mirroring Phase 4 Browse pivot grid styling (`<table class="table table-striped table-hover table-sm">` + `sticky-top` thead) — replaces the legacy `<ul class="list-group">` row layout
-- [ ] Per-platform PM metadata (Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End) sourced from YAML frontmatter on each existing `content/platforms/<PLATFORM_ID>.md` content page — `—` em-dash sentinel for missing fields; Title falls back to PLATFORM_ID
-- [ ] Six popover-checklist multi-filters (Status, Customer, AP Company, Device, Controller, Application) reuse Phase 4's `_picker_popover.html` macro (no fork) with D-15b auto-commit + 250ms debounce
-- [ ] Sortable column headers (asc → desc → asc) with default `start desc`; sort state survives URL round-trip (`?sort=start&order=desc`)
-- [ ] AI Summary stays in the row's last cell with existing Phase 3 in-place HTMX swap UX preserved (no row-expand drawer)
-- [ ] Add platform input row preserved; legacy `<select>` brand/SoC/year/has_content filters and Remove (×) button removed
+<!-- Overview redesign (v2.0) — moved to Validated under "Overview redesign — v2.0" after Phase 5 completion (2026-04-29 UAT approved). -->
+
 
 #### Ask carry-over (v2.0)
 - [ ] NL agent (PydanticAI + dual OpenAI/Ollama) reachable from the Ask tab
