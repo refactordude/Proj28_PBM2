@@ -625,7 +625,7 @@ Both assumptions are LOW-risk given HTMX 2.x documentation and Bootstrap 5 stand
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Confirmation picker: strip auto-commit or add `disable_auto_commit` kwarg?**
    - What we know: The Browse picker macro unconditionally emits `hx-trigger="change delay:250ms"` on the `<ul>`. The confirmation context should not auto-submit.
