@@ -1,0 +1,86 @@
+{# app_v2/templates/overview/_filter_bar.html
+   Filter bar for the Overview tab. 6 popover-checklist multi-filters:
+   Status, Customer, AP Company, Device, Controller, Application
+   (D-OV-05, OVERVIEW-V2-03).
+
+   Reuses the Phase 4 picker_popover macro AS-IS via cross-template
+   import (D-OV-06). Phase 4 macro was made cross-page reusable in
+   Plan 05-01 by adding form_id / hx_post / hx_target kwargs with
+   byte-stable defaults; this template overrides all three.
+
+   Each picker submits the user's selection to POST /overview/grid via
+   the macro's <ul class="popover-search-list"> hx-post wiring (D-15b
+   auto-commit + 250ms debounce inherited from Phase 4).
+
+   Defense-in-depth XSS: every dynamic output uses the explicit-escape
+   filter; the autoescape-bypass filter and inline scripts are banned by
+   acceptance grep (audit-grep-friendly comment hygiene per Plan 05-02). #}
+{% from "browse/_picker_popover.html" import picker_popover %}
+
+<div class="overview-filter-bar mb-3">
+  <div class="d-flex align-items-center gap-2 flex-wrap" id="overview-filter-controls">
+    {{ picker_popover(
+        'status', 'Status',
+        vm.filter_options['status'],
+        selected_filters.get('status', []),
+        form_id='overview-filter-form',
+        hx_post='/overview/grid',
+        hx_target='#overview-grid'
+    ) }}
+    {{ picker_popover(
+        'customer', 'Customer',
+        vm.filter_options['customer'],
+        selected_filters.get('customer', []),
+        form_id='overview-filter-form',
+        hx_post='/overview/grid',
+        hx_target='#overview-grid'
+    ) }}
+    {{ picker_popover(
+        'ap_company', 'AP Company',
+        vm.filter_options['ap_company'],
+        selected_filters.get('ap_company', []),
+        form_id='overview-filter-form',
+        hx_post='/overview/grid',
+        hx_target='#overview-grid'
+    ) }}
+    {{ picker_popover(
+        'device', 'Device',
+        vm.filter_options['device'],
+        selected_filters.get('device', []),
+        form_id='overview-filter-form',
+        hx_post='/overview/grid',
+        hx_target='#overview-grid'
+    ) }}
+    {{ picker_popover(
+        'controller', 'Controller',
+        vm.filter_options['controller'],
+        selected_filters.get('controller', []),
+        form_id='overview-filter-form',
+        hx_post='/overview/grid',
+        hx_target='#overview-grid'
+    ) }}
+    {{ picker_popover(
+        'application', 'Application',
+        vm.filter_options['application'],
+        selected_filters.get('application', []),
+        form_id='overview-filter-form',
+        hx_post='/overview/grid',
+        hx_target='#overview-grid'
+    ) }}
+
+    {# Clear-all link — D-18 mirror from Phase 4: single hx-post with
+       empty hx-vals resets all filters AND sort to defaults. The d-none
+       class hides the link when no filter is active. #}
+    {% set total_filters = active_filter_counts.values() | sum %}
+    <a href="#" id="overview-clear-all-link"
+       class="ms-auto small text-decoration-none{% if total_filters == 0 %} d-none{% endif %}"
+       style="color: var(--ink-2);"
+       hx-post="/overview/grid"
+       hx-vals='{}'
+       hx-target="#overview-grid"
+       hx-swap="innerHTML swap:200ms"
+       aria-label="Clear all filters">
+      Clear all filters
+    </a>
+  </div>
+</div>
