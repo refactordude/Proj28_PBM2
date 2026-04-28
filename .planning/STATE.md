@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 06-ask-tab-port/06-01-PLAN.md
-last_updated: "2026-04-28T22:46:38.410Z"
+stopped_at: Completed 06-ask-tab-port/06-02-PLAN.md
+last_updated: "2026-04-28T22:54:16.283Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 30
-  completed_plans: 25
-  percent: 83
+  completed_plans: 26
+  percent: 87
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 6 (Ask Tab Port) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -137,6 +137,9 @@ Progress: [██████████] 100%
 - 05.x: D-OV-16 — `link` is a 13th frontmatter key (NOT a column, NOT filterable, NOT sortable). When present, the Actions-cell Link button opens it in a new tab (`target="_blank" rel="noopener noreferrer"`). When absent, the Link button renders as a Bootstrap `.disabled` anchor (no href, `aria-disabled="true"`, "No link configured in frontmatter" tooltip, muted icon + text). The platform .md page is reached ONLY via the title-cell `<a>` — the Link button no longer routes to /platforms/{pid}. URL sanitization at the service layer (`_sanitize_link`): drops `javascript:` / `data:` / `vbscript:` / `file:` / `about:` (case-insensitive); keeps `http://` / `https://` verbatim; promotes `//host` to `https://host`; promotes bare domains (`www.naver.com`, `naver.com/path`) to `https://...`. Defense in depth — frontmatter is in-tree but PR/edit-route mutable, so the sanitizer must hold even if a malicious value lands in YAML.
 - 05.x: D-OV-15.1 (refines D-OV-15) — View + AI buttons share one Actions cell with identical Bootstrap shape (`btn btn-sm btn-outline-secondary`). The standalone AI Summary column header is removed (table goes from 14 → 13 columns; empty-state colspan dropped to 13). The View button keeps its existing icon + "View" label; the AI button uses `<span>✨</span> AI` so screen readers announce "Generate AI summary for {title}" via aria-label while the visual weight matches View. The `.ai-sparkle-cell` and `.ai-sparkle:hover/focus/disabled` CSS rules were removed (no longer needed — Bootstrap btn-outline-secondary already handles all states). Modal contract from D-OV-15 unchanged.
 - 05.x: D-OV-15 (supersedes D-OV-10 inline-slot contract) — Overview AI Summary surface uses an icon-only ✨ button + global Bootstrap `#summary-modal` popup. Rationale: error/retry rendered inside a `<td>` was visually weird and stretched table rows. Implementation: button class `btn btn-sm btn-link p-1 ai-sparkle`, `data-bs-toggle="modal" data-bs-target="#summary-modal"`, `hx-target="#summary-modal-body"`. The per-row `<div id="summary-{pid}">` slot was removed; the modal owns the result surface. Phase 3 detail-page summary surface UNCHANGED — backward compatibility achieved by reading the standard HTMX `HX-Target` header in the summary route and threading it as `target_id` into `_success.html`/`_error.html` so inner Retry/Regen buttons swap into whichever slot the caller rendered into (`summary-modal-body` from Overview, `summary-{pid}` from detail page). Fallback to `summary-{pid}` when no header. SUMMARY-02 wiring (hx-post path, hx-disabled-elt, has_content disabled state, "No content page to summarize yet" tooltip) preserved verbatim. Re-click resets modal body to spinner placeholder via inline `show.bs.modal` listener so a click on platform B never flashes platform A's previous summary. Invariants updated: `test_phase05_invariants.py::test_ai_summary_cell_d_ov_15_modal_surface` (replaces `test_ai_summary_cell_preserves_phase3_contract`) + new `test_ai_summary_modal_present_in_overview_index`; `test_content_routes.py` AI-button class + slot assertions revised; `test_overview_routes.py:180` `"AI Summary" in body` still passes via `<th title="AI Summary">` + visually-hidden span (column header keeps a screen-reader label).
+- 06-02: Cookie validation for pbm2_llm uses closed-set check against `{l.name for l in settings.llms}` — any other value (missing, empty, tampered, stale-config) silently falls to `settings.app.default_llm` (D-15). `request=None` default preserves all Phase 1-5 caller behavior; 4 router call sites now thread `request` so AI Summary picks up the cookie too (D-17).
+- 06-02: `load_starter_prompts()` uses module-scope imports (not function-scope as in v1.0 Streamlit page); no `lru_cache` — called only by `GET /ask`, YAML < 1KB, would mask live-edits of `config/starter_prompts.yaml` (RESEARCH.md Pattern 6).
+- 06-02: `disable_auto_commit=False` default on `picker_popover` macro preserves Phase 4/5 byte-stability for all existing callers; `True` suppresses all 5 `hx-*` attrs on the inner `<ul>` so confirmation-panel checkbox toggles do NOT fire full agent runs (RESEARCH.md Pitfall 3, D-07/D-10).
 
 ### Pending Todos
 
@@ -158,7 +161,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T22:46:38.389Z
-Stopped at: Completed 06-ask-tab-port/06-01-PLAN.md
+Last session: 2026-04-28T22:54:16.261Z
+Stopped at: Completed 06-ask-tab-port/06-02-PLAN.md
 Resume file: None
 Next action: `/gsd-verify-phase 5` to verify Phase 5 (overview-redesign) completion
