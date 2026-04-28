@@ -26,40 +26,6 @@
    comment hygiene convention from Plan 05-02). #}
 {% extends "base.html" %}
 
-{# Sortable column header macro — D-OV-07. asc → desc → asc cycle.
-   Encodes the next-order JSON inline via hx-vals so each click
-   transitions correctly without JS state. T-05-05-06 mitigation:
-   the `col` argument is hardcoded as a literal string in the
-   sortable_th calls below — NEVER from user input — so the inline
-   JSON is safe; `| e` is defense-in-depth on top of that.
-
-   Defined at template-top-level (NOT inside {% block content %}) so it is
-   visible from inside the nested {% block grid %}. Jinja2 block scoping
-   does not propagate macros from parent block to child block; only
-   template-top-level macros are visible across all blocks in the same
-   template. #}
-{% macro sortable_th(col, label) %}
-  <th scope="col" role="columnheader"
-      aria-sort="{% if vm.sort_col == col %}{{ 'descending' if vm.sort_order == 'desc' else 'ascending' }}{% else %}none{% endif %}">
-    <button type="button" class="btn btn-link p-0 text-decoration-none text-reset"
-            hx-post="/overview/grid"
-            hx-include="#overview-filter-form"
-            hx-target="#overview-grid"
-            hx-swap="innerHTML swap:200ms"
-            hx-vals='{"sort": "{{ col | e }}", "order": "{% if vm.sort_col == col and vm.sort_order == 'asc' %}desc{% else %}asc{% endif %}"}'
-            aria-label="Sort by {{ label | e }}">
-      {{ label | e }}
-      {% if vm.sort_col == col %}
-        {% if vm.sort_order == 'desc' %}
-          <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
-        {% else %}
-          <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
-        {% endif %}
-      {% endif %}
-    </button>
-  </th>
-{% endmacro %}
-
 {% block content %}
 
 <div class="shell">
@@ -120,6 +86,41 @@
     <div class="panel-body overview-grid-body" tabindex="0" aria-label="Overview platform table">
       <div id="overview-grid">
         {% block grid %}
+          {# Sortable column header macro — D-OV-07. asc → desc → asc cycle.
+             Encodes the next-order JSON inline via hx-vals so each click
+             transitions correctly without JS state. T-05-05-06 mitigation:
+             the `col` argument is hardcoded as a literal string in the
+             sortable_th calls below — NEVER from user input — so the inline
+             JSON is safe; `| e` is defense-in-depth on top of that.
+
+             Defined INSIDE {% block grid %} (NOT at template-top) so it is
+             visible when jinja2-fragments renders this block in isolation
+             for POST /overview/grid (block_names=["grid", ...]). Template-top
+             macros are NOT carried into a single-block fragment render — only
+             the block's own body and its enclosed definitions are. Mirror of
+             the `maybe` macro inlined in _grid.html (same constraint, same
+             solution). Plan 05-06 Task 2 deviation (Rule 1 bug fix). #}
+          {% macro sortable_th(col, label) %}
+            <th scope="col" role="columnheader"
+                aria-sort="{% if vm.sort_col == col %}{{ 'descending' if vm.sort_order == 'desc' else 'ascending' }}{% else %}none{% endif %}">
+              <button type="button" class="btn btn-link p-0 text-decoration-none text-reset"
+                      hx-post="/overview/grid"
+                      hx-include="#overview-filter-form"
+                      hx-target="#overview-grid"
+                      hx-swap="innerHTML swap:200ms"
+                      hx-vals='{"sort": "{{ col | e }}", "order": "{% if vm.sort_col == col and vm.sort_order == 'asc' %}desc{% else %}asc{% endif %}"}'
+                      aria-label="Sort by {{ label | e }}">
+                {{ label | e }}
+                {% if vm.sort_col == col %}
+                  {% if vm.sort_order == 'desc' %}
+                    <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                  {% else %}
+                    <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                  {% endif %}
+                {% endif %}
+              </button>
+            </th>
+          {% endmacro %}
           <table class="table table-striped table-hover table-sm overview-table">
             <thead class="sticky-top bg-light">
               <tr>

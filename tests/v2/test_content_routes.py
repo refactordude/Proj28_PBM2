@@ -351,7 +351,17 @@ def test_path_traversal_rejected_before_filesystem(
 # ---------------------------------------------------------------------------
 
 def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
-    """No content file → AI Summary button rendered with disabled + tooltip."""
+    """No content file → AI Summary button rendered with disabled + tooltip.
+
+    Phase 5 (D-OV-05): the AI Summary button moved from a flex `<li>`
+    utility (`class="ai-btn ms-2"`) to a Bootstrap-table cell button
+    (`class="btn btn-sm btn-outline-primary ai-btn"`) — the `ms-2` margin
+    is no longer needed inside a `<td>`. The Phase 3 SUMMARY-02 contract
+    on hx-post / hx-target / hx-disabled-elt / disabled+title is preserved
+    verbatim; only the surrounding utility class is gone. Tooltip copy
+    rephrased to "No content page to summarize yet" in Plan 05-05's
+    _grid.html.
+    """
     client, cd = isolated_content
     # Add a platform to the overview list first
     add_r = client.post("/overview/add", data={"platform_id": _PID})
@@ -359,14 +369,20 @@ def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
 
     r = client.get("/")
     body = r.text
-    assert 'class="ai-btn ms-2"' in body
+    # New Phase 5 button class — table cell, not flex <li>.
+    assert 'class="btn btn-sm btn-outline-primary ai-btn"' in body
     # Disabled with tooltip — appears in the rendered row
     assert "disabled" in body
-    assert "Content page must exist first" in body
+    assert "No content page to summarize yet" in body
 
 
 def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
-    """Content file present → AI Summary button enabled, hx-post to /summary."""
+    """Content file present → AI Summary button enabled, hx-post to /summary.
+
+    Phase 5 (D-OV-05): button class updated to the table-cell form
+    `class="btn btn-sm btn-outline-primary ai-btn"`. SUMMARY-02 wiring
+    (hx-post + hx-target + hx-disabled-elt) preserved verbatim per D-OV-10.
+    """
     client, cd = isolated_content
     # Pre-create content for this platform
     (cd / f"{_PID}.md").write_text("# Hello", encoding="utf-8")
@@ -375,14 +391,16 @@ def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
 
     r = client.get("/")
     body = r.text
-    assert 'class="ai-btn ms-2"' in body
+    # New Phase 5 button class — table cell, not flex <li>.
+    assert 'class="btn btn-sm btn-outline-primary ai-btn"' in body
+    # SUMMARY-02 wiring preserved (D-OV-10).
     assert f'hx-post="/platforms/{_PID}/summary"' in body
     # The standalone `disabled` HTML attribute + tooltip combo should NOT
     # appear when content exists. Note hx-disabled-elt="this" contains the
     # substring "disabled" — that's HTMX wiring, not the disabled-attribute,
     # so we assert against the tooltip copy that is only rendered when the
-    # row is disabled.
-    assert "Content page must exist first" not in body
+    # row is disabled. Phase 5 tooltip wording: "No content page to summarize yet".
+    assert "No content page to summarize yet" not in body
 
 
 def test_overview_row_has_summary_slot(isolated_content):
