@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: "Completed 05-04-PLAN.md (overview router rewire: D-OV-04 routes + D-OV-11 add behavior; 1 Rule-3 deviation for Pydantic+FastAPI default-factory incompat)"
-last_updated: "2026-04-28T07:19:08.677Z"
+stopped_at: "Completed 05-05-PLAN.md (overview templates redesign: full rewrite of index.html + new _grid.html + new _filter_bar.html + Phase 5 CSS append; 1 Rule-1 deviation for Jinja2 macro-scope hoist; 22 legacy test failures deferred to Plan 05-06 per D-OV-04 / D-OV-05 locks)"
+last_updated: "2026-04-28T07:35:25.043Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 24
-  completed_plans: 22
-  percent: 92
+  completed_plans: 23
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 05 (overview-redesign) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -126,6 +126,9 @@ Progress: [█████████░] 92%
 - 05-04: D-OV-04 routes shipped — GET / + GET /overview stacked decorators on overview_page; POST /overview/grid returns block_names=["grid","count_oob","filter_badges_oob"] + sets HX-Push-Url to canonical /overview?... URL composed via urllib.parse.urlencode(quote_via=urllib.parse.quote) for %20 spaces (Pitfall 6). DELETE /overview/{pid}, POST /overview/filter, POST /overview/filter/reset removed. POST /overview/add success returns HTTP 200 + HX-Redirect:/overview header per D-OV-11 (full GET /overview reload, NOT a fragment swap — simpler than synthesizing a one-row swap whose frontmatter may not exist at moment of add). 4xx error paths return plain-text Response (decouples router from Plan 05-05 deletion of overview/_filter_alert.html).
 - 05-04: Pydantic v2.13 + FastAPI 0.136 default-factory incompatibility (Phase 4 04-02 lesson re-applied) — GET `Annotated[list[str], Query(default_factory=list)]` cannot coexist with literal `= []` default; raises `TypeError: cannot specify both default and default_factory` at module-import time, blocking app boot. Fix: drop the literal `= []` on GET filter params (Query keeps `default_factory=list` only). POST `Form()` params correctly retain `= []` (Pydantic accepts Form with literal default — asymmetric but locked). Inline comment on `overview_page` quotes the Phase 4 deviation. Reusable for any future v2.0 router with multi-value GET params. Rule-3 Blocking auto-fix.
 - 05-04: Legacy helpers `_entity_dict` + `_build_overview_context` kept in `app_v2/routers/overview.py` for transitional template render during Wave 3 — Plan 05-05 rewrites overview/index.html to consume only `vm`-related keys. GET / and GET /overview pass BOTH the legacy ctx (entities/filter_brands/all_platform_ids/...) and the new ctx (vm + selected_filters + active_filter_counts + sort_col + sort_order) in the same TemplateResponse dict; both coexisting is harmless because Jinja2 only reads what the template asks for. Cleanup is a follow-up trivial commit after Plan 05-05 lands; not blocking this plan.
+- 05-05: D-OV-05 + D-OV-06 templates shipped — full rewrite of `overview/index.html` (sortable Bootstrap pivot table mirroring Phase 4 styling: `table table-striped table-hover table-sm overview-table` + `thead.sticky-top.bg-light`); NEW `overview/_grid.html` (<tbody> partial + `maybe` macro inline + AI Summary cell preserving Phase 3 SUMMARY-02 contract); NEW `overview/_filter_bar.html` (6 picker_popover calls via cross-template import — NOT forked — each overriding form_id='overview-filter-form', hx_post='/overview/grid', hx_target='#overview-grid'); legacy `_filter_alert.html` + `_entity_row.html` DELETED. Phase 5 CSS block (`.overview-grid-body` + `.overview-table` + sortable header buttons) appended to `app_v2/static/css/app.css` mirroring `.browse-grid-body` + `.pivot-table`. 14-column order: Title | Status | Customer | Model Name | AP Company | AP Model | Device | Controller | Application | 담당자 | Start | End | Link | AI Summary (12 sortable + 2 non-sortable). 3 named blocks: grid + count_oob + filter_badges_oob (matches Plan 05-04 block_names contract). Phase 4 byte-stability PRESERVED (30/30 in test_browse_routes.py + test_phase04_invariants.py).
+- 05-05: Jinja2 macro scope lesson — macros defined inside `{% block content %}` are NOT visible from nested `{% block grid %}`. Rule-1 bug auto-fix: hoisted `sortable_th` macro to template-top scope (between `{% extends %}` and `{% block content %}`) where it is visible from all child blocks. Symmetric with `_grid.html` keeping `maybe` macro inline at the top of the partial (consumed only by that partial — sidesteps macro scope across `{% include %}` boundaries). Inline comment in index.html documents the constraint for future readers. Reusable Phase-5+ pattern: any shared markup helper called from a child block MUST live at template-top scope, NOT inside another block.
+- 05-05: 22 legacy test failures explicitly DEFERRED to Plan 05-06 — all target deleted markup (_entity_row.html, _filter_alert.html, `<details>` filter block, `class="ai-btn ms-2"` Phase 3 utility) or removed routes (POST /overview/filter, /overview/filter/reset, DELETE /overview/{pid}) per D-OV-04 / D-OV-05 locks. Documented in `.planning/phases/05-overview-redesign/deferred-items.md` (78 lines). Out-of-scope per Plan 05-05's `<output>` which assigns test resurfacing to Plan 05-06 (Wave 4).
 
 ### Pending Todos
 
@@ -145,7 +148,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T07:19:08.654Z
-Stopped at: Completed 05-04-PLAN.md (overview router rewire: D-OV-04 routes + D-OV-11 add behavior; 1 Rule-3 deviation for Pydantic+FastAPI default-factory incompat)
+Last session: 2026-04-28T07:35:25.021Z
+Stopped at: Completed 05-05-PLAN.md (overview templates redesign: full rewrite of index.html + new _grid.html + new _filter_bar.html + Phase 5 CSS append; 1 Rule-1 deviation for Jinja2 macro-scope hoist; 22 legacy test failures deferred to Plan 05-06 per D-OV-04 / D-OV-05 locks)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
