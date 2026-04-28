@@ -71,7 +71,7 @@ def _detail_context(request: Request, platform_id: str, raw_md: str | None) -> d
         "rendered_html": rendered_html,
         "frontmatter": frontmatter,
         # Shared resolver (Plan 03-01) — single source of truth for backend label.
-        "backend_name": resolve_active_backend_name(settings),
+        "backend_name": resolve_active_backend_name(settings, request),
     }
 
 

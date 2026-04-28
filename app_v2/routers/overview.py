@@ -234,7 +234,7 @@ def overview_page(
         all_platform_ids = list(list_platforms(db, db_name=""))  # type: ignore[arg-type]
     except Exception:  # noqa: BLE001 — catalog load is non-fatal (UI degrades gracefully)
         all_platform_ids = []
-    backend_name = resolve_active_backend_name(getattr(request.app.state, "settings", None))
+    backend_name = resolve_active_backend_name(getattr(request.app.state, "settings", None), request)
     legacy_ctx = _build_overview_context(
         entities=entities,
         all_platform_ids=all_platform_ids,

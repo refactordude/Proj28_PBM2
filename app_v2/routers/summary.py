@@ -121,8 +121,8 @@ def get_summary_route(
 ):
     """Return success or amber-warning fragment. ALWAYS status 200."""
     settings = getattr(request.app.state, "settings", None)
-    cfg = resolve_active_llm(settings)
-    backend_name = resolve_active_backend_name(settings)
+    cfg = resolve_active_llm(settings, request)
+    backend_name = resolve_active_backend_name(settings, request)
     target_id = _resolve_target_id(hx_target, platform_id)
     if cfg is None:
         return _render_error(
