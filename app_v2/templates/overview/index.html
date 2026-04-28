@@ -25,14 +25,19 @@
    grep — neither token appears anywhere in this file (audit-grep-friendly
    comment hygiene convention from Plan 05-02). #}
 {% extends "base.html" %}
-{% block content %}
 
 {# Sortable column header macro — D-OV-07. asc → desc → asc cycle.
    Encodes the next-order JSON inline via hx-vals so each click
    transitions correctly without JS state. T-05-05-06 mitigation:
    the `col` argument is hardcoded as a literal string in the
    sortable_th calls below — NEVER from user input — so the inline
-   JSON is safe; `| e` is defense-in-depth on top of that. #}
+   JSON is safe; `| e` is defense-in-depth on top of that.
+
+   Defined at template-top-level (NOT inside {% block content %}) so it is
+   visible from inside the nested {% block grid %}. Jinja2 block scoping
+   does not propagate macros from parent block to child block; only
+   template-top-level macros are visible across all blocks in the same
+   template. #}
 {% macro sortable_th(col, label) %}
   <th scope="col" role="columnheader"
       aria-sort="{% if vm.sort_col == col %}{{ 'descending' if vm.sort_order == 'desc' else 'ascending' }}{% else %}none{% endif %}">
@@ -54,6 +59,8 @@
     </button>
   </th>
 {% endmacro %}
+
+{% block content %}
 
 <div class="shell">
   <div class="panel">
