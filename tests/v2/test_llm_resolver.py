@@ -107,3 +107,37 @@ def test_resolve_active_backend_name_unknown_type_falls_back_to_ollama():
         app=AppConfig(default_llm="weird"),
     )
     assert resolve_active_backend_name(settings) == "Ollama"
+
+
+# --- Phase 6 D-15 / D-17: cookie-aware resolution ------------------------
+
+def test_resolve_active_llm_cookie_overrides_default():
+    """D-17: a valid pbm2_llm cookie value overrides settings.app.default_llm."""
+    from types import SimpleNamespace
+    settings = SimpleNamespace(
+        app=SimpleNamespace(default_llm="ollama-local"),
+        llms=[
+            SimpleNamespace(name="ollama-local", type="ollama"),
+            SimpleNamespace(name="openai-prod", type="openai"),
+        ],
+    )
+    request = SimpleNamespace(cookies={"pbm2_llm": "openai-prod"})
+    cfg = resolve_active_llm(settings, request)
+    assert cfg is not None
+    assert cfg.name == "openai-prod"
+
+
+def test_resolve_active_llm_invalid_cookie_falls_back_silently():
+    """D-15: cookie value not in settings.llms[].name → silent fallback to default."""
+    from types import SimpleNamespace
+    settings = SimpleNamespace(
+        app=SimpleNamespace(default_llm="ollama-local"),
+        llms=[
+            SimpleNamespace(name="ollama-local", type="ollama"),
+            SimpleNamespace(name="openai-prod", type="openai"),
+        ],
+    )
+    request = SimpleNamespace(cookies={"pbm2_llm": "evil-tampered-value"})
+    cfg = resolve_active_llm(settings, request)
+    assert cfg is not None
+    assert cfg.name == "ollama-local"  # default, not the tampered value
