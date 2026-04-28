@@ -1,142 +1,171 @@
 {# app_v2/templates/overview/index.html
-   Full Overview tab. D-01..D-18, D-21. Block 'entity_list' is HTMX fragment target.  #}
+   Phase 5 Overview tab full rewrite (D-OV-05). Mirrors the Phase 4 Browse
+   pivot-grid styling for visual consistency: table table-striped table-hover
+   table-sm with thead.sticky-top.bg-light, sortable column headers, OOB
+   blocks for count + filter badges.
+
+   Block names: 'grid' (innerHTML target #overview-grid), 'count_oob' (OOB
+   to #overview-count caption in panel-header), 'filter_badges_oob' (OOB
+   to 6 picker badge spans). These names match Plan 05-04's POST
+   /overview/grid response: block_names=["grid", "count_oob",
+   "filter_badges_oob"].
+
+   Empty <form id="overview-filter-form"> precedes the filter bar so picker
+   checkboxes inside dropdown menus can associate via form= attribute
+   (gap-2 mechanism from Phase 4).
+
+   Pivot grid scroll container is .panel-body.overview-grid-body — vertical
+   scroll lives HERE so thead.sticky-top engages (Pattern 5 / Pitfall 1
+   from Phase 4). The .overview-grid-body class is added to app.css in
+   Task 5 mirroring .browse-grid-body's behavior.
+
+   Every dynamic Jinja2 output uses the explicit-escape filter
+   (defense-in-depth XSS — same discipline as Phase 4 templates).
+   The autoescape-bypass filter and inline scripts are banned by acceptance
+   grep — neither token appears anywhere in this file (audit-grep-friendly
+   comment hygiene convention from Plan 05-02). #}
 {% extends "base.html" %}
-
 {% block content %}
-  {# ---- Add platform row (D-08, D-09, typeahead with datalist per D-07) ---- #}
-  <form hx-post="/overview/add"
-        hx-target="#overview-list"
-        hx-swap="afterbegin"
-        hx-on::after-request="this.reset()"
-        class="d-flex gap-2 align-items-center mb-3">
-    <label for="platform-input" class="form-label mb-0 text-nowrap">Add platform to overview</label>
-    <input id="platform-input"
-           type="text"
-           name="platform_id"
-           list="platforms-datalist"
-           class="form-control"
-           placeholder="Start typing a PLATFORM_ID…"
-           autocomplete="off"
-           required>
-    <datalist id="platforms-datalist">
-      {% for pid in all_platform_ids %}
-        <option value="{{ pid }}"></option>
-      {% endfor %}
-    </datalist>
-    <button type="submit" class="btn btn-primary text-nowrap">Add</button>
-  </form>
 
-  {# ---- Filter block (D-12..D-17). Routes in Plan 02-03; layout complete here. ---- #}
-  <details id="filter-details" class="bg-light border rounded p-2 mb-3"
-           {% if filters_open %}open{% endif %}>
-    <summary class="d-flex align-items-center gap-2 user-select-none" style="cursor:pointer">
-      Filters
-      {# WR-01R: the visible summary badge IS the OOB swap target. A single
-         element with id `filter-count-badge` lives in <summary> (visible to the
-         user) and carries hx-swap-oob="true" so filter responses update it
-         in-place. The "Clear all" link is OOB-swapped the same way so its
-         d-none toggle stays in sync. The `filter_oob` block lets fragment
-         routes (POST /overview/filter, /overview/filter/reset) render BOTH
-         this OOB pair AND the entity_list via block_names=[...]. On initial
-         GET / the OOB attribute is harmless — htmx only acts on responses. #}
-      {% block filter_oob %}
-        <span id="filter-count-badge"
-              hx-swap-oob="true"
-              class="badge bg-primary {% if active_filter_count == 0 %}d-none{% endif %}">
-          {{ active_filter_count }}
-        </span>
-        <a id="clear-filters-link"
-           hx-swap-oob="true"
-           class="ms-auto small {% if active_filter_count == 0 %}d-none{% endif %}"
-           href="#"
-           hx-post="/overview/filter/reset"
-           hx-target="#overview-list"
-           hx-swap="innerHTML">Clear all</a>
-      {% endblock filter_oob %}
-    </summary>
-    <form id="filter-form"
-          class="row g-2 mt-2"
-          hx-post="/overview/filter"
-          hx-include="[data-filter]"
-          hx-target="#overview-list"
-          hx-swap="innerHTML">
-      <div class="col-auto">
-        <select name="brand" data-filter class="form-select form-select-sm" hx-trigger="change">
-          <option value="">All brands</option>
-          {% for brand in filter_brands %}
-            <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>{{ brand }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-auto">
-        <select name="soc" data-filter class="form-select form-select-sm" hx-trigger="change">
-          <option value="">All SoCs</option>
-          {% for soc in filter_socs %}
-            <option value="{{ soc }}" {% if selected_soc == soc %}selected{% endif %}>{{ soc }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-auto">
-        <select name="year" data-filter class="form-select form-select-sm" hx-trigger="change">
-          <option value="">All years</option>
-          {% for year in filter_years %}
-            <option value="{{ year }}" {% if selected_year == year|string %}selected{% endif %}>{{ year }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-auto d-flex align-items-center gap-1">
-        <input type="checkbox" id="has-content-check" name="has_content" value="1"
-               data-filter class="form-check-input" hx-trigger="change"
-               {% if selected_has_content %}checked{% endif %}>
-        <label for="has-content-check" class="form-check-label small">Has content</label>
-      </div>
-    </form>
-  </details>
-
-  {# ---- Entity list — HTMX fragment target. Block name 'entity_list' per UI-SPEC. ---- #}
-  <ul id="overview-list" class="list-group list-group-flush">
-    {% block entity_list %}
-      {# WR-01R: the OOB-swap target for filter count moved into <summary> as
-         the `filter_oob` block (single visible+OOB element). Filter routes now
-         render block_names=["filter_oob", "entity_list"] so this block stays
-         focused on entity rows and the OOB pair is emitted exactly once,
-         positioned BEFORE <ul id="overview-list"> by virtue of block ordering
-         in the route response. #}
-      {% if entities %}
-        {% for entity in entities %}
-          {% include "overview/_entity_row.html" %}
-        {% endfor %}
-      {% elif active_filter_count == 0 %}
-        {# D-05 empty state — no platforms in curated list at all. #}
-        <div class="alert alert-info text-center py-5" role="alert">
-          <i class="bi bi-arrow-up-circle fs-3 d-block mb-2"></i>
-          No platforms in your overview yet. Use the search above to add your first one.
-        </div>
-      {% else %}
-        {# Filters applied, zero results. #}
-        <li class="list-group-item text-center text-muted py-4">
-          No platforms match the current filters.
-          <a href="#"
-             hx-post="/overview/filter/reset"
-             hx-target="#overview-list"
-             hx-swap="innerHTML">Clear filters</a>
-        </li>
+{# Sortable column header macro — D-OV-07. asc → desc → asc cycle.
+   Encodes the next-order JSON inline via hx-vals so each click
+   transitions correctly without JS state. T-05-05-06 mitigation:
+   the `col` argument is hardcoded as a literal string in the
+   sortable_th calls below — NEVER from user input — so the inline
+   JSON is safe; `| e` is defense-in-depth on top of that. #}
+{% macro sortable_th(col, label) %}
+  <th scope="col" role="columnheader"
+      aria-sort="{% if vm.sort_col == col %}{{ 'descending' if vm.sort_order == 'desc' else 'ascending' }}{% else %}none{% endif %}">
+    <button type="button" class="btn btn-link p-0 text-decoration-none text-reset"
+            hx-post="/overview/grid"
+            hx-include="#overview-filter-form"
+            hx-target="#overview-grid"
+            hx-swap="innerHTML swap:200ms"
+            hx-vals='{"sort": "{{ col | e }}", "order": "{% if vm.sort_col == col and vm.sort_order == 'asc' %}desc{% else %}asc{% endif %}"}'
+            aria-label="Sort by {{ label | e }}">
+      {{ label | e }}
+      {% if vm.sort_col == col %}
+        {% if vm.sort_order == 'desc' %}
+          <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+        {% else %}
+          <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+        {% endif %}
       {% endif %}
-    {% endblock entity_list %}
-  </ul>
+    </button>
+  </th>
+{% endmacro %}
 
-  {# ---- localStorage open/closed persistence for #filter-details (UI-SPEC). ---- #}
-  <script>
-  (function () {
-    var el = document.getElementById('filter-details');
-    if (!el) return;
-    var key = 'pbm2.overview.filters.open';
-    var stored = localStorage.getItem(key);
-    if (stored === 'false') el.removeAttribute('open');
-    else if (stored === 'true') el.setAttribute('open', '');
-    el.addEventListener('toggle', function () {
-      localStorage.setItem(key, el.open ? 'true' : 'false');
-    });
-  }());
-  </script>
+<div class="shell">
+  <div class="panel">
+
+    <div class="panel-header" id="overview-panel-header">
+      <b>Overview</b>
+      <span class="tag">Curated platforms</span>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <span id="overview-count" class="text-muted small" aria-live="polite">
+          {{ vm.rows | length }} platform{% if vm.rows | length != 1 %}s{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="panel-body">
+
+      {# Add platform input row (D-OV-11 — preserved). After successful
+         POST /overview/add, the route returns 200 + HX-Redirect: /overview
+         so HTMX triggers a full window navigation; no hx-target needed. #}
+      <form hx-post="/overview/add"
+            hx-on::after-request="this.reset()"
+            class="d-flex gap-2 align-items-center mb-3">
+        <label for="platform-input" class="form-label mb-0 text-nowrap">Add platform to overview</label>
+        <input id="platform-input"
+               type="text"
+               name="platform_id"
+               list="platforms-datalist"
+               class="form-control"
+               placeholder="Start typing a PLATFORM_ID…"
+               autocomplete="off"
+               required>
+        <datalist id="platforms-datalist">
+          {% for pid in all_platform_ids %}
+            <option value="{{ pid | e }}"></option>
+          {% endfor %}
+        </datalist>
+        <button type="submit" class="btn btn-primary text-nowrap">Add</button>
+      </form>
+
+      {# Empty hidden form — picker checkboxes associate via form= attribute.
+         Gap-2 mechanism from Phase 4: HTMX iterates form.elements (browser
+         DOM API includes all form-associated controls) so checkboxes
+         inside dropdown menus participate even though they are NOT
+         DOM-descendants of this form element. Must precede the filter bar
+         include so the checkboxes find their target by id at parse time. #}
+      <form id="overview-filter-form" autocomplete="off" class="visually-hidden" aria-hidden="true"></form>
+
+      {# Filter bar — 6 picker popovers (Plan 05-05 Task 4). #}
+      {% include "overview/_filter_bar.html" %}
+
+    </div>
+
+    {# Pivot grid scroll container. Vertical scroll lives HERE so
+       thead.sticky-top engages (Pitfall 1 from Phase 4). The
+       .overview-grid-body class mirrors .browse-grid-body's behavior
+       (max-height: 70vh; overflow-y: auto) — see app.css Phase 5 block. #}
+    <div class="panel-body overview-grid-body" tabindex="0" aria-label="Overview platform table">
+      <div id="overview-grid">
+        {% block grid %}
+          <table class="table table-striped table-hover table-sm overview-table">
+            <thead class="sticky-top bg-light">
+              <tr>
+                {{ sortable_th('title',       'Title') }}
+                {{ sortable_th('status',      'Status') }}
+                {{ sortable_th('customer',    'Customer') }}
+                {{ sortable_th('model_name',  'Model Name') }}
+                {{ sortable_th('ap_company',  'AP Company') }}
+                {{ sortable_th('ap_model',    'AP Model') }}
+                {{ sortable_th('device',      'Device') }}
+                {{ sortable_th('controller',  'Controller') }}
+                {{ sortable_th('application', 'Application') }}
+                {{ sortable_th('assignee',    '담당자') }}
+                {{ sortable_th('start',       'Start') }}
+                {{ sortable_th('end',         'End') }}
+                <th scope="col" class="text-end">Link</th>
+                <th scope="col" class="text-end">AI Summary</th>
+              </tr>
+            </thead>
+            {% include "overview/_grid.html" %}
+          </table>
+        {% endblock grid %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# OOB count caption — emitted on POST /overview/grid alongside the
+   primary grid swap. HTMX merges into <span id="overview-count">
+   in panel-header. Stable target outside #overview-grid (Pitfall 7
+   from Phase 4). #}
+{% block count_oob %}
+  <span id="overview-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">
+    {{ vm.rows | length }} platform{% if vm.rows | length != 1 %}s{% endif %}
+  </span>
+{% endblock count_oob %}
+
+{# OOB picker badges — emitted on POST /overview/grid alongside the
+   grid swap so the trigger button count badges in the filter bar
+   refresh. HTMX merges each <span> by id into the corresponding
+   picker-{name}-badge in the persistent .panel shell. Both badges
+   are ALWAYS emitted on every POST (mirrors Phase 4 D-14(b) gap-3
+   always-emit-with-d-none pattern). The d-none class is toggled to
+   match D-08 (no visible badge when count is 0). Stable targets:
+   precedent Phase 4 picker_badges_oob block. The keys iterated here
+   are the 6 FILTERABLE_COLUMNS from overview_grid_service.py. #}
+{% block filter_badges_oob %}
+  {% for col, count in active_filter_counts.items() %}
+    <span id="picker-{{ col | e }}-badge" hx-swap-oob="true"
+          class="badge bg-secondary ms-1{% if count == 0 %} d-none{% endif %}"
+          aria-live="polite">{{ count }}</span>
+  {% endfor %}
+{% endblock filter_badges_oob %}
+
 {% endblock %}
