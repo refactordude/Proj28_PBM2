@@ -71,7 +71,14 @@ All UI uses tokens already wired into `app_v2/static/css/tokens.css` + `app_v2/s
 ### Filter trigger model (Area 3.1)
 
 - **D-14:** Selections inside a popover are **LOCAL until the user clicks `[Apply]`**. Apply: (a) closes the popover, (b) updates the trigger button's count badge, (c) fires a single `hx-post=/browse/grid` swap with the new selection. NO change-triggered re-query per checkbox click — that's explicitly rejected because pivot queries hit the DB and 5 toggles ≠ 5 queries.
-- **D-15:** Popover-internal Clear button empties the popover's checkbox state but does NOT trigger a grid swap until Apply is clicked. (Closing without Apply discards the changes — restore-on-cancel via stashed state in `data-original-selection` on the popover root.)
+- **D-15:** Popover-internal Clear button empties the popover's checkbox state but does NOT trigger a grid swap until Apply is clicked or until an implicit-Apply close event fires (see D-15a). The originally-stashed selection on `data-original-selection` is the revert target ONLY when an explicit-cancel close event fires (Esc); on implicit-Apply close events the current popover state is committed. Amended 2026-04-28 after gap-4 (user reported outside-click should auto-Apply); supersedes the original "always restore-on-close" wording.
+- **D-15a:** Close-event taxonomy for the picker popover — every Bootstrap dropdown close path is classified into one of two buckets:
+  - **Implicit-Apply (commit current state):** outside-click on the page background, click on the OTHER picker's trigger button, click on the Swap-axes / Clear-all controls, Tab-away (focusout to a non-popover element), browser-tab-blur, programmatic `bootstrap.Dropdown.hide()` (already covered today via `dataset.applied=1` after explicit Apply).
+  - **Explicit-cancel (revert to `data-original-selection`):** Escape key.
+  - Distinguish via Bootstrap's `hide.bs.dropdown` event payload — `e.clickEvent` is non-null on outside-click; `e` carries no key info but the keydown listener can set a `dataset.cancelling=1` flag on Esc that `onDropdownHide` reads and clears. Programmatic close from the explicit Apply button continues to short-circuit at the existing `dataset.applied=1` gate.
+  - **No-op short-circuit:** if the current checkbox set equals `data-original-selection` (deep equality on sorted value arrays), skip the implicit-Apply HTMX request entirely — no DB round-trip on accidental opens that don't change state. Set `dataset.applied=1` to prevent the cancel handler from firing, but do NOT trigger Apply.
+  - **No visual cue** distinguishes implicit-Apply from explicit-Apply — the trigger badge update (already wired via `picker_badges_oob` from gap-3) and the grid swap are the affordance.
+  - The implicit-Apply path reuses the existing Apply button's HTMX wiring (`form="browse-filter-form"` + `hx-post=/browse/grid` + `hx-target=#browse-grid` + `hx-swap=outerHTML` + `block_names` extension via the route) by programmatically clicking it (`element.click()` on the popover-apply-btn) — NOT a hand-rolled second HTMX trigger. This guarantees the gap-2 form-association fix and the gap-3 OOB badge swap continue to fire.
 - **D-16:** Swap-axes toggle is a different beast: it's a **view transform of the already-fetched DataFrame**, not a re-query. Triggers immediately on click via `hx-post=/browse/grid` with `swap=1` flag — no Apply needed. The cached `_core` DataFrame is re-pivoted server-side with `swap_axes=True/False` and the table fragment swapped.
 
 ### Clear all (Area 3.2)
@@ -270,3 +277,4 @@ These follow from the BROWSE-V2-04 scope-out (D-20, D-21). Planner should treat 
 
 *Phase: 04-browse-tab-port*
 *Context gathered: 2026-04-26 via interactive smart discuss (4 grey areas; export feature scope-removed mid-discussion)*
+*Amended 2026-04-28 via gap-4 discuss (D-15 close-policy contract change + D-15a close-event taxonomy added; closes user-reported gap-4 in 04-HUMAN-UAT.md). Implements: outside-click commits / Esc cancels / no visual cue / no-op short-circuit on unchanged selection. Closure plan number assigned by /gsd-plan-phase 4 --gaps.*
