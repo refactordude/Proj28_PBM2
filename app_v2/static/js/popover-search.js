@@ -1,79 +1,180 @@
-/* popover-search.js — Browse popover-checklist (D-10, D-14, D-15) */
+// app_v2/static/js/popover-search.js
+//
+// Picker popover client logic.
+//
+// D-08 / D-15 (amended) / D-15a (Phase 04, plan 04-07): close-event taxonomy.
+//   The picker popover is a native <div popover>. It can close via four paths:
+//
+//     1. Explicit-Apply  → user clicks the [Apply] button.
+//     2. Implicit-Apply  → user clicks outside the popover (light-dismiss).
+//                          We programmatically click [Apply] on close.
+//     3. Esc-Cancel      → user presses Escape. We mark the popover with
+//                          dataset.cancelling = "1" before the browser closes
+//                          it; on close we revert checkboxes to the snapshot
+//                          taken at open and skip Apply.
+//     4. No-op           → close (any path) when the current selection equals
+//                          the snapshot taken at open. Skip Apply entirely.
+//
+//   Visual contract (D-08): no UI cue distinguishes implicit-Apply from
+//   explicit-Apply. The grid + picker_badges_oob swap is the affordance.
+//
+//   Anchor: data-original-selection on the popover stores the JSON-encoded
+//   selection at open time. Comparison is order-independent (sorted).
+
 (function () {
   "use strict";
 
-  function onInput(e) {
-    if (!e.target.matches('.popover-search-input')) return;
-    var root = e.target.closest('.popover-search-root');
-    if (!root) return;
-    var q = e.target.value.toLowerCase();
-    root.querySelectorAll('.popover-search-list > li').forEach(function (li) {
-      var label = (li.dataset.label || '').toLowerCase();
-      li.style.display = label.indexOf(q) !== -1 ? '' : 'none';
+  /**
+   * Read all currently checked checkbox values inside a popover, sorted.
+   * Returns a JSON string for stable comparison.
+   */
+  function snapshotSelection(popover) {
+    const checked = popover.querySelectorAll(
+      'input[type="checkbox"][name="filter_value"]:checked'
+    );
+    const values = Array.from(checked, (cb) => cb.value);
+    values.sort();
+    return JSON.stringify(values);
+  }
+
+  /**
+   * Restore checkbox state from a JSON snapshot string.
+   * Used by Esc-Cancel to revert any in-popover changes the user made.
+   */
+  function restoreSelection(popover, snapshotJson) {
+    let snapshot;
+    try {
+      snapshot = JSON.parse(snapshotJson);
+    } catch (e) {
+      return;
+    }
+    if (!Array.isArray(snapshot)) {
+      return;
+    }
+    const wanted = new Set(snapshot);
+    const all = popover.querySelectorAll(
+      'input[type="checkbox"][name="filter_value"]'
+    );
+    all.forEach((cb) => {
+      cb.checked = wanted.has(cb.value);
     });
   }
 
-  function onCheckboxChange(e) {
-    if (!e.target.matches('.popover-search-root input[type="checkbox"]')) return;
-    var root = e.target.closest('.popover-search-root');
-    if (!root) return;
-    var count = root.querySelectorAll('input[type="checkbox"]:checked').length;
-    var badge = root.querySelector('.popover-apply-count');
-    if (badge) badge.textContent = count;
-  }
+  /**
+   * Wire up search filter, Esc-cancel listener, and toggle handler for one
+   * popover. Idempotent: skips popovers already wired (data-popover-wired="1").
+   */
+  function wirePopover(popover) {
+    if (popover.dataset.popoverWired === "1") {
+      return;
+    }
+    popover.dataset.popoverWired = "1";
 
-  function onClearClick(e) {
-    if (!e.target.matches('.popover-clear-btn')) return;
-    var root = e.target.closest('.popover-search-root');
-    if (!root) return;
-    // D-15: Clear empties checkboxes ONLY; never fires HTMX.
-    root.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
-      cb.checked = false;
-      cb.dispatchEvent(new Event('change', { bubbles: true }));
+    // ---- search filter (existing behavior) -------------------------------
+    const searchInput = popover.querySelector(".picker-search-input");
+    const itemsContainer = popover.querySelector(".picker-items");
+    if (searchInput && itemsContainer) {
+      searchInput.addEventListener("input", function (ev) {
+        const q = (ev.target.value || "").trim().toLowerCase();
+        const labels = itemsContainer.querySelectorAll("label.picker-item");
+        labels.forEach((label) => {
+          const text = (label.textContent || "").toLowerCase();
+          if (!q || text.indexOf(q) !== -1) {
+            label.style.display = "";
+          } else {
+            label.style.display = "none";
+          }
+        });
+      });
+    }
+
+    // ---- Esc-cancel: capture-phase keydown -------------------------------
+    //
+    // We use the capture phase so we observe the Escape press before the
+    // browser dispatches the popover light-dismiss close. Setting
+    // dataset.cancelling here is read by the toggle("closed") handler below
+    // to differentiate Esc-Cancel from outside-click implicit-Apply.
+    popover.addEventListener(
+      "keydown",
+      function (ev) {
+        if (ev.key === "Escape") {
+          popover.dataset.cancelling = "1";
+        }
+      },
+      true // useCapture
+    );
+
+    // ---- toggle handler: snapshot on open, dispatch on close -------------
+    popover.addEventListener("toggle", function (ev) {
+      if (ev.newState === "open") {
+        // Snapshot selection at open. Clear any stale cancelling flag.
+        popover.dataset.originalSelection = snapshotSelection(popover);
+        delete popover.dataset.cancelling;
+        return;
+      }
+
+      if (ev.newState !== "closed") {
+        return;
+      }
+
+      // ---- close path ---------------------------------------------------
+      const original = popover.dataset.originalSelection;
+      const cancelling = popover.dataset.cancelling === "1";
+
+      // Always clear the cancelling flag for the next open cycle.
+      delete popover.dataset.cancelling;
+
+      if (cancelling) {
+        // Esc-Cancel: revert checkbox state and skip Apply.
+        if (typeof original === "string") {
+          restoreSelection(popover, original);
+        }
+        return;
+      }
+
+      // No snapshot recorded (defensive): cannot determine if changed; skip.
+      if (typeof original !== "string") {
+        return;
+      }
+
+      const current = snapshotSelection(popover);
+      if (current === original) {
+        // No-op: selection unchanged → do not submit.
+        return;
+      }
+
+      // Implicit-Apply: programmatically click the popover's Apply button.
+      // The Apply button carries form="browse-filter-form" (gap-2 fix), so
+      // its click submits the parent form via HTMX exactly like explicit-Apply.
+      const applyBtn = popover.querySelector(".picker-apply");
+      if (applyBtn) {
+        applyBtn.click();
+      }
     });
   }
 
-  function onDropdownShow(e) {
-    var root = e.target.querySelector ? e.target.querySelector('.popover-search-root') : null;
-    if (!root) return;
-    // D-15: stash so close-without-Apply can restore.
-    var checked = Array.prototype.slice.call(
-      root.querySelectorAll('input[type="checkbox"]:checked')
-    ).map(function (cb) { return cb.value; });
-    root.dataset.originalSelection = JSON.stringify(checked);
-    // D-09: focus search input. show.bs.dropdown fires before visible — defer.
-    setTimeout(function () {
-      var input = root.querySelector('.popover-search-input');
-      if (input) input.focus();
-    }, 0);
+  /**
+   * Find every picker popover in the document and wire it.
+   * Safe to call repeatedly; wiring is idempotent.
+   */
+  function wireAll(root) {
+    const scope = root || document;
+    const popovers = scope.querySelectorAll(".picker-popover[popover]");
+    popovers.forEach(wirePopover);
   }
 
-  function onDropdownHide(e) {
-    var root = e.target.querySelector ? e.target.querySelector('.popover-search-root') : null;
-    if (!root) return;
-    if (root.dataset.applied === '1') { delete root.dataset.applied; return; }
-    // D-15: restore original selection on close-without-Apply.
-    var original = JSON.parse(root.dataset.originalSelection || '[]');
-    var set = {};
-    for (var i = 0; i < original.length; i++) set[original[i]] = true;
-    root.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
-      cb.checked = !!set[cb.value];
+  // Initial wire on first load.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      wireAll(document);
     });
-    var badge = root.querySelector('.popover-apply-count');
-    if (badge) badge.textContent = original.length;
+  } else {
+    wireAll(document);
   }
 
-  function onApplyClick(e) {
-    if (!e.target.matches('.popover-apply-btn, .popover-apply-btn *')) return;
-    var root = e.target.closest('.popover-search-root');
-    if (root) root.dataset.applied = '1';
-    // HTMX fires from hx-post on the button; Bootstrap dropdown closes via hx-on:click.
-  }
-
-  document.addEventListener('input',  onInput,            true);
-  document.addEventListener('change', onCheckboxChange,   true);
-  document.addEventListener('click',  onClearClick,       true);
-  document.addEventListener('click',  onApplyClick,       true);
-  document.addEventListener('show.bs.dropdown',   onDropdownShow);
-  document.addEventListener('hidden.bs.dropdown', onDropdownHide);
+  // Re-wire after HTMX swaps (the picker popover lives inside #filter-bar
+  // which gets replaced when the filter bar is re-rendered).
+  document.body.addEventListener("htmx:afterSwap", function (ev) {
+    wireAll(ev.target || document);
+  });
 })();
