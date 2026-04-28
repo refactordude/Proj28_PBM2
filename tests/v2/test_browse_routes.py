@@ -439,71 +439,94 @@ def test_get_browse_with_garbage_params_returns_empty_grid(client, monkeypatch):
 
 
 # -----------------------------------------------------------------------
-# gap-2 regression — Apply button form-association (2026-04-27)
-# See: .planning/debug/gap-2-apply-no-swap.md
-#      .planning/phases/04-browse-tab-port/04-HUMAN-UAT.md gap-2
+# gap-5 regression — D-15b auto-commit on checkbox change with debounce
+# See: .planning/phases/04-browse-tab-port/04-HUMAN-UAT.md gap-5
+#      .planning/phases/04-browse-tab-port/04-CONTEXT.md D-15b
+# (Apply button removed; gap-2/gap-3/gap-4 contracts superseded by D-15b.)
 # -----------------------------------------------------------------------
 
-def test_apply_button_carries_form_attribute(client, monkeypatch):
-    """gap-2 regression: Apply submit button MUST carry form="browse-filter-form".
+def test_picker_checklist_carries_d15b_hx_attributes(client, monkeypatch):
+    """gap-5 regression: each picker's <ul class="popover-search-list"> MUST
+    carry hx-post="/browse/grid" + hx-target="#browse-grid" + hx-trigger
+    containing "delay:250ms" so bubbling change events from inner checkboxes
+    fire a single debounced commit per D-15b. The Apply button MUST be absent.
 
-    This is the contract that lets HTMX's dn()/Nt() auto-include the
-    empty <form id="browse-filter-form"> for non-GET requests, which in
-    turn iterates form.elements (browser DOM API) — picking up every
-    form-associated checkbox in the picker dropdowns even though they
-    are NOT DOM descendants of the form.
-
-    Before the fix: the button used hx-include="#browse-filter-form input:checked",
-    a CSS descendant selector that matched zero elements. POST body was
-    empty -> empty-state alert. See .planning/debug/gap-2-apply-no-swap.md.
+    This replaces the gap-2/gap-4 Apply-button assertions which were
+    contractually superseded when the user requested removal of the Apply
+    button (gap-5, 2026-04-28).
     """
     _patch_cache(monkeypatch, platforms=["P1"], params=[
         {"InfoCategory": "attribute", "Item": "vendor_id"},
     ])
     r = client.get("/browse")
     assert r.status_code == 200
-    # The popover-apply-btn class is the unique selector for the Apply button
-    assert "popover-apply-btn" in r.text, "Apply button missing from rendered popover"
-    # Locate the Apply button block and confirm form= attribute is present
-    # within it. Use the class as the anchor and slice ~600 chars forward
-    # (the button block is ~10 lines including the hx-* attributes).
-    i = r.text.index("popover-apply-btn")
-    block = r.text[i : i + 600]
-    assert 'form="browse-filter-form"' in block, (
-        "gap-2 regression: Apply button is missing form=\"browse-filter-form\". "
-        "Without it, HTMX cannot auto-include the picker checkboxes in the "
-        "POST /browse/grid body and the grid will not swap on Apply click. "
-        f"Got block: {block[:400]!r}"
+    # Apply button MUST be gone (D-15b: there is no commit gesture).
+    assert "popover-apply-btn" not in r.text, (
+        "D-15b regression: popover-apply-btn class is back in the rendered "
+        "page. The Apply button must be removed; auto-commit on change is "
+        "the only commit path."
     )
-    # Defense-in-depth: the broken pre-fix hx-include selector must be gone.
-    # If it returns, the bug is back even if form= is also present.
-    assert 'hx-include="#browse-filter-form input:checked"' not in block, (
-        "gap-2 regression: the broken hx-include CSS-descendant selector "
-        "is back on the Apply button. Remove it — form= attribute is sufficient."
+    # popover-search-list MUST appear at least twice (Platforms + Parameters).
+    assert r.text.count("popover-search-list") >= 2, (
+        "D-15b regression: expected popover-search-list to appear >= 2 times "
+        "(once per picker); got fewer."
+    )
+    # Each popover-search-list <ul> must carry the required hx-* attributes.
+    # Anchor on the class and slice ~600 chars forward to capture the open
+    # <ul ...> tag block.
+    i = 0
+    occurrences = 0
+    while True:
+        j = r.text.find("popover-search-list", i)
+        if j == -1:
+            break
+        block = r.text[j : j + 600]
+        assert 'hx-post="/browse/grid"' in block, (
+            "D-15b regression: <ul class=\"popover-search-list\"> is missing "
+            f"hx-post=\"/browse/grid\". Block: {block[:400]!r}"
+        )
+        assert 'hx-target="#browse-grid"' in block, (
+            "D-15b regression: <ul class=\"popover-search-list\"> is missing "
+            "hx-target=\"#browse-grid\"."
+        )
+        assert "delay:250ms" in block, (
+            "D-15b regression: <ul class=\"popover-search-list\"> hx-trigger "
+            "must contain \"delay:250ms\" so quick toggle bursts collapse to "
+            "a single POST /browse/grid request. The original D-14 concern "
+            "(5 toggles ≠ 5 queries) is addressed by HTMX's built-in "
+            "delay: trigger modifier."
+        )
+        occurrences += 1
+        i = j + 1
+    assert occurrences >= 2, f"Expected >=2 popover-search-list occurrences; got {occurrences}"
+    # Defense-in-depth: the gap-2 form-association on individual checkboxes
+    # is still required (HTMX auto-includes form-associated inputs in the
+    # POST body when the trigger element has hx-include="closest form" OR
+    # when the bubble-source is a form-associated input via element.form).
+    assert 'form="browse-filter-form"' in r.text, (
+        "gap-2 regression (preserved under D-15b): checkboxes must still "
+        "carry form=\"browse-filter-form\" so HTMX includes them in the "
+        "POST body. This is a precondition; the auto-commit fires from the "
+        "<ul> but the body must contain the checked values."
     )
 
 
-def test_post_browse_grid_apply_button_payload_renders_populated_grid(client, monkeypatch):
-    """gap-2 regression: the form body that HTMX produces post-fix renders the grid.
+def test_post_browse_grid_with_populated_payload_renders_grid(client, monkeypatch):
+    """D-15b regression: the form body HTMX produces from the auto-commit
+    checklist trigger (debounced change) renders the populated pivot grid.
 
-    Post-fix, when the user clicks Apply, HTMX's dn() function:
-      1. resolves Nt(applyButton) = applyButton.form (= the empty
-         #browse-filter-form, courtesy of the new form= attribute)
-      2. fn() iterates form.elements (which includes the form-associated
-         checkboxes inside the dropdown menus via the form= attr they
-         ALREADY have on the <input type="checkbox"> elements)
-      3. emits a POST body like:
-             platforms=P1&platforms=P2&params=attribute%20%C2%B7%20vendor_id
+    Under D-15b, when the user toggles checkboxes in either picker, the
+    bubbling change events fire `hx-post=/browse/grid` on the <ul> after
+    a 250ms debounce. HTMX's getInputValues() iterates form.elements of
+    the form-associated <input type="checkbox"> elements (each carries
+    form="browse-filter-form" — the gap-2 precondition that survives the
+    Apply-button removal) and emits a body like:
+        platforms=P1&platforms=P2&params=attribute%20%C2%B7%20vendor_id
 
-    This test sends exactly that body and asserts:
+    This test sends that body shape and asserts:
       - response is 200
       - response contains the populated pivot table (NOT the empty-state alert)
-      - the platforms+params arrived at fetch_cells as a non-empty tuple
-        (proves the form-association actually carried the values, not that
-        the route handler accidentally tolerated the empty body).
-
-    Before the fix the same Apply click sent platforms=&params= (or rather,
-    no keys at all) -> is_empty_selection=True -> empty-state alert.
+      - platforms+params arrived at fetch_cells as a non-empty tuple
     """
     captured: dict = {}
 
@@ -720,157 +743,3 @@ def test_post_browse_grid_picker_badge_zero_count_renders_hidden(client, monkeyp
         )
 
 
-# -----------------------------------------------------------------------
-# gap-4 regression — D-15a close-event taxonomy / implicit-Apply server contract
-# See: .planning/phases/04-browse-tab-port/04-HUMAN-UAT.md gap-4
-#      .planning/phases/04-browse-tab-port/04-CONTEXT.md D-15 (amended) + D-15a
-#
-# TestClient cannot exercise the JS-side close-event distinguisher (HTMX
-# is JavaScript, runs in the browser). The implicit-Apply path's HTTP
-# contract — once popover-search.js fires popoverApplyBtn.click() — is
-# the SAME POST /browse/grid that explicit Apply makes; that is what
-# these tests pin. JS-side correctness is grep-guarded by the new
-# invariant in test_phase04_invariants.py.
-# -----------------------------------------------------------------------
-
-
-def test_post_browse_grid_implicit_apply_payload_shape(client, monkeypatch):
-    """gap-4 regression: implicit-Apply via outside-click hits the same HTTP contract as explicit Apply.
-
-    D-15a: when the user opens a picker, ticks boxes, then clicks
-    outside the popover, popover-search.js programmatically clicks
-    the popover's Apply button. The button's hx-post=/browse/grid +
-    form="browse-filter-form" auto-include + the existing form-
-    associated checkboxes produce a POST body identical to the one
-    an explicit Apply click would produce.
-
-    This test sends that exact body shape and asserts the route returns:
-      - HTTP 200
-      - The 4-block fragment shape (grid + count_oob + warnings_oob
-        + picker_badges_oob from gap-3 fix)
-      - HX-Push-Url canonical /browse?... URL (Pitfall 2 defended)
-      - The populated pivot table (NOT the empty-state alert) when
-        the implicit-Apply selection is non-empty
-    """
-    captured: dict = {}
-
-    def _capture_fetch(db, p, ic, i, row_cap=200, db_name=""):
-        captured["platforms"] = p
-        captured["infocategories"] = ic
-        captured["items"] = i
-        return (
-            pd.DataFrame({
-                "PLATFORM_ID": ["P1", "P2", "P3"],
-                "InfoCategory": ["attribute", "attribute", "attribute"],
-                "Item": ["vendor_id", "vendor_id", "vendor_id"],
-                "Result": ["0xA1", "0xB2", "0xC3"],
-            }),
-            False,
-        )
-
-    _patch_cache(
-        monkeypatch,
-        platforms=["P1", "P2", "P3"],
-        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
-        fetch=_capture_fetch,
-    )
-
-    r = _post_form_pairs(client, "/browse/grid", [
-        ("platforms", "P1"),
-        ("platforms", "P2"),
-        ("platforms", "P3"),
-        ("params", "attribute · vendor_id"),
-    ])
-    assert r.status_code == 200
-
-    # 1. Populated grid renders.
-    assert "Select platforms and parameters above to build the pivot grid." not in r.text, (
-        "gap-4 server contract: implicit-Apply payload produced empty-state alert."
-    )
-    assert 'class="table table-striped table-hover table-sm pivot-table"' in r.text, (
-        "Populated pivot table missing from implicit-Apply response"
-    )
-
-    # 2. picker_badges_oob OOB block from gap-3 still emits.
-    assert 'id="picker-platforms-badge"' in r.text, (
-        "gap-4: picker-platforms-badge OOB span missing from implicit-Apply response."
-    )
-    assert 'id="picker-params-badge"' in r.text, (
-        "gap-4: picker-params-badge OOB span missing from implicit-Apply response."
-    )
-    assert r.text.count('hx-swap-oob="true"') >= 3, (
-        "gap-4: at least 3 OOB swap fragments expected (grid_count + 2 picker badges)"
-    )
-
-    # 3. HX-Push-Url is set to the canonical /browse?... URL.
-    assert "HX-Push-Url" in r.headers, "implicit-Apply response missing HX-Push-Url header"
-    push = r.headers["HX-Push-Url"]
-    assert push.startswith("/browse?"), (
-        f"HX-Push-Url should start with /browse?...; got {push!r}"
-    )
-    assert "/browse/grid" not in push, "HX-Push-Url leaked /browse/grid"
-
-    # 4. Affirmative invariant — fetch_cells received the actual selected values.
-    assert captured.get("platforms") == ("P1", "P2", "P3"), (
-        f"fetch_cells received wrong platforms tuple under implicit-Apply: "
-        f"{captured.get('platforms')!r}"
-    )
-    assert captured.get("items") == ("vendor_id",), (
-        f"fetch_cells received wrong items tuple under implicit-Apply: "
-        f"{captured.get('items')!r}"
-    )
-
-
-def test_post_browse_grid_idempotent_unchanged_selection(client, monkeypatch):
-    """gap-4 regression: applying the same selection twice produces a valid response.
-
-    D-15a no-op short-circuit lives in popover-search.js (skip the
-    implicit-Apply HTMX request when current sorted checkbox values
-    equal data-original-selection). This test pins that the server
-    side stays well-behaved if the JS short-circuit ever regresses:
-    the SAME POST body posted twice in sequence produces the SAME
-    200 response with the same fragment shape and same HX-Push-Url
-    (HTTP-level idempotency).
-    """
-    call_count = [0]
-
-    def _counting_fetch(db, p, ic, i, row_cap=200, db_name=""):
-        call_count[0] += 1
-        return (
-            pd.DataFrame({
-                "PLATFORM_ID": ["P1"],
-                "InfoCategory": ["attribute"],
-                "Item": ["vendor_id"],
-                "Result": ["0xA1"],
-            }),
-            False,
-        )
-
-    _patch_cache(
-        monkeypatch,
-        platforms=["P1"],
-        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
-        fetch=_counting_fetch,
-    )
-
-    body_pairs = [
-        ("platforms", "P1"),
-        ("params", "attribute · vendor_id"),
-    ]
-
-    # First call.
-    r1 = _post_form_pairs(client, "/browse/grid", body_pairs)
-    assert r1.status_code == 200
-    assert 'class="table table-striped table-hover table-sm pivot-table"' in r1.text
-
-    # Second call — identical body, must produce identical-shape response.
-    r2 = _post_form_pairs(client, "/browse/grid", body_pairs)
-    assert r2.status_code == 200
-    assert 'class="table table-striped table-hover table-sm pivot-table"' in r2.text
-    assert 'id="picker-platforms-badge"' in r2.text
-    assert 'id="picker-params-badge"' in r2.text
-    assert r1.headers.get("HX-Push-Url") == r2.headers.get("HX-Push-Url"), (
-        f"HX-Push-Url drifted between identical calls: "
-        f"{r1.headers.get('HX-Push-Url')!r} vs {r2.headers.get('HX-Push-Url')!r}"
-    )
-    assert call_count[0] >= 1, "fetch_cells should be called at least once"
