@@ -31,6 +31,7 @@ from app_v2.services.content_store import (
     read_content,
     render_markdown,
     save_content,
+    split_frontmatter,
 )
 from app_v2.services.llm_resolver import resolve_active_backend_name
 from app_v2.templates import templates
@@ -52,7 +53,11 @@ CONTENT_DIR: _Path = DEFAULT_CONTENT_DIR
 def _detail_context(request: Request, platform_id: str, raw_md: str | None) -> dict:
     """Build template context for detail.html, _content_area.html, _edit_panel.html."""
     brand, _model, soc_raw = parse_platform_id(platform_id)
-    rendered_html = render_markdown(raw_md) if raw_md is not None else ""
+    if raw_md is not None:
+        frontmatter, body = split_frontmatter(raw_md)
+        rendered_html = render_markdown(body)
+    else:
+        frontmatter, rendered_html = {}, ""
     settings = getattr(request.app.state, "settings", None)
     return {
         "active_tab": "overview",
@@ -64,6 +69,7 @@ def _detail_context(request: Request, platform_id: str, raw_md: str | None) -> d
         "has_content": raw_md is not None,
         "raw_md": raw_md or "",
         "rendered_html": rendered_html,
+        "frontmatter": frontmatter,
         # Shared resolver (Plan 03-01) — single source of truth for backend label.
         "backend_name": resolve_active_backend_name(settings),
     }

@@ -195,6 +195,50 @@ def _parse_frontmatter_text(text: str) -> dict[str, str]:
     return result
 
 
+def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
+    """Return ``(frontmatter_dict, body_text)`` for a content page.
+
+    Mirrors ``_parse_frontmatter_text`` for the dict half, and returns the
+    markdown body **without** the frontmatter fence so the caller can render
+    only the body through ``render_markdown``. Used by the platform detail
+    page to surface frontmatter as a properties table separate from the
+    rendered markdown body (Obsidian-style).
+
+    - No leading ``---\\n``     → ``({}, text)``  (legacy / unfenced page)
+    - Fenced but malformed     → ``({}, text)``  (defensive: render whole file)
+    - Well-formed              → ``(dict, body)``
+    """
+    if not text.startswith("---\n"):
+        return ({}, text)
+    body_after_first_fence = text[4:]
+    end_idx = body_after_first_fence.find("\n---\n")
+    if end_idx >= 0:
+        yaml_text = body_after_first_fence[:end_idx]
+        body = body_after_first_fence[end_idx + len("\n---\n"):]
+    elif body_after_first_fence.endswith("\n---"):
+        yaml_text = body_after_first_fence[:-4]
+        body = ""
+    else:
+        return ({}, text)
+
+    try:
+        data = _yaml.safe_load(yaml_text)
+    except _yaml.YAMLError:
+        return ({}, text)
+    except Exception:  # noqa: BLE001 — defensive
+        return ({}, text)
+
+    if not isinstance(data, dict):
+        return ({}, body)
+
+    result: dict[str, str] = {}
+    for k, v in data.items():
+        if v is None:
+            continue
+        result[str(k)] = str(v)
+    return (result, body)
+
+
 def read_frontmatter(
     platform_id: str,
     content_dir: Path = DEFAULT_CONTENT_DIR,

@@ -5,6 +5,18 @@
 {% if has_content %}
 <div class="panel" id="content-area">
   <div class="panel-body">
+    {% if frontmatter %}
+    <table class="properties-table mb-3">
+      <tbody>
+        {% for key, value in frontmatter.items() %}
+        <tr>
+          <th scope="row">{{ key }}</th>
+          <td>{{ value }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
     <article class="markdown-content">
       {{ rendered_html | safe }}
     </article>

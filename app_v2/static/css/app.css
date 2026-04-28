@@ -77,6 +77,14 @@
 .markdown-content ul, .markdown-content ol { padding-left: 1.4em; margin: 0 0 1em; }
 .markdown-content blockquote { border-left: 3px solid var(--accent-soft); padding-left: 14px; color: var(--ink-2); margin: 0 0 1em; }
 
+/* Obsidian-style frontmatter properties table — sits above .markdown-content
+   on the platform detail page when the content file has YAML frontmatter. */
+.properties-table { max-width: 800px; margin: 0 auto 1.5em; width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.properties-table tr { border-bottom: 1px solid var(--line); }
+.properties-table tr:last-child { border-bottom: none; }
+.properties-table th { width: 180px; padding: 7px 12px 7px 0; text-align: left; font-weight: 500; color: var(--ink-2); vertical-align: top; text-transform: capitalize; }
+.properties-table td { padding: 7px 0; color: var(--ink-1); vertical-align: top; word-break: break-word; }
+
 /* ============================================================
    Phase 04 — Browse Tab (UI-SPEC §Components, D-26..D-28)
    ============================================================ */
