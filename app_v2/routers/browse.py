@@ -97,7 +97,8 @@ def browse_grid(
     """Grid fragment — fired by Apply / swap-axes / Clear-all (BROWSE-V2-01).
 
     Returns ONLY the named blocks: `grid` (innerHTML target #browse-grid),
-    `count_oob` (OOB swap to #grid-count), `warnings_oob` (cap-warning slot).
+    `count_oob` (OOB swap to #grid-count), `warnings_oob` (cap-warning slot),
+    `picker_badges_oob` (OOB swap to #picker-platforms-badge + #picker-params-badge; gap-3).
 
     D-32 + Pitfall 2: sets `HX-Push-Url` response header to the canonical
     /browse?... URL. The response header overrides the `hx-push-url`
@@ -120,7 +121,7 @@ def browse_grid(
         request,
         "browse/index.html",
         ctx,
-        block_names=["grid", "count_oob", "warnings_oob"],
+        block_names=["grid", "count_oob", "warnings_oob", "picker_badges_oob"],
     )
     response.headers["HX-Push-Url"] = _build_browse_url(
         platforms, params, swap == "1"

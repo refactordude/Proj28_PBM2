@@ -15,6 +15,13 @@
      not a DOM-descendant of it. HTMX auto-includes element.form in the POST
      body via dn()/Nt() (htmx.min.js getInputValues path) — no hx-include
      needed. (Pitfall 4 of 04-RESEARCH.md; gap-2 closure 2026-04-27.)
+   - The trigger-button count badge <span> is ALWAYS emitted with a stable
+     id="picker-{name}-badge" so POST /browse/grid responses can carry an
+     OOB-swap fragment ({% block picker_badges_oob %} in index.html) that
+     updates the count after Apply (D-14(b)). Visibility follows D-08
+     (no badge when empty) via Bootstrap d-none — the <span> stays in DOM
+     either way so HTMX has a target to merge into. (gap-3 closure
+     2026-04-28; precedent: Pattern 6 / count_oob OOB swap.)
 
    Every dynamic output uses Jinja2 explicit-escape (autoescape is also
    globally on for .html templates; the explicit filter is belt-and-suspenders
@@ -30,7 +37,7 @@
           data-bs-auto-close="outside"
           aria-expanded="false"
           aria-label="Select {{ label | lower }}{% if selected %} ({{ selected | length }} selected){% endif %}">
-    {{ label }}{% if selected %} <span class="badge bg-secondary ms-1">{{ selected | length }}</span>{% endif %} <i class="bi bi-chevron-down ms-1"></i>
+    {{ label }} <span id="picker-{{ name }}-badge" class="badge bg-secondary ms-1{% if not selected %} d-none{% endif %}" aria-live="polite">{{ selected | length }}</span> <i class="bi bi-chevron-down ms-1"></i>
   </button>
 
   <div class="dropdown-menu p-0 popover-search-root"

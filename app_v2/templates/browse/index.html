@@ -79,4 +79,20 @@
 {# Reserved for future "above the panel" cap-warning OOBs; currently empty.
    Cap-warning alerts render INSIDE #browse-grid via the grid block above. #}
 {% block warnings_oob %}{% endblock warnings_oob %}
+
+{# OOB picker badges — emitted by POST /browse/grid alongside the grid swap
+   so the trigger button count badges in .browse-filter-bar refresh after
+   Apply (D-14(b); gap-3 closure 2026-04-28). HTMX merges each <span> by id
+   into the corresponding picker-{name}-badge in the persistent .panel
+   shell. Both badges are ALWAYS emitted on every POST so a same-block swap
+   (e.g., user only changed platforms) still corrects any stale-params
+   display in case the params trigger drifted. The d-none class is toggled
+   to match D-08 (no visible badge when count is 0) — text content is the
+   integer count even when hidden, so HTMX's text replacement on the
+   existing span is always correct. Stable target: precedent Pattern 6 /
+   count_oob (lines 73-77 above). #}
+{% block picker_badges_oob %}
+  <span id="picker-platforms-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_platforms %} d-none{% endif %}" aria-live="polite">{{ vm.selected_platforms | length }}</span>
+  <span id="picker-params-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_params %} d-none{% endif %}" aria-live="polite">{{ vm.selected_params | length }}</span>
+{% endblock picker_badges_oob %}
 {% endblock %}
