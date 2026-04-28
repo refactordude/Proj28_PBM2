@@ -58,7 +58,17 @@
     {# Body: scrollable checklist (D-09). Each <li> carries data-label for
        client-side substring filter (D-10). The <ul> itself carries the
        hx-* wiring (D-15b 2026-04-28); checkbox change events bubble up and
-       HTMX's `delay:250ms` modifier debounces bursts into a single POST. #}
+       HTMX's `delay:250ms` modifier debounces bursts into a single POST.
+
+       hx-include="#browse-filter-form" is REQUIRED — without it, HTMX's
+       getInputValues() iterates only direct <input> children of the <ul>,
+       finds none (checkboxes are nested under <li><label>), and posts an
+       EMPTY body → empty-state alert. Pointing hx-include at the
+       <form id="browse-filter-form"> element makes HTMX walk form.elements
+       (browser DOM API), which includes ALL form-associated controls via
+       the form= attribute on each checkbox — including those in the OTHER
+       picker, so cross-picker selections are preserved on every commit.
+       This is the same mechanism that closed gap-2 (form-association). #}
     <ul class="list-unstyled m-0 popover-search-list"
         style="max-height: 320px; overflow-y: auto;"
         role="listbox"
@@ -66,7 +76,8 @@
         hx-post="/browse/grid"
         hx-target="#browse-grid"
         hx-swap="innerHTML swap:200ms"
-        hx-trigger="change changed delay:250ms from:closest .popover-search-root">
+        hx-include="#browse-filter-form"
+        hx-trigger="change delay:250ms from:closest .popover-search-root">
       {% for opt in options %}
         <li data-label="{{ opt | e }}" role="option">
           <label class="dropdown-item d-flex align-items-center gap-2"

@@ -300,6 +300,21 @@ def test_picker_popover_uses_d15b_auto_commit_pattern():
             "must contain \"delay:250ms\" so quick toggle bursts collapse "
             f"to a single POST. Tag: {tag!r}"
         )
+        # Marker 4b: hx-include="#browse-filter-form" is REQUIRED — without
+        # it HTMX iterates only direct <input> children of the <ul> (none
+        # — checkboxes are nested under <li><label>) and posts an empty
+        # body → empty-state alert. Pointing hx-include at the form
+        # element triggers HTMX's form.elements iteration, which includes
+        # form-associated controls via the form= attribute (gap-2 mechanism).
+        assert 'hx-include="#browse-filter-form"' in tag, (
+            "D-15b marker 4b — <ul class=\"popover-search-list\"> missing "
+            "hx-include=\"#browse-filter-form\". Without it, HTMX's "
+            "getInputValues() iterates only direct <input> children of the "
+            "<ul> (the checkboxes are NOT direct children — they're under "
+            "<li><label>) and the POST body arrives empty. Same mechanism "
+            "that closed gap-2; same regression class if dropped. "
+            f"Tag: {tag!r}"
+        )
 
     # Marker 5: data-bs-auto-close="outside" preserved.
     assert 'data-bs-auto-close="outside"' in tpl_src, (

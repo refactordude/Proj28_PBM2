@@ -496,6 +496,15 @@ def test_picker_checklist_carries_d15b_hx_attributes(client, monkeypatch):
             "(5 toggles ≠ 5 queries) is addressed by HTMX's built-in "
             "delay: trigger modifier."
         )
+        assert 'hx-include="#browse-filter-form"' in block, (
+            "D-15b regression: <ul class=\"popover-search-list\"> missing "
+            "hx-include=\"#browse-filter-form\". Without it, HTMX's "
+            "getInputValues() iterates only direct <input> children of the "
+            "<ul> and posts an empty body — the same failure mode as gap-2 "
+            "before the fix. The form-element selector triggers HTMX's "
+            "form.elements iteration, which includes form-associated "
+            "checkboxes from BOTH pickers (cross-picker selection preserved)."
+        )
         occurrences += 1
         i = j + 1
     assert occurrences >= 2, f"Expected >=2 popover-search-list occurrences; got {occurrences}"
