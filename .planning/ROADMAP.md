@@ -125,7 +125,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 **Success Criteria** (what must be TRUE):
   1. User can type a natural-language question, submit it, and receive a result table with an LLM summary and a collapsible SQL block — or a parameter-confirmation step when the agent needs clarification
   2. The two-turn confirmation flow presents pre-checked candidate parameters; user can modify the selection and click "Run Query" to execute with the confirmed params; the correct SQL runs against the DB
-  3. Switching the backend selector to OpenAI shows the data-sensitivity alert banner; the selected backend persists across page refreshes (cookie); switching back to Ollama clears the banner
+  3. The Ask page header bar shows an "LLM: Ollama ▾" / "LLM: OpenAI ▾" dropdown that lets the user switch backends; the selected backend persists across page refreshes via the `pbm2_llm` cookie and the dropdown label reflects the active backend on every page render. (Phase 6 D-12 + D-18: selector is Ask-page-only; no OpenAI sensitivity-warning banner anywhere — the visible dropdown label is the affordance.)
   4. The 8 curated starter prompts appear when no question has been asked; clicking one fills the textarea but does not auto-submit
   5. A question that would exceed the step-cap or timeout shows the red abort banner with the exact v1.0 copy; a question designed to SELECT from a non-allowed table (e.g. `mysql.user`) is rejected before execution
 **Plans**: 6 plans
