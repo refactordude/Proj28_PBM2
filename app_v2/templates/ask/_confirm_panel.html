@@ -1,0 +1,79 @@
+{# NL-05 confirmation panel (ASK-V2-02, D-07, D-08, D-09, D-10).
+
+   Outermost wrapper carries id="answer-zone" — Plan 06-03 routes do
+   hx-target="#answer-zone" + hx-swap="outerHTML"; this fragment IS the
+   replacement #answer-zone after a first-turn ClarificationNeeded result.
+
+   Reuses the Browse picker macro with disable_auto_commit=True (Plan 06-02
+   dependency, Pitfall 3): checkbox toggles do NOT fire HTMX requests. The
+   Run Query button is the ONLY commit trigger. D-10: button is always
+   enabled, even with 0 selected — the route's loop-prevention message
+   handles the empty-list case.
+
+   Hidden <input name="original_question"> carries the first-turn question
+   verbatim so the route can compose the second-turn message. Form is
+   <form id="ask-confirm-form">; Run Query button posts to /ask/confirm
+   with hx-include pointing at the form so checkboxes participate.
+
+   Copy: button label "Run Query ▸" (D-13 / 02-UI-SPEC.md Copywriting Contract
+   — uses "Run Query" verbatim; the ▸ glyph is a v2.0 visual addition from D-07).
+
+   Confirm panel copy ported VERBATIM from 02-UI-SPEC.md Copywriting Contract:
+     - Picker label: "Parameters to include"
+     - Count hint: "Agent proposed {N} parameters. Uncheck to remove, search to add."
+#}
+{% from "browse/_picker_popover.html" import picker_popover %}
+
+<div id="answer-zone">
+  <div class="panel" style="border-left: 3px solid var(--violet, #7a5af8);">
+    <div class="panel-body">
+
+      {# Agent's clarifying message (autoescaped — LLM output is untrusted). #}
+      {% if message %}
+        <p class="mb-3">{{ message | e }}</p>
+      {% endif %}
+
+      <form id="ask-confirm-form">
+        {# Hidden original question — needed by /ask/confirm to compose
+           the second-turn loop-prevention message (RESEARCH.md Open Question 3). #}
+        <input type="hidden" name="original_question" value="{{ original_question | e }}">
+
+        {# Picker reuse — disable_auto_commit=True so checkbox toggles do NOT
+           fire HTMX requests (Pitfall 3 / D-07). The Run Query button below is
+           the only commit trigger. The macro renders a Bootstrap dropdown with
+           search + checklist; selected items get a checked attribute. #}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Parameters to include
+            <small class="text-muted ms-2">
+              Agent proposed {{ candidate_params | length }} parameters. Uncheck to remove, search to add.
+            </small>
+          </label>
+          {{ picker_popover(
+               name="confirmed_params",
+               label="Confirm parameters",
+               options=all_params,
+               selected=candidate_params,
+               form_id="ask-confirm-form",
+               hx_post="/ask/confirm",
+               hx_target="#answer-zone",
+               disable_auto_commit=True
+             ) }}
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button type="submit"
+                  class="btn btn-primary"
+                  hx-post="/ask/confirm"
+                  hx-target="#answer-zone"
+                  hx-swap="outerHTML"
+                  hx-include="#ask-confirm-form"
+                  hx-disabled-elt="this">
+            Run Query &#9656;
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>

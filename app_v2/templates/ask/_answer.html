@@ -1,0 +1,80 @@
+{# Answer fragment (ASK-V2-03 post-deviation, D-04, D-08, D-11).
+
+   Outermost wrapper carries id="answer-zone" — symmetric with
+   _confirm_panel.html and _abort_banner.html.
+
+   Three sections per ASK-V2-03 post-deviation:
+     1. Result table — Bootstrap .table.table-striped.table-hover.table-sm
+        with sticky header. Every cell autoescaped. NO column type config —
+        TextColumn-only mirrors v1.0 EAV heterogeneity.
+     2. LLM summary — plain prose paragraph, autoescaped.
+     3. Collapsed <details> "Generated SQL" expander with the validated/
+        limited SQL inside a <code> block.
+
+   D-04: no question echo — the user's question stays in the textarea
+   above; we don't re-render it here.
+
+   D-11: No extra action buttons per user decision (ASK-V2-03 deviation).
+   Editing the textarea and clicking Run is the resend mechanism.
+
+   Copy ported VERBATIM from 02-UI-SPEC.md Copywriting Contract:
+     - SQL expander title: "Generated SQL"
+     - Row-count caption: "{N} rows returned."
+
+   Context shape provided by _df_to_template_ctx (Plan 06-03):
+     columns: list[str]
+     rows: list[list[str]]
+     row_count: int
+     summary: str
+     sql: str
+#}
+<div id="answer-zone">
+  <div class="panel mb-3">
+    <div class="panel-body">
+
+      {# Result table — TextColumn-only (Pitfall 2 mitigation: route already
+         converted DataFrame to columns + rows before reaching this template). #}
+      {% if rows %}
+        <div class="table-responsive mb-3">
+          <table class="table table-striped table-hover table-sm"
+                 style="font-family: var(--mono, 'JetBrains Mono', monospace);">
+            <thead class="sticky-top bg-light">
+              <tr>
+                {% for col in columns %}
+                  <th scope="col">{{ col | e }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  {% for cell in row %}
+                    <td>{{ cell | e }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-muted small mb-3">{{ row_count }} rows returned.</p>
+      {% else %}
+        <p class="text-muted">No rows returned.</p>
+      {% endif %}
+
+      {# LLM summary — plain prose, autoescaped. Never use the unsafe filter
+         on agent output (threat model T-06-04-01). #}
+      {% if summary %}
+        <div class="mb-3" style="line-height: 1.6;">{{ summary | e }}</div>
+      {% endif %}
+
+      {# Collapsed SQL expander — title "Generated SQL" verbatim from
+         02-UI-SPEC.md Copywriting Contract. #}
+      <details>
+        <summary class="text-secondary small">Generated SQL</summary>
+        <pre class="mt-2 p-2 bg-light border rounded"
+             style="font-family: var(--mono, 'JetBrains Mono', monospace); font-size: 13px;"><code>{{ sql | e }}</code></pre>
+      </details>
+
+    </div>
+  </div>
+</div>
