@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
-status: executing
-stopped_at: Completed 06-ask-tab-port/06-05-PLAN.md
-last_updated: "2026-04-28T23:27:00.501Z"
-last_activity: 2026-04-28
+status: verifying
+stopped_at: Phase 6 complete — Ask tab ported to FastAPI/HTMX; v1.0 Streamlit Ask deleted per D-22
+last_updated: "2026-04-29T00:00:00.000Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 30
-  completed_plans: 29
-  percent: 97
+  completed_plans: 30
+  percent: 100
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 6 (Ask Tab Port) — EXECUTING
-Plan: 6 of 6
-Status: Ready to execute
-Last activity: 2026-04-28
+Phase: 6
+Plan: Complete
+Status: Phase complete — ready for verification
+Last activity: 2026-04-29
 
 Progress: [██████████] 100%
 
@@ -149,6 +149,12 @@ Progress: [██████████] 100%
 - 06-05: _build_deps mocked in ask_client fixture (in addition to _get_agent + run_nl_query): Pydantic AgentDeps requires a real DBAdapter instance; SimpleNamespace fails Pydantic validation causing route to short-circuit at deps guard; sentinel mock is the minimal fix (Rule-1 auto-fix)
 - 06-05: agent.run_sync invariant uses regex (?<!`) backtick-prefix negative lookbehind: ask.py module docstring mentions the term in backtick-quoted prose; naive string-contains would have tripped the ASK-V2-06 guard; code-call pattern regex correctly discriminates
 - 06-05: Phase 6 test baseline set at 522 total (339 v2 + 183 v1.0); 39 new tests in Plans 06-05; full-suite green confirms no regressions from Phases 1-5
+- 06-01: Spec deviations applied to REQUIREMENTS.md — ASK-V2-03 Regenerate clause dropped (D-11); ASK-V2-04 moved to Out of Scope and merged into ASK-V2-F01 (D-05); ASK-V2-05 global-sidebar + OpenAI-banner clauses dropped, selector becomes Ask-page-only (D-12 + D-18). REQUIREMENTS Totals reconciled to 50 active reqs (44 mapped). ROADMAP Phase 6 Success Criterion #3 rewritten to drop banner sub-claims.
+- 06-02: llm_resolver extended with `request: Any = None` second arg; cookie precedence (D-15 closed-set validation against `settings.llms[].name` — invalid value silently falls back to `settings.app.default_llm`; D-17 single source of truth across Ask + AI Summary). 4 caller sites in overview.py / platforms.py / summary.py thread `request` positionally; backward compatible default of `None` preserves Phase 1-5 behavior. starter_prompts loader ported verbatim from v1.0 `app/pages/ask.py:62-89` to `app_v2/services/starter_prompts.py` (yaml fallback chain unchanged). Picker macro `_picker_popover.html` extended with `disable_auto_commit=False` kwarg; default preserves Phase 4/5 byte-stability. Phase 4 invariant `test_picker_popover_uses_d15b_auto_commit_pattern` and Phase 5 invariant `test_picker_popover_macro_is_shared_not_forked` both still pass.
+- 06-03: 4 routes shipped — GET /ask + POST /ask/query + POST /ask/confirm + POST /settings/llm — all sync `def` per INFRA-05 + RESEARCH.md Pitfall 1 (run_nl_query calls agent.run_sync internally; async-def would block uvicorn loop). ALWAYS-200 contract for all 3 NL outcomes (mirror of summary.py post-Phase-3). `_get_agent` lazy-cache pattern in app.state.agent_registry (RESEARCH.md Pattern 5). Pitfall 6 second-turn-clarification suppression: if the agent returns ClarificationNeeded on the second turn, the route synthesizes an `AgentRunFailure(reason="llm-error")` and renders the abort banner instead of looping. The composed second-turn message includes the loop-prevention sentence verbatim per D-10. Phase 1 GET /ask stub deleted from root.py. ask + settings routers registered BEFORE root in main.py (defense-in-depth precedent from Phase 4).
+- 06-04: 5 templates shipped — ask/index.html (full page) + _starter_chips.html (4×2 grid, .ai-chip class) + _confirm_panel.html (NL-05; reuses Browse picker macro with `disable_auto_commit=True` per Pitfall 3 — checkbox toggles do NOT fire HTMX, the explicit Run Query ▸ button is the ONLY commit trigger) + _answer.html (table + summary + collapsed `<details>` SQL expander; NO Regenerate per D-11) + _abort_banner.html (verbatim v1.0 step-cap + timeout copy from 02-UI-SPEC.md lines 341, 346). Every dynamic value autoescaped via Jinja2 default + explicit `| e`; ZERO `| safe` filters anywhere in app_v2/templates/ask/. LLM dropdown label "LLM: {Ollama|OpenAI} ▾" with one `<button class="dropdown-item">` per `settings.llms[]` entry — NO global-navbar placement, NO OpenAI banner (D-12 + D-18). app.css extended with `.ai-chip` rounded-pill rule (additive only — Phase 1-5 byte-stable).
+- 06-05: 3 new test files (`tests/v2/test_ask_routes.py` ≥12 tests, `tests/v2/test_settings_routes.py` ≥5 tests, `tests/v2/test_phase06_invariants.py` ≥8 source-level invariants parametrized to ≥17 collected items); `test_llm_resolver.py` extended with 2 cookie-precedence tests (D-15 + D-17). Mocking idiom: pytest-mock at module level (`mocker.patch("app_v2.routers.ask.run_nl_query", ...)`) per D-19 — same pattern as Phase 3 test_summary_routes.py. NO threat-model regression tests at the route layer per D-20 — Phase 1 tests/agent/test_nl_service.py is the single locus for SAFE-02..06 coverage. Static-analysis invariants codify: sync-def routes, no `| safe`, answer-zone id on every fragment, no Regenerate, no OpenAI banner, no `agent.run_sync` bypass, banned-libs absence, D-14 cookie attrs.
+- 06-06: D-22 final cleanup — `app/pages/ask.py` + `tests/pages/test_ask_page.py` + `tests/pages/test_starter_prompts.py` deleted; `streamlit_app.py` Ask nav entry removed; Phase 6 invariant polarity-flipped to `test_v1_streamlit_ask_deleted_per_d22` (also positively asserts D-22 #5 preserves: `nl_service.py`, `nl_agent.py`, `pydantic_model.py` still present). v2.0 has zero leftover `from app.pages.ask` imports. Full suite green at new test count: 506 passed, 2 skipped, 0 failed (v1.0 Streamlit Browse + Settings retained; v2.0 owns Ask outright). `tests/pages/test_starter_prompts.py` coverage subsumed by `tests/v2/test_ask_routes.py::test_get_ask_returns_200_with_html` end-to-end render check.
 
 ### Pending Todos
 
@@ -156,7 +162,8 @@ Progress: [██████████] 100%
 - `/gsd-uat-phase 4` — Phase 4 UAT against running app
 - `/gsd-verify-phase 5` — run Phase 5 verifier
 - `/gsd-uat-phase 5` — Phase 5 UAT against running app
-- Execute Phase 6 (ask-tab carry-over) once Phase 5 verification passes
+- `/gsd-verify-phase 6` — run Phase 6 verifier
+- `/gsd-uat-phase 6` — Phase 6 UAT against running app
 
 ### Blockers/Concerns
 
