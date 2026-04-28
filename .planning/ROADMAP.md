@@ -94,7 +94,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 04-04-PLAN.md — Integration tests (TestClient + URL round-trip + caps + XSS) + codebase invariant guards (BROWSE-V2-01..03, -05)
 - [x] 04-05-PLAN.md — gap-2 closure: Apply button form-association fix in `_picker_popover.html` + 2 regression tests
 - [x] 04-06-PLAN.md — gap-3 closure: picker_badges_oob OOB swap on Apply (D-14(b)) + always-emit-with-d-none pattern + 2 regression tests
-- [ ] 04-07-PLAN.md — gap-4 closure: D-15a close-event taxonomy in popover-search.js (outside-click implicit-Apply, Esc explicit-cancel, no-op short-circuit) + 2 regression tests + 1 Phase 4 invariant
+- [x] 04-07-PLAN.md — gap-4 closure: D-15a close-event taxonomy in popover-search.js (outside-click implicit-Apply, Esc explicit-cancel, no-op short-circuit) + 2 regression tests + 1 Phase 4 invariant
 **UI hint**: yes
 
 ### Phase 5: Ask Tab Port
