@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
-status: executing
-stopped_at: "Completed 05-05-PLAN.md (overview templates redesign: full rewrite of index.html + new _grid.html + new _filter_bar.html + Phase 5 CSS append; 1 Rule-1 deviation for Jinja2 macro-scope hoist; 22 legacy test failures deferred to Plan 05-06 per D-OV-04 / D-OV-05 locks)"
-last_updated: "2026-04-28T07:35:25.043Z"
+status: verifying
+stopped_at: "Completed 05-06-PLAN.md (Phase 5 test suite + invariants: 22-test rewrite of test_overview_routes.py + new test_phase05_invariants.py with 11 D-OV guards + delete legacy test_overview_filter.py per D-OV-14 + 2 Rule-1 deviations: sortable_th macro-scope fix for jinja2-fragments single-block render + 2 content-routes ai-btn assertion updates. Full v2 suite green: 293 passed + 1 skipped + 0 failed. Phase 5 COMPLETE.)"
+last_updated: "2026-04-28T07:47:30.000Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 24
-  completed_plans: 23
-  percent: 96
+  completed_plans: 24
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 05 (overview-redesign) — EXECUTING
-Plan: 6 of 6
-Status: Ready to execute
+Phase: 05 (overview-redesign) — COMPLETE
+Plan: 6 of 6 (last plan)
+Status: Phase complete — ready for verification
 Last activity: 2026-04-28
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -129,12 +129,19 @@ Progress: [█████████░] 92%
 - 05-05: D-OV-05 + D-OV-06 templates shipped — full rewrite of `overview/index.html` (sortable Bootstrap pivot table mirroring Phase 4 styling: `table table-striped table-hover table-sm overview-table` + `thead.sticky-top.bg-light`); NEW `overview/_grid.html` (<tbody> partial + `maybe` macro inline + AI Summary cell preserving Phase 3 SUMMARY-02 contract); NEW `overview/_filter_bar.html` (6 picker_popover calls via cross-template import — NOT forked — each overriding form_id='overview-filter-form', hx_post='/overview/grid', hx_target='#overview-grid'); legacy `_filter_alert.html` + `_entity_row.html` DELETED. Phase 5 CSS block (`.overview-grid-body` + `.overview-table` + sortable header buttons) appended to `app_v2/static/css/app.css` mirroring `.browse-grid-body` + `.pivot-table`. 14-column order: Title | Status | Customer | Model Name | AP Company | AP Model | Device | Controller | Application | 담당자 | Start | End | Link | AI Summary (12 sortable + 2 non-sortable). 3 named blocks: grid + count_oob + filter_badges_oob (matches Plan 05-04 block_names contract). Phase 4 byte-stability PRESERVED (30/30 in test_browse_routes.py + test_phase04_invariants.py).
 - 05-05: Jinja2 macro scope lesson — macros defined inside `{% block content %}` are NOT visible from nested `{% block grid %}`. Rule-1 bug auto-fix: hoisted `sortable_th` macro to template-top scope (between `{% extends %}` and `{% block content %}`) where it is visible from all child blocks. Symmetric with `_grid.html` keeping `maybe` macro inline at the top of the partial (consumed only by that partial — sidesteps macro scope across `{% include %}` boundaries). Inline comment in index.html documents the constraint for future readers. Reusable Phase-5+ pattern: any shared markup helper called from a child block MUST live at template-top scope, NOT inside another block.
 - 05-05: 22 legacy test failures explicitly DEFERRED to Plan 05-06 — all target deleted markup (_entity_row.html, _filter_alert.html, `<details>` filter block, `class="ai-btn ms-2"` Phase 3 utility) or removed routes (POST /overview/filter, /overview/filter/reset, DELETE /overview/{pid}) per D-OV-04 / D-OV-05 locks. Documented in `.planning/phases/05-overview-redesign/deferred-items.md` (78 lines). Out-of-scope per Plan 05-05's `<output>` which assigns test resurfacing to Plan 05-06 (Wave 4).
+- 05-06: Macro scope under jinja2-fragments — when a route returns specific `block_names`, template-top macros are NOT carried into the single-block fragment render (only the block's own enclosed definitions are). Macros consumed inside such a block MUST be defined inside that block (or imported into it via `{% import %}`). Mirror of the `maybe` macro inlined in `_grid.html`. Plan 05-05's earlier "hoist sortable_th to template-top" fix solved the inheritance case (block-to-block visibility within the same render) but missed this orthogonal case (single-block fragment render via `block_names=["grid", ...]`). Rule-1 bug auto-fix in Plan 05-06 Task 2 — moved sortable_th INTO `{% block grid %}`. Inline comment in index.html documents the constraint and the precedent for future readers. Reusable Phase-5+ pattern.
+- 05-06: Plan 05-06 success criterion mandate ("Full v2 test suite green; no leftover failures from deferred-items.md") justified updating 2 tests in `tests/v2/test_content_routes.py` even though the file is not in the plan's literal `<files>` list — `deferred-items.md` explicitly named those 2 tests as Plan 05-06's responsibility. Updated AI-button assertions to the new Phase 5 table-cell button class (`class="btn btn-sm btn-outline-primary ai-btn"`) + new tooltip wording ("No content page to summarize yet"); SUMMARY-02 contract on hx-post / hx-target / hx-disabled-elt preserved verbatim per D-OV-10. Pattern: when a deferred-items.md handoff explicitly names test files as the next plan's scope, treat updates as in-scope Rule-1 (bug) auto-fixes — do not stop on the literal `<files>` list.
+- 05-06: Forbidden-route guards parametrized — single test function `test_no_forbidden_route_in_overview_router` with `@pytest.mark.parametrize` over 3 (regex, decision_id) pairs (DELETE /overview/<pid>, POST /overview/filter, POST /overview/filter/reset) covers D-OV-04 in 1 source location, 3 collected runs. Same idiom as Phase 03 banned-libs guard. Reusable for any future "this route MUST be gone" enforcement.
+- 05-06: Static-analysis invariant guards split forbidden literals at runtime via string concatenation (`"| " + "safe"`) so the test file's source does not contain the substring it scans for under app_v2/. T-05-06-01 mitigation. Mirrors Phase 04 invariants pattern.
+- 05-06: Phase 5 complete — full v2 suite GREEN: 293 passed + 1 skipped + 0 failed (was 22 failures from deferred-items.md before Plan 05-06). All 6 OVERVIEW-V2-XX requirements covered by tests; Phase 4 byte-stability preserved (14/14 invariants + 16/16 browse routes pass).
 
 ### Pending Todos
 
 - `/gsd-verify-phase 4` — run Phase 4 verifier
 - `/gsd-uat-phase 4` — Phase 4 UAT against running app
-- Execute Phase 5 (ask-tab-nl-agent) when Phase 4 verification passes
+- `/gsd-verify-phase 5` — run Phase 5 verifier
+- `/gsd-uat-phase 5` — Phase 5 UAT against running app
+- Execute Phase 6 (ask-tab carry-over) once Phase 5 verification passes
 
 ### Blockers/Concerns
 
@@ -148,7 +155,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T07:35:25.021Z
-Stopped at: Completed 05-05-PLAN.md (overview templates redesign: full rewrite of index.html + new _grid.html + new _filter_bar.html + Phase 5 CSS append; 1 Rule-1 deviation for Jinja2 macro-scope hoist; 22 legacy test failures deferred to Plan 05-06 per D-OV-04 / D-OV-05 locks)
+Last session: 2026-04-28T07:47:30.000Z
+Stopped at: Completed 05-06-PLAN.md (Phase 5 test suite + invariants: 22-test rewrite of test_overview_routes.py + new test_phase05_invariants.py with 11 D-OV guards + delete legacy test_overview_filter.py per D-OV-14 + 2 Rule-1 deviations: sortable_th macro-scope fix for jinja2-fragments single-block render + 2 content-routes ai-btn assertion updates. Full v2 suite green: 293 passed + 1 skipped + 0 failed. Phase 5 COMPLETE.)
 Resume file: None
-Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
+Next action: `/gsd-verify-phase 5` to verify Phase 5 (overview-redesign) completion

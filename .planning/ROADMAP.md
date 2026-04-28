@@ -25,7 +25,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [ ] **Phase 2: Overview Tab + Filters** - Curated platform list, add/remove, HTMX-swapped faceted filters
 - [ ] **Phase 3: Content Pages + AI Summary** - Per-platform markdown CRUD, safe rendering, in-place LLM summary
 - [x] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps under Bootstrap (export deferred per D-19..D-22)
-- [ ] **Phase 5: Overview Tab Redesign** - Replace list view with sortable Bootstrap table mirroring Browse pivot grid; YAML-frontmatter metadata fields per content page; popover-checklist multi-filters (Status / Customer / AP Company / Device / Controller / Application) reusing Browse picker pattern (D-15b auto-commit)
+- [x] **Phase 5: Overview Tab Redesign** - Replace list view with sortable Bootstrap table mirroring Browse pivot grid; YAML-frontmatter metadata fields per content page; popover-checklist multi-filters (Status / Customer / AP Company / Device / Controller / Application) reusing Browse picker pattern (D-15b auto-commit) (completed 2026-04-28)
 - [ ] **Phase 6: Ask Tab Port** - NL agent, two-turn confirmation, history, LLM backend selector, safety harness
 
 ## Phase Details
@@ -115,7 +115,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 05-03-PLAN.md — overview_grid_service.py with OverviewGridViewModel + filter/sort orchestration (D-OV-03, D-OV-07, D-OV-08)
 - [x] 05-04-PLAN.md — Routes: GET /overview + POST /overview/grid + HX-Push-Url; remove DELETE/filter/reset (D-OV-04, D-OV-11, D-OV-13)
 - [x] 05-05-PLAN.md — Templates: full rewrite of overview/index.html + new _grid.html + _filter_bar.html; delete legacy partials (D-OV-05, D-OV-06, D-OV-09, D-OV-10)
-- [ ] 05-06-PLAN.md — Tests: rewrite test_overview_routes.py + new test_phase05_invariants.py; delete test_overview_filter.py (D-OV-14)
+- [x] 05-06-PLAN.md — Tests: rewrite test_overview_routes.py + new test_phase05_invariants.py; delete test_overview_filter.py (D-OV-14)
 **UI hint**: yes
 
 ### Phase 6: Ask Tab Port
@@ -139,5 +139,5 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | 2. Overview Tab + Filters | v2.0 | 3/3 | Complete | 2026-04-25 |
 | 3. Content Pages + AI Summary | v2.0 | 4/4 | Complete | 2026-04-26 |
 | 4. Browse Tab Port | v2.0 | 7/7 | Complete | 2026-04-28 |
-| 5. Overview Tab Redesign | v2.0 | 1/6 | In Progress | - |
+| 5. Overview Tab Redesign | v2.0 | 6/6 | Complete   | 2026-04-28 |
 | 6. Ask Tab Port | v2.0 | 0/? | Not started | - |
