@@ -137,7 +137,10 @@
                 {{ sortable_th('start',       'Start') }}
                 {{ sortable_th('end',         'End') }}
                 <th scope="col" class="text-end">Link</th>
-                <th scope="col" class="text-end">AI Summary</th>
+                <th scope="col" class="text-end ai-sparkle-cell" title="AI Summary">
+                  <span class="visually-hidden">AI Summary</span>
+                  <span aria-hidden="true">✨</span>
+                </th>
               </tr>
             </thead>
             {% include "overview/_grid.html" %}
@@ -148,6 +151,51 @@
 
   </div>
 </div>
+
+{# AI Summary modal (D-OV-15 — supersedes D-OV-10).
+   Single global modal — every row's ✨ button targets this body. Bootstrap
+   data-bs-toggle on the button opens the modal; HTMX swaps the body. The
+   tiny inline 'show.bs.modal' handler resets the body to the spinner
+   placeholder so a re-click on a different row never flashes the previous
+   platform's summary while the new request is in flight.
+   The summary route reads HX-Target and threads it into the rendered
+   _success.html / _error.html so inner Retry/Regenerate buttons swap back
+   into the same #summary-modal-body slot they were rendered into. #}
+<div class="modal fade" id="summary-modal" tabindex="-1"
+     aria-labelledby="summary-modal-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="summary-modal-title">
+          <i class="bi bi-stars" aria-hidden="true"></i> AI Summary
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="summary-modal-body" aria-live="polite">
+        <div class="text-center text-muted py-4">
+          <div class="spinner-border spinner-border-sm me-2" role="status">
+            <span class="visually-hidden">Loading…</span>
+          </div>
+          Generating summary…
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // Reset modal body to the spinner placeholder every time the modal opens
+  // (before the new HTMX swap lands). Without this, opening the modal for
+  // platform B briefly shows platform A's previous summary.
+  (function () {
+    var modal = document.getElementById('summary-modal');
+    if (!modal) return;
+    var body = document.getElementById('summary-modal-body');
+    var placeholder = body.innerHTML;
+    modal.addEventListener('show.bs.modal', function () {
+      body.innerHTML = placeholder;
+    });
+  })();
+</script>
 
 {# OOB count caption — emitted on POST /overview/grid alongside the
    primary grid swap. HTMX merges into <span id="overview-count">

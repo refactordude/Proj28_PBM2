@@ -53,21 +53,34 @@
             View
           </a>
         </td>
-        {# AI Summary cell — D-OV-10. Phase 3 SUMMARY-02 contract preserved.
-           disabled when no content page (D-13 from Phase 3); has_content
-           flag computed by overview_grid_service via has_content_file. #}
-        <td class="text-end">
+        {# AI Summary cell — D-OV-15 (supersedes D-OV-10): icon-only ✨
+           button + modal popup target. Phase 3 SUMMARY-02 wiring (hx-post,
+           hx-disabled-elt, has_content disabled state) preserved verbatim;
+           only the surface changed:
+             - button text "AI Summary" → "✨"
+             - hx-target=#summary-{pid} (in-row slot) → #summary-modal-body
+             - data-bs-toggle/target opens the global #summary-modal modal
+               located at the bottom of overview/index.html
+             - per-row <div id="summary-{pid}"> slot removed (modal owns it)
+           D-OV-15 rationale: error/retry rendered inside a table cell was
+           visually weird; modal gives the result room to breathe and keeps
+           the table dense. Detail page (Phase 3) keeps inline behavior — the
+           summary route reads HX-Target and renders inner Retry/Regen
+           buttons against whatever target the caller specified. #}
+        <td class="text-end ai-sparkle-cell">
           <button type="button"
-                  class="btn btn-sm btn-outline-primary ai-btn"
+                  class="btn btn-sm btn-link p-1 ai-sparkle"
                   hx-post="/platforms/{{ row.platform_id | e }}/summary"
-                  hx-target="#summary-{{ row.platform_id | e }}"
+                  hx-target="#summary-modal-body"
                   hx-swap="innerHTML"
                   hx-disabled-elt="this"
+                  data-bs-toggle="modal"
+                  data-bs-target="#summary-modal"
+                  data-platform-title="{{ row.title | e }}"
                   {% if not row.has_content %}disabled title="No content page to summarize yet"{% endif %}
                   aria-label="Generate AI summary for {{ row.title | e }}">
-            AI Summary
+            <span aria-hidden="true">✨</span>
           </button>
-          <div id="summary-{{ row.platform_id | e }}" class="mt-1"></div>
         </td>
       </tr>
     {% endfor %}

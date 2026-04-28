@@ -14,7 +14,7 @@
   </div>
   <button class="btn btn-sm btn-outline-warning"
           hx-post="/platforms/{{ platform_id }}/summary"
-          hx-target="#summary-{{ platform_id }}"
+          hx-target="#{{ target_id or 'summary-' ~ platform_id }}"
           hx-swap="innerHTML"
           hx-indicator="#summary-{{ platform_id }}-spinner"
           hx-disabled-elt="this">

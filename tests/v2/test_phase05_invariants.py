@@ -150,30 +150,79 @@ def test_picker_popover_macro_is_shared_not_forked():
 
 
 # -----------------------------------------------------------------------
-# D-OV-10 — AI Summary cell preserves Phase 3 contract
+# D-OV-15 — AI Summary cell uses ✨ icon button + modal popup
+# (supersedes D-OV-10 inline-slot contract)
 # -----------------------------------------------------------------------
 
-def test_ai_summary_cell_preserves_phase3_contract():
-    """D-OV-10: AI Summary button in overview/_grid.html preserves Phase 3
-    SUMMARY-02 contract verbatim:
-      - hx-post="/platforms/{pid}/summary"
-      - hx-target="#summary-{pid}"
-      - hx-disabled-elt="this"
-      - disabled attr when not row.has_content
+def test_ai_summary_cell_d_ov_15_modal_surface():
+    """D-OV-15: AI Summary button in overview/_grid.html is an icon-only ✨
+    button that targets the global #summary-modal popup. SUMMARY-02 wiring
+    (hx-post path, hx-disabled-elt, has_content disabled state) preserved
+    verbatim from the original D-OV-10 contract — only the result surface
+    changed (in-row slot → modal popup):
+      - hx-post="/platforms/{pid}/summary"               (preserved)
+      - hx-target="#summary-modal-body"                  (CHANGED)
+      - data-bs-toggle="modal" + data-bs-target=…modal   (NEW)
+      - hx-disabled-elt="this"                           (preserved)
+      - disabled attr when not row.has_content           (preserved)
+      - per-row <div id="summary-{pid}"> slot REMOVED    (CHANGED)
+      - button label is the ✨ sparkle, NOT "AI Summary" (CHANGED)
     """
     src = (OVERVIEW_TPL_DIR / "_grid.html").read_text(encoding="utf-8")
+    # SUMMARY-02 wiring preserved
     assert "/platforms/{{ row.platform_id | e }}/summary" in src, (
-        "D-OV-10 — AI Summary hx-post path missing or malformed"
-    )
-    assert 'hx-target="#summary-{{ row.platform_id | e }}"' in src, (
-        "D-OV-10 — AI Summary hx-target missing"
+        "D-OV-15 — AI Summary hx-post path missing or malformed"
     )
     assert 'hx-disabled-elt="this"' in src, (
-        "D-OV-10 — AI Summary hx-disabled-elt missing"
+        "D-OV-15 — AI Summary hx-disabled-elt missing"
     )
     assert "{% if not row.has_content %}disabled" in src, (
-        "D-OV-10 + D-13 (Phase 3) — AI Summary disabled state must be "
+        "D-OV-15 + D-13 (Phase 3) — AI Summary disabled state must be "
         "driven by row.has_content"
+    )
+    # New modal-popup contract
+    assert 'hx-target="#summary-modal-body"' in src, (
+        "D-OV-15 — AI Summary must target the global modal body"
+    )
+    assert 'data-bs-toggle="modal"' in src, (
+        "D-OV-15 — AI Summary button must open the Bootstrap modal"
+    )
+    assert 'data-bs-target="#summary-modal"' in src, (
+        "D-OV-15 — AI Summary data-bs-target must point at #summary-modal"
+    )
+    assert "✨" in src, (
+        "D-OV-15 — AI Summary button label must be the ✨ sparkle icon"
+    )
+    # Per-row inline slot must be GONE (modal owns the result surface).
+    assert 'id="summary-{{ row.platform_id | e }}"' not in src, (
+        "D-OV-15 — per-row in-cell summary slot must be removed; "
+        "result renders in #summary-modal-body instead"
+    )
+    # The literal "AI Summary" button text must be gone from _grid.html.
+    # (The column header in index.html still contains the visually-hidden
+    # accessible label — that test lives separately.)
+    assert ">AI Summary<" not in src, (
+        "D-OV-15 — 'AI Summary' button text replaced by ✨ icon"
+    )
+
+
+def test_ai_summary_modal_present_in_overview_index():
+    """D-OV-15: overview/index.html must declare the global #summary-modal
+    Bootstrap modal with a #summary-modal-body swap target. The reset
+    inline script that re-seeds the placeholder on show.bs.modal must be
+    present so re-clicks never flash the previous platform's summary.
+    """
+    src = (OVERVIEW_TPL_DIR / "index.html").read_text(encoding="utf-8")
+    assert 'id="summary-modal"' in src, (
+        "D-OV-15 — overview/index.html must declare #summary-modal"
+    )
+    assert 'id="summary-modal-body"' in src, (
+        "D-OV-15 — overview/index.html must declare #summary-modal-body"
+    )
+    assert "show.bs.modal" in src, (
+        "D-OV-15 — overview/index.html must reset modal body on open "
+        "(addEventListener('show.bs.modal', …)) so re-click never flashes "
+        "the previous platform's summary"
     )
 
 

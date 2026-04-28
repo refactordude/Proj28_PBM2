@@ -72,21 +72,40 @@ router = APIRouter(prefix="/platforms", tags=["summary"])
 PLATFORM_ID_PATTERN = r"^[A-Za-z0-9_\-]{1,128}$"
 
 
-def _render_error(request: Request, platform_id: str, reason: str) -> HTMLResponse:
+def _resolve_target_id(hx_target: str | None, platform_id: str) -> str:
+    """Pick the target id to thread into rendered fragments (D-OV-15).
+
+    HTMX sends the ``HX-Target`` request header containing the id of the
+    element that hx-target points at. The summary route honors that id so
+    inner Retry / Regenerate buttons in ``_error.html`` / ``_success.html``
+    swap into the same slot the caller rendered into:
+
+      - Overview row ✨ button → ``HX-Target: summary-modal-body`` (D-OV-15)
+      - Detail page button     → ``HX-Target: summary-{platform_id}``
+      - Non-HTMX / curl        → no header → fall back to ``summary-{pid}``
+
+    The fallback preserves the Phase 3 inline contract for any future
+    caller that does not set hx-target.
+    """
+    if hx_target:
+        return hx_target.lstrip("#")
+    return f"summary-{platform_id}"
+
+
+def _render_error(
+    request: Request, platform_id: str, reason: str, target_id: str
+) -> HTMLResponse:
     """Render the amber-warning error fragment with a classified reason.
 
     Always status 200 — UI-SPEC mandate (WR-03). The error fragment swaps
-    inline into the per-row summary slot (``#summary-{pid}``), NEVER into
-    the global ``#htmx-error-container``. Explicit ``status_code=200`` so
-    the always-200 contract is encoded at the call site, not inherited from
-    the ``TemplateResponse`` default. A future maintainer extending this
-    helper cannot silently break the contract by routing through a path
-    where the status default differs.
+    inline into whichever slot the caller's hx-target named (D-OV-15:
+    ``#summary-modal-body`` from Overview rows, ``#summary-{pid}`` from
+    the detail page), NEVER into the global ``#htmx-error-container``.
     """
     return templates.TemplateResponse(
         request,
         "summary/_error.html",
-        {"platform_id": platform_id, "reason": reason},
+        {"platform_id": platform_id, "reason": reason, "target_id": target_id},
         status_code=200,
     )
 
@@ -98,14 +117,16 @@ def get_summary_route(
         str, Path(pattern=PLATFORM_ID_PATTERN, min_length=1, max_length=128)
     ],
     x_regenerate: Annotated[str | None, Header()] = None,
+    hx_target: Annotated[str | None, Header()] = None,
 ):
     """Return success or amber-warning fragment. ALWAYS status 200."""
     settings = getattr(request.app.state, "settings", None)
     cfg = resolve_active_llm(settings)
     backend_name = resolve_active_backend_name(settings)
+    target_id = _resolve_target_id(hx_target, platform_id)
     if cfg is None:
         return _render_error(
-            request, platform_id, "LLM not configured — set one in Settings"
+            request, platform_id, "LLM not configured — set one in Settings", target_id
         )
 
     regenerate = (x_regenerate or "").lower() == "true"
@@ -119,7 +140,9 @@ def get_summary_route(
     except FileNotFoundError:
         # Classified independently because we know exactly what happened —
         # avoids re-routing through _classify_error's branchwork.
-        return _render_error(request, platform_id, "Content page no longer exists")
+        return _render_error(
+            request, platform_id, "Content page no longer exists", target_id
+        )
     except Exception as exc:  # noqa: BLE001 — classified to user-readable string
         reason = summary_service._classify_error(exc, backend_name)
         _log.warning(
@@ -128,7 +151,7 @@ def get_summary_route(
             type(exc).__name__,
             exc,
         )
-        return _render_error(request, platform_id, reason)
+        return _render_error(request, platform_id, reason, target_id)
 
     # Compute cache age in seconds (0 → "(fresh)" branch in template).
     age_s = max(
@@ -152,5 +175,6 @@ def get_summary_route(
             "llm_model": result.llm_model,
             "cached_age_s": age_s,
             "backend_name": backend_name,
+            "target_id": target_id,
         },
     )

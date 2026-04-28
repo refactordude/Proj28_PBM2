@@ -353,14 +353,12 @@ def test_path_traversal_rejected_before_filesystem(
 def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
     """No content file → AI Summary button rendered with disabled + tooltip.
 
-    Phase 5 (D-OV-05): the AI Summary button moved from a flex `<li>`
-    utility (`class="ai-btn ms-2"`) to a Bootstrap-table cell button
-    (`class="btn btn-sm btn-outline-primary ai-btn"`) — the `ms-2` margin
-    is no longer needed inside a `<td>`. The Phase 3 SUMMARY-02 contract
-    on hx-post / hx-target / hx-disabled-elt / disabled+title is preserved
-    verbatim; only the surrounding utility class is gone. Tooltip copy
-    rephrased to "No content page to summarize yet" in Plan 05-05's
-    _grid.html.
+    D-OV-15 (supersedes D-OV-05/D-OV-10 button class): the AI Summary
+    button is now an icon-only ✨ sparkle (`class="btn btn-sm btn-link p-1
+    ai-sparkle"`). SUMMARY-02 wiring on the hx-post path / hx-disabled-elt /
+    disabled+title is preserved verbatim; the result surface moved from an
+    in-row slot to the global #summary-modal popup. Tooltip copy unchanged:
+    "No content page to summarize yet".
     """
     client, cd = isolated_content
     # Add a platform to the overview list first
@@ -369,19 +367,20 @@ def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
 
     r = client.get("/")
     body = r.text
-    # New Phase 5 button class — table cell, not flex <li>.
-    assert 'class="btn btn-sm btn-outline-primary ai-btn"' in body
+    # D-OV-15 button class — icon-only sparkle.
+    assert 'class="btn btn-sm btn-link p-1 ai-sparkle"' in body
     # Disabled with tooltip — appears in the rendered row
     assert "disabled" in body
     assert "No content page to summarize yet" in body
 
 
 def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
-    """Content file present → AI Summary button enabled, hx-post to /summary.
+    """Content file present → ✨ button enabled, hx-post to /summary.
 
-    Phase 5 (D-OV-05): button class updated to the table-cell form
-    `class="btn btn-sm btn-outline-primary ai-btn"`. SUMMARY-02 wiring
-    (hx-post + hx-target + hx-disabled-elt) preserved verbatim per D-OV-10.
+    D-OV-15: button class is the icon-only sparkle form
+    `class="btn btn-sm btn-link p-1 ai-sparkle"`. SUMMARY-02 wiring
+    (hx-post path + hx-disabled-elt) preserved verbatim; hx-target moved
+    from `#summary-{pid}` to `#summary-modal-body` (modal popup).
     """
     client, cd = isolated_content
     # Pre-create content for this platform
@@ -391,23 +390,32 @@ def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
 
     r = client.get("/")
     body = r.text
-    # New Phase 5 button class — table cell, not flex <li>.
-    assert 'class="btn btn-sm btn-outline-primary ai-btn"' in body
-    # SUMMARY-02 wiring preserved (D-OV-10).
+    # D-OV-15 button class — icon-only sparkle.
+    assert 'class="btn btn-sm btn-link p-1 ai-sparkle"' in body
+    # SUMMARY-02 wiring preserved on the hx-post path.
     assert f'hx-post="/platforms/{_PID}/summary"' in body
+    # D-OV-15 modal target (replaces in-row slot target).
+    assert 'hx-target="#summary-modal-body"' in body
     # The standalone `disabled` HTML attribute + tooltip combo should NOT
     # appear when content exists. Note hx-disabled-elt="this" contains the
     # substring "disabled" — that's HTMX wiring, not the disabled-attribute,
     # so we assert against the tooltip copy that is only rendered when the
-    # row is disabled. Phase 5 tooltip wording: "No content page to summarize yet".
+    # row is disabled.
     assert "No content page to summarize yet" not in body
 
 
-def test_overview_row_has_summary_slot(isolated_content):
-    """Per-row summary slot wrapper present (id="summary-{pid}")."""
+def test_overview_has_global_summary_modal(isolated_content):
+    """D-OV-15: overview index renders ONE global #summary-modal popup
+    (replaces the per-row #summary-{pid} slot from D-OV-10).
+    """
     client, cd = isolated_content
     add_r = client.post("/overview/add", data={"platform_id": _PID})
     assert add_r.status_code == 200
 
     r = client.get("/")
-    assert f'id="summary-{_PID}"' in r.text
+    body = r.text
+    # New global modal surface
+    assert 'id="summary-modal"' in body
+    assert 'id="summary-modal-body"' in body
+    # Old per-row slot must be gone
+    assert f'id="summary-{_PID}"' not in body

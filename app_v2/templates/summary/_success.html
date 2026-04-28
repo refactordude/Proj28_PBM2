@@ -23,7 +23,7 @@
       </small>
       <button class="ai-btn regen"
               hx-post="/platforms/{{ platform_id }}/summary"
-              hx-target="#summary-{{ platform_id }}"
+              hx-target="#{{ target_id or 'summary-' ~ platform_id }}"
               hx-swap="innerHTML"
               hx-indicator="#summary-{{ platform_id }}-spinner"
               hx-headers='{"X-Regenerate": "true"}'
