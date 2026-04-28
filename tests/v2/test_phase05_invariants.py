@@ -217,6 +217,42 @@ def test_ai_summary_cell_d_ov_15_modal_surface():
     )
 
 
+def test_link_button_d_ov_16_external_open_or_disabled():
+    """D-OV-16: the Link button in overview/_grid.html opens row.link in a
+    new tab (target="_blank" + rel="noopener noreferrer") when frontmatter
+    has a `link` key; otherwise renders Bootstrap's `.disabled` anchor
+    state with no href and an explanatory tooltip. The .md file MUST NOT
+    be reachable from this button — only the title cell links there.
+    """
+    src = (OVERVIEW_TPL_DIR / "_grid.html").read_text(encoding="utf-8")
+    # Active branch — external link wired with security attributes
+    assert "{% if row.link %}" in src, (
+        "D-OV-16 — Link button must branch on row.link presence"
+    )
+    assert 'href="{{ row.link | e }}"' in src, (
+        "D-OV-16 — active Link button must point at row.link (escaped)"
+    )
+    assert 'target="_blank"' in src, (
+        "D-OV-16 — Link button must open in a new tab"
+    )
+    assert 'rel="noopener noreferrer"' in src, (
+        "D-OV-16 — Link button must set rel=noopener noreferrer "
+        "(reverse-tabnabbing + referrer leak protection)"
+    )
+    # Disabled branch — Bootstrap pattern, no href, aria-disabled
+    assert 'class="btn btn-sm btn-outline-secondary disabled' in src, (
+        "D-OV-16 — disabled Link button must use Bootstrap .disabled class"
+    )
+    assert 'aria-disabled="true"' in src, (
+        "D-OV-16 — disabled Link button must set aria-disabled=true"
+    )
+    # The OLD behavior (clicking Link → goes to .md file) MUST be gone.
+    # The .md file is reachable only from the title cell <a>.
+    assert 'href="/platforms/{{ row.platform_id | e }}"\n             class="btn' not in src, (
+        "D-OV-16 — Link button must NOT route to the platform .md page"
+    )
+
+
 def test_ai_summary_modal_present_in_overview_index():
     """D-OV-15: overview/index.html must declare the global #summary-modal
     Bootstrap modal with a #summary-modal-body swap target. The reset

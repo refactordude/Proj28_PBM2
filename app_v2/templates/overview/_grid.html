@@ -59,12 +59,33 @@
            through to inner Retry/Regen buttons (modal-body for Overview,
            summary-{pid} for the detail page caller). #}
         <td class="text-end text-nowrap">
-          <a href="/platforms/{{ row.platform_id | e }}"
-             class="btn btn-sm btn-outline-secondary me-1"
-             aria-label="Open platform page for {{ row.title | e }}">
-            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-            View
-          </a>
+          {# Link button — D-OV-16. Opens row.link (sanitized service-side
+             to http(s) only; bare domains promoted to https://). When
+             frontmatter has no `link` key, renders as a Bootstrap
+             `.disabled` anchor with no href and a tooltip explaining why.
+             The .md file is NOT reachable from this button anymore — the
+             title cell is the canonical handle for the platform's content
+             page (see <td> at the top of this row). #}
+          {% if row.link %}
+            <a href="{{ row.link | e }}"
+               class="btn btn-sm btn-outline-secondary me-1"
+               target="_blank"
+               rel="noopener noreferrer"
+               title="Open {{ row.link | e }}"
+               aria-label="Open external link for {{ row.title | e }}">
+              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+              Link
+            </a>
+          {% else %}
+            <a class="btn btn-sm btn-outline-secondary disabled me-1"
+               role="button"
+               tabindex="-1"
+               aria-disabled="true"
+               title="No link configured in frontmatter">
+              <i class="bi bi-link-45deg text-muted" aria-hidden="true"></i>
+              <span class="text-muted">Link</span>
+            </a>
+          {% endif %}
           <button type="button"
                   class="btn btn-sm btn-outline-secondary"
                   hx-post="/platforms/{{ row.platform_id | e }}/summary"

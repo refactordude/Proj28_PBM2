@@ -331,11 +331,81 @@ def test_constants_sortable_columns_has_12_entries_with_dates():
 
 
 def test_overview_row_model_fields():
-    # OverviewRow has 14 fields (12 PM + platform_id + has_content).
+    # OverviewRow has 15 fields (12 PM + platform_id + has_content + link).
     fields = set(OverviewRow.model_fields.keys())
     expected = {
         "platform_id", "title", "status", "customer", "model_name",
         "ap_company", "ap_model", "device", "controller", "application",
-        "assignee", "start", "end", "has_content",
+        "assignee", "start", "end", "has_content", "link",
     }
     assert fields == expected
+
+
+# ---------------------------------------------------------------------------
+# D-OV-16 — link sanitizer + frontmatter wiring.
+# ---------------------------------------------------------------------------
+def test_sanitize_link_drops_dangerous_schemes():
+    """D-OV-16: javascript:/data:/vbscript:/file:/about: must return None
+    so the template renders the disabled-state Link button instead of an
+    XSS-vector href.
+    """
+    from app_v2.services.overview_grid_service import _sanitize_link
+    for raw in (
+        "javascript:alert(1)",
+        "JavaScript:alert(1)",  # case-insensitive
+        "  javascript:void(0)  ",  # leading whitespace
+        "data:text/html,<script>alert(1)</script>",
+        "vbscript:msgbox(1)",
+        "file:///etc/passwd",
+        "about:blank",
+    ):
+        assert _sanitize_link(raw) is None, f"Should reject {raw!r}"
+
+
+def test_sanitize_link_returns_none_for_empty_input():
+    from app_v2.services.overview_grid_service import _sanitize_link
+    assert _sanitize_link(None) is None
+    assert _sanitize_link("") is None
+    assert _sanitize_link("   ") is None
+    assert _sanitize_link("\n\t") is None
+
+
+def test_sanitize_link_keeps_http_https_verbatim():
+    from app_v2.services.overview_grid_service import _sanitize_link
+    assert _sanitize_link("http://example.com") == "http://example.com"
+    assert _sanitize_link("https://example.com/path?q=1") == "https://example.com/path?q=1"
+    assert _sanitize_link("HTTPS://Example.Com") == "HTTPS://Example.Com"  # case preserved
+    assert _sanitize_link("  https://example.com  ") == "https://example.com"
+
+
+def test_sanitize_link_promotes_bare_domain_to_https():
+    """`link: www.naver.com` (no scheme) → https://www.naver.com so the
+    rendered <a href="..."> opens the external site, not a relative path.
+    """
+    from app_v2.services.overview_grid_service import _sanitize_link
+    assert _sanitize_link("www.naver.com") == "https://www.naver.com"
+    assert _sanitize_link("naver.com") == "https://naver.com"
+    assert _sanitize_link("naver.com/path") == "https://naver.com/path"
+
+
+def test_sanitize_link_promotes_protocol_relative_to_https():
+    from app_v2.services.overview_grid_service import _sanitize_link
+    assert _sanitize_link("//example.com/x") == "https://example.com/x"
+
+
+def test_link_field_populated_from_frontmatter(tmp_path):
+    """End-to-end: build_overview_grid_view_model reads `link:` from
+    frontmatter, sanitizes it, and surfaces it on OverviewRow.link.
+    Missing `link:` in frontmatter → row.link is None.
+    """
+    cd = tmp_path / "content"
+    cd.mkdir()
+    _write_fm(cd, "P1", title="Has link", link="www.naver.com")
+    _write_fm(cd, "P2", title="No link")  # no link key
+    _write_fm(cd, "P3", title="Bad link", link="javascript:alert(1)")
+
+    vm = build_overview_grid_view_model(["P1", "P2", "P3"], cd)
+    by_pid = {r.platform_id: r for r in vm.rows}
+    assert by_pid["P1"].link == "https://www.naver.com"  # promoted
+    assert by_pid["P2"].link is None                      # missing → None
+    assert by_pid["P3"].link is None                      # dangerous → None

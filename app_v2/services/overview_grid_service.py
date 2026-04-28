@@ -46,6 +46,15 @@ ALL_METADATA_KEYS: tuple[str, ...] = (
     "device", "controller", "application", "assignee", "start", "end",
 )
 
+# Frontmatter URL schemes that must be blocked before they ever reach an
+# `<a href="...">`. javascript: and vbscript: are XSS vectors; data: can
+# embed scripts; file: leaks local FS to the user; about: is a no-op trap.
+# Frontmatter is technically PM-controlled (in-tree markdown), but those
+# files travel through Git PRs and the editor route — defense in depth.
+_DANGEROUS_LINK_SCHEMES: tuple[str, ...] = (
+    "javascript:", "data:", "vbscript:", "file:", "about:",
+)
+
 # 6 filterable columns per D-OV-13 / user lock — Title, Model Name,
 # assignee (담당자), Start, End are NOT filterable.
 FILTERABLE_COLUMNS: tuple[str, ...] = (
@@ -94,6 +103,12 @@ class OverviewRow(BaseModel):
     start: str | None = None
     end: str | None = None
     has_content: bool = False
+    # D-OV-16 — external `link` from frontmatter, sanitized at the service
+    # layer (dangerous schemes dropped, bare domains promoted to https://).
+    # None when missing → template renders the Link button in its disabled
+    # state. Not in ALL_METADATA_KEYS — `link` is NOT filterable, sortable,
+    # or a column on the grid; it's a per-row action affordance.
+    link: str | None = None
 
 
 class OverviewGridViewModel(BaseModel):
@@ -110,6 +125,38 @@ class OverviewGridViewModel(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers — module-private.
 # ---------------------------------------------------------------------------
+
+
+def _sanitize_link(raw: str | None) -> str | None:
+    """Coerce a frontmatter ``link`` value to a safe http(s) URL or None.
+
+    D-OV-16 contract:
+      - None / empty / whitespace      → None
+      - Dangerous scheme prefix        → None  (javascript:, data:, vbscript:,
+                                                file:, about: — case-insensitive)
+      - Already http:// or https://    → returned verbatim (trimmed)
+      - Protocol-relative ``//host``   → ``https://host``
+      - Anything else (e.g. ``www.x``,
+        ``naver.com``)                 → ``https://`` prefix added
+
+    Returning None signals "no usable link" so the template renders the
+    button in its disabled state. Frontmatter values arrive already
+    string-coerced from ``read_frontmatter`` (None values dropped at that
+    layer) — the ``raw is None`` branch is defensive belt-and-suspenders.
+    """
+    if not raw:
+        return None
+    s = raw.strip()
+    if not s:
+        return None
+    lower = s.lower()
+    if any(lower.startswith(scheme) for scheme in _DANGEROUS_LINK_SCHEMES):
+        return None
+    if lower.startswith("http://") or lower.startswith("https://"):
+        return s
+    if s.startswith("//"):
+        return "https:" + s
+    return "https://" + s
 
 
 def _parse_iso_date(value: str | None) -> datetime.date | None:
@@ -296,6 +343,7 @@ def build_overview_grid_view_model(
             start=fm.get("start") or None,
             end=fm.get("end") or None,
             has_content=has_content,
+            link=_sanitize_link(fm.get("link")),
         )
         all_rows.append(row)
 
