@@ -3,13 +3,14 @@ status: diagnosed
 phase: 04-browse-tab-port
 source: [04-VERIFICATION.md]
 started: 2026-04-26T23:45:00Z
-updated: 2026-04-28T01:55:00Z
+updated: 2026-04-28T12:30:00Z
 ---
 
 ## Current Test
 
 [testing complete — gap-4 surfaced: outside-click on popover currently cancels per D-15; user reports this should auto-Apply]
 [gap-4 closed by Plan 04-07 (2026-04-28); ready for UAT replay]
+[2026-04-28 UAT replay surfaced gap-5: implicit-Apply path not landing the grid swap (only the in-popover Apply count badge updates) AND user requested removal of the Apply button entirely — design pivot to auto-commit on each checkbox change with client-side debounce. gap-4 marked superseded; gap-5 supersedes it.]
 
 ## Tests
 
@@ -59,12 +60,13 @@ verified: 2026-04-27T12:30:00Z
 
 total: 2
 passed: 2
-issues: 2
+issues: 3
 pending: 0
 skipped: 0
 blocked: 0
-gaps_open: 0
+gaps_open: 1
 gaps_resolved: 4
+gaps_superseded: 1
 
 ## Gaps
 
@@ -187,12 +189,16 @@ fix: |
   Closed by Plan 04-06.
 
 ### gap-4 — Clicking outside the popover discards selection (should auto-Apply)
-status: resolved
+status: superseded
 reported: 2026-04-28T11:00:00Z
 resolved: 2026-04-28T01:55:00Z
+superseded: 2026-04-28T12:30:00Z
+superseded_by: gap-5
+superseded_reason: |
+  UAT replay confirmed the Plan 04-07 implicit-Apply implementation does not land the grid swap on outside-click — only the in-popover ".popover-apply-count" badge updates (via onCheckboxChange, not via implicit-Apply). Likely cause: by the time `hidden.bs.dropdown` fires, the Apply button's parent .dropdown-menu has been hidden by Bootstrap and the synthetic .click() on the button is rejected by HTMX or the form-association is lost. Independent of the bug, the user has decided to remove the Apply button entirely (design pivot — see gap-5), making D-15 amended + D-15a moot. gap-4 is therefore superseded rather than re-fixed.
 test_ref: 1
 severity: minor
-contract_ref: D-15 (amended) + D-15a (locked)
+contract_ref: D-15 (amended) + D-15a (locked) — both superseded by D-15b
 symptom: |
   When the user opens the Platforms (or Parameters) picker, ticks one or more
   checkboxes, then clicks anywhere outside the popover (or presses Esc, or
@@ -313,3 +319,44 @@ fix: |
   Content) keep their `overflow: hidden` rounded-corner clipping unchanged.
   Browser support: Chromium-based Edge / Chrome 105+, Safari 15.4+,
   Firefox 121+ (acceptable for the corporate-intranet target environment).
+
+### gap-5 — Implicit-Apply does not land the grid swap; design pivot to remove Apply button entirely
+status: open
+reported: 2026-04-28T12:30:00Z
+test_ref: 1
+severity: major
+contract_ref: D-14 (overturned), D-15 (superseded), D-15a (superseded), new D-15b
+supersedes: gap-4
+symptom: |
+  UAT replay of the gap-4 closure (Plan 04-07): user opened the Platforms picker, ticked items, and clicked outside the popover. Observed:
+  - In-popover "Apply (N)" count badge updated correctly (this is the onCheckboxChange handler, NOT implicit-Apply).
+  - Trigger button badge did NOT update.
+  - Pivot grid did NOT swap.
+  - Only clicking the explicit Apply button OR the Swap-axes toggle commits.
+
+  This means branch (iv) of `onDropdownHide` (`applyBtn.click()`) is failing to fire the HTMX request — likely because by the time `hidden.bs.dropdown` fires, the .dropdown-menu is already hidden by Bootstrap and the synthetic click on the now-hidden Apply button is rejected by HTMX or the form-association is lost.
+
+  More importantly: the user has reported the entire 2-click Apply workflow as friction and explicitly requested removal of the Apply button. Design pivot: each checkbox toggle commits directly via debounced HTMX. The close-event taxonomy is moot — there is no commit gesture to taxonomize anymore.
+
+fix_direction: |
+  This is a CONTRACT change first, code change second.
+
+  CONTRACT (new D-15b, supersedes D-14, D-15, D-15a):
+    - Each checkbox change in either picker fires a single hx-post=/browse/grid request after a 250ms client-side debounce (collapses bursts so 5 quick toggles = 1 query, not 5).
+    - The hx-* attributes are attached to the <ul class="popover-search-list"> checklist (not to individual checkboxes) so HTMX listens for bubbling change events and applies its built-in "delay:" trigger modifier as the debouncer.
+    - Apply button is REMOVED from the popover footer.
+    - Clear button stays — clicking it unchecks all in this picker, the change events bubble, and the debounce fires a single commit (showing the empty selection grid for this picker).
+    - Top-level "Clear all" link (D-17) is unchanged.
+    - Esc and outside-click and Tab-away all just close the popover. No commit/cancel distinction; the checkbox state at any moment IS the truth. (Once the user toggles a box, the commit is queued via debounce regardless of how the popover closes.)
+    - Trigger button badge update path is unchanged — the picker_badges_oob OOB swap from gap-3 fires on every POST /browse/grid response; the badge updates server-side after the debounced request lands.
+    - data-bs-auto-close stays "outside" so the popover stays open across multiple toggles (ergonomics — user picks N items in a row).
+
+  CODE:
+    1. _picker_popover.html: delete the popover footer's Apply button (keep the Clear button); add hx-post / hx-target / hx-swap / hx-trigger="change changed delay:250ms from:closest .popover-search-root" to the <ul class="popover-search-list"> element.
+    2. popover-search.js: delete onDropdownHide, onApplyClick, onKeydown, _selectionsEqual, dataset.applied/cancelling/originalSelection logic. Keep onInput (search filter) and onClearClick (popover Clear button). Drop the onCheckboxChange in-popover badge update because the .popover-apply-count target is removed. Drop onDropdownShow's flag-clearing (no flags exist anymore).
+    3. tests/v2/test_phase04_invariants.py: remove the D-15a invariant (test_popover_search_js_implements_d15a_close_event_taxonomy); add a new D-15b invariant pinning hx-post on the checklist <ul> + hx-trigger contains "delay:250ms" + no .popover-apply-btn in the template.
+    4. tests/v2/test_browse_routes.py: remove the gap-4 implicit-Apply tests (they're moot); add a structural test confirming the Apply button is absent from GET /browse output and the checklist <ul> carries the expected hx-* attributes.
+
+  This is a NET SIMPLIFICATION — popover-search.js shrinks by ~150 lines; the close-event taxonomy is replaced with HTMX's built-in `delay:` trigger; the contract is uniform across all close paths.
+
+
