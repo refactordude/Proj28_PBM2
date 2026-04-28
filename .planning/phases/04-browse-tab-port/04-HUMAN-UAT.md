@@ -11,6 +11,7 @@ updated: 2026-04-28T12:30:00Z
 [testing complete — gap-4 surfaced: outside-click on popover currently cancels per D-15; user reports this should auto-Apply]
 [gap-4 closed by Plan 04-07 (2026-04-28); ready for UAT replay]
 [2026-04-28 UAT replay surfaced gap-5: implicit-Apply path not landing the grid swap (only the in-popover Apply count badge updates) AND user requested removal of the Apply button entirely — design pivot to auto-commit on each checkbox change with client-side debounce. gap-4 marked superseded; gap-5 supersedes it.]
+[gap-5 closed inline 2026-04-28 (commits ab58c98, 355aaf0, dc96001, ff7048c). All 5 gaps now resolved (1 superseded). UAT browser replay still required to confirm D-15b debounced auto-commit behavior across all close paths.]
 
 ## Tests
 
@@ -64,8 +65,8 @@ issues: 3
 pending: 0
 skipped: 0
 blocked: 0
-gaps_open: 1
-gaps_resolved: 4
+gaps_open: 0
+gaps_resolved: 5
 gaps_superseded: 1
 
 ## Gaps
@@ -321,8 +322,9 @@ fix: |
   Firefox 121+ (acceptable for the corporate-intranet target environment).
 
 ### gap-5 — Implicit-Apply does not land the grid swap; design pivot to remove Apply button entirely
-status: open
+status: resolved
 reported: 2026-04-28T12:30:00Z
+resolved: 2026-04-28T13:00:00Z
 test_ref: 1
 severity: major
 contract_ref: D-14 (overturned), D-15 (superseded), D-15a (superseded), new D-15b
@@ -358,5 +360,14 @@ fix_direction: |
     4. tests/v2/test_browse_routes.py: remove the gap-4 implicit-Apply tests (they're moot); add a structural test confirming the Apply button is absent from GET /browse output and the checklist <ul> carries the expected hx-* attributes.
 
   This is a NET SIMPLIFICATION — popover-search.js shrinks by ~150 lines; the close-event taxonomy is replaced with HTMX's built-in `delay:` trigger; the contract is uniform across all close paths.
+
+fix: |
+  Implemented D-15b inline (no separate gap-closure plan):
+    - 04-CONTEXT.md amended: D-14, D-15, D-15a marked SUPERSEDED; new D-15b locked (auto-commit + 250ms debounce). [commit ab58c98]
+    - app_v2/templates/browse/_picker_popover.html: removed the Apply button + the popover-apply-btn block; added hx-post="/browse/grid" + hx-target="#browse-grid" + hx-swap="innerHTML swap:200ms" + hx-trigger="change changed delay:250ms from:closest .popover-search-root" to the <ul class="popover-search-list"> element. Kept the popover Clear button (now footer-right-aligned only) — its existing JS dispatches change events on each unchecked checkbox, which bubble to the <ul> and fire the same debounced commit. [commit 355aaf0]
+    - app_v2/static/js/popover-search.js: 203 → 61 lines (-142). Deleted onDropdownHide / onApplyClick / onKeydown / _selectionsEqual / dataset.applied|cancelling|originalSelection logic / onCheckboxChange (in-popover Apply count badge gone). Kept onInput (search filter) + onClearClick (popover Clear). Removed the show/hide/keydown event listener registrations; only document-level input + click listeners remain. [commit dc96001]
+    - tests/v2/test_browse_routes.py: replaced test_apply_button_carries_form_attribute with test_picker_checklist_carries_d15b_hx_attributes (asserts <ul> hx-post + hx-target + delay:250ms + no popover-apply-btn in GET /browse output); renamed test_post_browse_grid_apply_button_payload_renders_populated_grid → test_post_browse_grid_with_populated_payload_renders_grid (docstring updated; test body unchanged); removed the two gap-4 D-15a tests (test_post_browse_grid_implicit_apply_payload_shape, test_post_browse_grid_idempotent_unchanged_selection — moot under D-15b). 18 → 16 tests. [commit ff7048c]
+    - tests/v2/test_phase04_invariants.py: replaced test_popover_search_js_implements_d15a_close_event_taxonomy with test_picker_popover_uses_d15b_auto_commit_pattern. New invariant grep-guards 10 markers: no popover-apply-btn in template, hx-post + hx-target + delay:250ms on the <ul>, data-bs-auto-close="outside" preserved (D-09), and absence of dataset.cancelling / _selectionsEqual / popover-apply-btn / hidden.bs.dropdown / hide.bs.dropdown in popover-search.js plus a D-15b citation. 14 → 14 invariants. [commit ff7048c]
+  Verification: full v2 pytest suite 275 passed, 1 skipped (was 277 before — 2 gap-4 server tests removed; the structural template/JS shape is now covered by the new test + invariant). UAT browser replay still required to confirm the live behavior across all close paths (outside-click, Esc, Tab-away, click-on-other-trigger, scroll-close, debounce burst-collapse).
 
 
