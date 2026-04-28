@@ -718,3 +718,159 @@ def test_post_browse_grid_picker_badge_zero_count_renders_hidden(client, monkeyp
             f"gap-3: {badge_id} for empty selection MUST carry d-none "
             f"(D-08: no visible badge when count is 0). Got: {tag!r}"
         )
+
+
+# -----------------------------------------------------------------------
+# gap-4 regression — D-15a close-event taxonomy / implicit-Apply server contract
+# See: .planning/phases/04-browse-tab-port/04-HUMAN-UAT.md gap-4
+#      .planning/phases/04-browse-tab-port/04-CONTEXT.md D-15 (amended) + D-15a
+#
+# TestClient cannot exercise the JS-side close-event distinguisher (HTMX
+# is JavaScript, runs in the browser). The implicit-Apply path's HTTP
+# contract — once popover-search.js fires popoverApplyBtn.click() — is
+# the SAME POST /browse/grid that explicit Apply makes; that is what
+# these tests pin. JS-side correctness is grep-guarded by the new
+# invariant in test_phase04_invariants.py.
+# -----------------------------------------------------------------------
+
+
+def test_post_browse_grid_implicit_apply_payload_shape(client, monkeypatch):
+    """gap-4 regression: implicit-Apply via outside-click hits the same HTTP contract as explicit Apply.
+
+    D-15a: when the user opens a picker, ticks boxes, then clicks
+    outside the popover, popover-search.js programmatically clicks
+    the popover's Apply button. The button's hx-post=/browse/grid +
+    form="browse-filter-form" auto-include + the existing form-
+    associated checkboxes produce a POST body identical to the one
+    an explicit Apply click would produce.
+
+    This test sends that exact body shape and asserts the route returns:
+      - HTTP 200
+      - The 4-block fragment shape (grid + count_oob + warnings_oob
+        + picker_badges_oob from gap-3 fix)
+      - HX-Push-Url canonical /browse?... URL (Pitfall 2 defended)
+      - The populated pivot table (NOT the empty-state alert) when
+        the implicit-Apply selection is non-empty
+    """
+    captured: dict = {}
+
+    def _capture_fetch(db, p, ic, i, row_cap=200, db_name=""):
+        captured["platforms"] = p
+        captured["infocategories"] = ic
+        captured["items"] = i
+        return (
+            pd.DataFrame({
+                "PLATFORM_ID": ["P1", "P2", "P3"],
+                "InfoCategory": ["attribute", "attribute", "attribute"],
+                "Item": ["vendor_id", "vendor_id", "vendor_id"],
+                "Result": ["0xA1", "0xB2", "0xC3"],
+            }),
+            False,
+        )
+
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1", "P2", "P3"],
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=_capture_fetch,
+    )
+
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("platforms", "P2"),
+        ("platforms", "P3"),
+        ("params", "attribute · vendor_id"),
+    ])
+    assert r.status_code == 200
+
+    # 1. Populated grid renders.
+    assert "Select platforms and parameters above to build the pivot grid." not in r.text, (
+        "gap-4 server contract: implicit-Apply payload produced empty-state alert."
+    )
+    assert 'class="table table-striped table-hover table-sm pivot-table"' in r.text, (
+        "Populated pivot table missing from implicit-Apply response"
+    )
+
+    # 2. picker_badges_oob OOB block from gap-3 still emits.
+    assert 'id="picker-platforms-badge"' in r.text, (
+        "gap-4: picker-platforms-badge OOB span missing from implicit-Apply response."
+    )
+    assert 'id="picker-params-badge"' in r.text, (
+        "gap-4: picker-params-badge OOB span missing from implicit-Apply response."
+    )
+    assert r.text.count('hx-swap-oob="true"') >= 3, (
+        "gap-4: at least 3 OOB swap fragments expected (grid_count + 2 picker badges)"
+    )
+
+    # 3. HX-Push-Url is set to the canonical /browse?... URL.
+    assert "HX-Push-Url" in r.headers, "implicit-Apply response missing HX-Push-Url header"
+    push = r.headers["HX-Push-Url"]
+    assert push.startswith("/browse?"), (
+        f"HX-Push-Url should start with /browse?...; got {push!r}"
+    )
+    assert "/browse/grid" not in push, "HX-Push-Url leaked /browse/grid"
+
+    # 4. Affirmative invariant — fetch_cells received the actual selected values.
+    assert captured.get("platforms") == ("P1", "P2", "P3"), (
+        f"fetch_cells received wrong platforms tuple under implicit-Apply: "
+        f"{captured.get('platforms')!r}"
+    )
+    assert captured.get("items") == ("vendor_id",), (
+        f"fetch_cells received wrong items tuple under implicit-Apply: "
+        f"{captured.get('items')!r}"
+    )
+
+
+def test_post_browse_grid_idempotent_unchanged_selection(client, monkeypatch):
+    """gap-4 regression: applying the same selection twice produces a valid response.
+
+    D-15a no-op short-circuit lives in popover-search.js (skip the
+    implicit-Apply HTMX request when current sorted checkbox values
+    equal data-original-selection). This test pins that the server
+    side stays well-behaved if the JS short-circuit ever regresses:
+    the SAME POST body posted twice in sequence produces the SAME
+    200 response with the same fragment shape and same HX-Push-Url
+    (HTTP-level idempotency).
+    """
+    call_count = [0]
+
+    def _counting_fetch(db, p, ic, i, row_cap=200, db_name=""):
+        call_count[0] += 1
+        return (
+            pd.DataFrame({
+                "PLATFORM_ID": ["P1"],
+                "InfoCategory": ["attribute"],
+                "Item": ["vendor_id"],
+                "Result": ["0xA1"],
+            }),
+            False,
+        )
+
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1"],
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=_counting_fetch,
+    )
+
+    body_pairs = [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+    ]
+
+    # First call.
+    r1 = _post_form_pairs(client, "/browse/grid", body_pairs)
+    assert r1.status_code == 200
+    assert 'class="table table-striped table-hover table-sm pivot-table"' in r1.text
+
+    # Second call — identical body, must produce identical-shape response.
+    r2 = _post_form_pairs(client, "/browse/grid", body_pairs)
+    assert r2.status_code == 200
+    assert 'class="table table-striped table-hover table-sm pivot-table"' in r2.text
+    assert 'id="picker-platforms-badge"' in r2.text
+    assert 'id="picker-params-badge"' in r2.text
+    assert r1.headers.get("HX-Push-Url") == r2.headers.get("HX-Push-Url"), (
+        f"HX-Push-Url drifted between identical calls: "
+        f"{r1.headers.get('HX-Push-Url')!r} vs {r2.headers.get('HX-Push-Url')!r}"
+    )
+    assert call_count[0] >= 1, "fetch_cells should be called at least once"

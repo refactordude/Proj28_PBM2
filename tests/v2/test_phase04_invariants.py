@@ -228,3 +228,91 @@ def test_browse_templates_contain_no_banned_tokens(token):
         f"Banned token '{token}' found in browse templates:\n"
         + "\n".join(violations)
     )
+
+
+# -----------------------------------------------------------------------
+# D-15a — popover-search.js implements the close-event taxonomy
+# (gap-4 closure 2026-04-28)
+# -----------------------------------------------------------------------
+
+def test_popover_search_js_implements_d15a_close_event_taxonomy():
+    """D-15a regression guard — popover-search.js must implement all
+    close-event-taxonomy contract markers, AND the trigger button in
+    _picker_popover.html must keep data-bs-auto-close="outside" (the JS
+    precondition).
+
+    Required markers in app_v2/static/js/popover-search.js:
+      1. dataset.cancelling — set by the keydown listener on Esc, read
+         by onDropdownHide for the explicit-cancel branch
+      2. The Esc keydown listener registered with capture-phase=true so
+         it runs BEFORE Bootstrap's own internal Esc handler
+      3. Programmatic click on the popover Apply button (.popover-apply-btn
+         + .click()) — implicit-Apply reuses the gap-2 form-association
+         + gap-3 OOB swap rather than rolling a second hx-post
+      4. _selectionsEqual helper — drives the no-op short-circuit
+      5. Comment block citing D-15a — locked-contract documentation
+
+    Required markers in app_v2/templates/browse/_picker_popover.html:
+      6. data-bs-auto-close="outside" on the trigger button (the
+         precondition for the close-event taxonomy to be reachable)
+    """
+    js_src = (APP_V2_ROOT / "static" / "js" / "popover-search.js").read_text(encoding="utf-8")
+    tpl_src = _read("templates", "browse", "_picker_popover.html")
+
+    # Marker 1: dataset.cancelling appears at least 2 times.
+    n_cancelling = js_src.count("dataset.cancelling")
+    assert n_cancelling >= 2, (
+        f"D-15a marker 1 — dataset.cancelling found {n_cancelling} times "
+        f"in popover-search.js; expected >= 2 (set in onKeydown, read in "
+        f"onDropdownHide). The Esc-distinguisher mechanism is missing or "
+        f"incomplete."
+    )
+
+    # Marker 2: keydown listener registered with capture-phase=true.
+    keydown_pattern = re.compile(
+        r"addEventListener\(\s*['\"]keydown['\"]\s*,\s*\w+\s*,\s*true\s*\)"
+    )
+    assert keydown_pattern.search(js_src), (
+        "D-15a marker 2 — popover-search.js must register a capture-phase "
+        "keydown listener: addEventListener('keydown', <handler>, true). "
+        "Without capture phase, Bootstrap's internal Esc handler may fire "
+        "first and prevent the cancellation flag from being set."
+    )
+
+    # Marker 3: programmatic click on the popover Apply button.
+    assert ".popover-apply-btn" in js_src, (
+        "D-15a marker 3 — popover-search.js does not reference "
+        ".popover-apply-btn. The implicit-Apply path must locate the "
+        "popover's Apply button via this class."
+    )
+    click_pattern = re.compile(r"\b(?:applyBtn|popoverApplyBtn|applyButton|btn)\.click\(\)")
+    oneliner_pattern = re.compile(
+        r"querySelector\(\s*['\"]\.popover-apply-btn['\"]\s*\)\s*\.click\(\)"
+    )
+    assert click_pattern.search(js_src) or oneliner_pattern.search(js_src), (
+        "D-15a marker 3 — programmatic .click() on the popover Apply "
+        "button is missing. Implicit-Apply must reuse the explicit-Apply "
+        "code path by clicking popoverApplyBtn — NOT a hand-rolled "
+        "second hx-post."
+    )
+
+    # Marker 4: _selectionsEqual helper for no-op short-circuit.
+    assert "_selectionsEqual" in js_src, (
+        "D-15a marker 4 — _selectionsEqual helper missing from "
+        "popover-search.js. The no-op short-circuit (skip HTMX when "
+        "selection unchanged) is not implementable without it."
+    )
+
+    # Marker 5: D-15a citation.
+    assert "D-15a" in js_src, (
+        "D-15a marker 5 — popover-search.js does not cite D-15a in a "
+        "comment. Future readers must see the locked contract documented."
+    )
+
+    # Marker 6: data-bs-auto-close="outside" on the trigger button.
+    assert 'data-bs-auto-close="outside"' in tpl_src, (
+        "D-15a marker 6 — trigger button in _picker_popover.html missing "
+        "data-bs-auto-close=\"outside\". Without it, Bootstrap intercepts "
+        "outside-clicks before hide.bs.dropdown fires and the close-event "
+        "taxonomy is unreachable."
+    )
