@@ -176,7 +176,6 @@ def main() -> None:
                 icon=":material/table_chart:",
                 default=True,
             ),
-            st.Page("app/pages/ask.py", title="Ask", icon=":material/chat:"),
             st.Page(
                 "app/pages/settings.py",
                 title="Settings",

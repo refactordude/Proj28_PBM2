@@ -178,12 +178,33 @@ def test_settings_router_cookie_attrs_match_d14():
 
 # ---- D-22 readiness — v1.0 Streamlit Ask still present at this stage ----
 
-def test_v1_streamlit_ask_still_present_pre_06_06_deletion():
-    """D-22 deletion happens in Plan 06-06 (the FINAL plan).
+def test_v1_streamlit_ask_deleted_per_d22():
+    """D-22: the v1.0 Streamlit Ask UI was hard-deleted in Plan 06-06.
 
-    At this stage (Plan 06-05 just landed), the v1.0 Streamlit files MUST
-    still exist. This invariant flips polarity in Plan 06-06 — we update
-    THIS test file at that point. Until then, presence == correctness.
+    Polarity-flipped from `test_v1_streamlit_ask_still_present_pre_06_06_deletion`
+    (Plan 06-05 placeholder). After Plan 06-06, the v1.0 Ask page MUST NOT
+    exist on disk; v2.0 owns the Ask URL outright.
+
+    Files that MUST stay (D-22 #5 — framework-agnostic v2.0 consumers):
+      - app/core/agent/nl_service.py
+      - app/core/agent/nl_agent.py
+      - app/adapters/llm/pydantic_model.py
+    These are positively asserted to ensure deletion didn't overreach.
     """
     v1_ask = REPO / "app" / "pages" / "ask.py"
-    assert v1_ask.exists(), "v1.0 Streamlit Ask page should still exist until Plan 06-06"
+    assert not v1_ask.exists(), "D-22: app/pages/ask.py must be deleted in Plan 06-06"
+
+    v1_test = REPO / "tests" / "pages" / "test_ask_page.py"
+    assert not v1_test.exists(), "D-22: tests/pages/test_ask_page.py must be deleted"
+
+    # streamlit_app.py must not reference the deleted file
+    streamlit_src = (REPO / "streamlit_app.py").read_text()
+    assert "app/pages/ask.py" not in streamlit_src, "streamlit_app.py still references the deleted Ask page"
+
+    # D-22 #5 — framework-agnostic preserves
+    nl_service = REPO / "app" / "core" / "agent" / "nl_service.py"
+    nl_agent = REPO / "app" / "core" / "agent" / "nl_agent.py"
+    pydantic_model = REPO / "app" / "adapters" / "llm" / "pydantic_model.py"
+    assert nl_service.exists(), "D-22 #5: nl_service.py MUST be preserved (v2.0 consumer)"
+    assert nl_agent.exists(), "D-22 #5: nl_agent.py MUST be preserved (v2.0 consumer)"
+    assert pydantic_model.exists(), "D-22 #5: pydantic_model.py MUST be preserved (v2.0 consumer)"
