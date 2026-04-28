@@ -109,7 +109,13 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   4. Column headers are clickable to sort (cycle: asc → desc → unsorted, or asc → desc only — planner decides). Default sort is Start descending (latest on top). Sort state survives URL round-trip (e.g. `?sort=start&order=desc`) so the URL is shareable.
   5. AI Summary button stays in the row's last cell and continues to swap content in-place (existing Phase 3 behavior preserved); no row-expand drawer.
   6. The existing Add platform input row at the top of the page continues to work; the legacy `<select>` filters (brand / soc / year / has_content) and the legacy `_filter_alert.html` partial are removed; the Remove button is removed.
-**Plans**: TBD
+**Plans**: 6 plans
+- [x] 05-01-PLAN.md — Docs prep (PROJECT.md subsection) + picker_popover macro form_id parameterization (D-OV-06)
+- [ ] 05-02-PLAN.md — read_frontmatter parser in content_store.py with mtime_ns memoize (D-OV-02, D-OV-12)
+- [ ] 05-03-PLAN.md — overview_grid_service.py with OverviewGridViewModel + filter/sort orchestration (D-OV-03, D-OV-07, D-OV-08)
+- [ ] 05-04-PLAN.md — Routes: GET /overview + POST /overview/grid + HX-Push-Url; remove DELETE/filter/reset (D-OV-04, D-OV-11, D-OV-13)
+- [ ] 05-05-PLAN.md — Templates: full rewrite of overview/index.html + new _grid.html + _filter_bar.html; delete legacy partials (D-OV-05, D-OV-06, D-OV-09, D-OV-10)
+- [ ] 05-06-PLAN.md — Tests: rewrite test_overview_routes.py + new test_phase05_invariants.py; delete test_overview_filter.py (D-OV-14)
 **UI hint**: yes
 
 ### Phase 6: Ask Tab Port
@@ -133,5 +139,5 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | 2. Overview Tab + Filters | v2.0 | 3/3 | Complete | 2026-04-25 |
 | 3. Content Pages + AI Summary | v2.0 | 4/4 | Complete | 2026-04-26 |
 | 4. Browse Tab Port | v2.0 | 7/7 | Complete | 2026-04-28 |
-| 5. Overview Tab Redesign | v2.0 | 0/? | Not started | - |
+| 5. Overview Tab Redesign | v2.0 | 1/6 | In Progress | - |
 | 6. Ask Tab Port | v2.0 | 0/? | Not started | - |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 04-07-PLAN.md (gap-4 closure)
-last_updated: "2026-04-28T02:03:53.629Z"
+stopped_at: Completed 05-01-PLAN.md (PROJECT.md subsection + picker_popover macro D-OV-06 parameterization)
+last_updated: "2026-04-28T06:52:07.127Z"
 last_activity: 2026-04-28
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 4
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  total_plans: 24
+  completed_plans: 19
+  percent: 79
 ---
 
 # Project State
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 04 — browse-tab-port
+**Current focus:** Phase 05 — overview-redesign
 
 ## Current Position
 
-Phase: 04 (browse-tab-port) — EXECUTING
-Plan: 2 of 7
+Phase: 05 (overview-redesign) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -108,6 +108,9 @@ Progress: [██████████] 100%
 - 04-05: gap-2 closed via single-attribute fix in `_picker_popover.html` — Apply button now carries `form="browse-filter-form"` (mirrors Swap-axes pattern in `_filter_bar.html` line 38); broken `hx-include="#browse-filter-form input:checked"` CSS-descendant selector removed. HTMX's dn()/Nt() resolves element.form for non-GET requests and iterates form.elements (browser DOM API enumerates all form-associated controls regardless of DOM tree position). 2 regression tests added to `tests/v2/test_browse_routes.py` (smoke + recording-mock end-to-end) — file now has 14 tests. Full v2 suite green (272 passed, 1 skipped). Zero Python production-code changes — `git diff --quiet HEAD~2 -- routers/services/adapters/index.html/_filter_bar.html` returns 0. Plan executed exactly as written; zero deviations.
 - 04-06: gap-3 closed via Candidate A (server-side OOB) — extended count_oob/warnings_oob OOB pattern with new `picker_badges_oob` block in `app_v2/templates/browse/index.html` emitting two `hx-swap-oob="true"` spans (id="picker-platforms-badge", id="picker-params-badge") on every POST /browse/grid. Trigger badge in `_picker_popover.html` now uses stable id + d-none for visibility (instead of conditional emit) so HTMX has a permanent merge target while D-08's "no badge when empty" visual contract is preserved. `block_names` extended 3 → 4 with "picker_badges_oob"; one-line router change. 2 regression tests added to `tests/v2/test_browse_routes.py` (non-empty: counts + visible; empty: stable target hidden via d-none) — file now has 16 tests. Full v2 suite green (274 passed, 1 skipped, up from 272). Production-code invariance: zero changes to services / adapters / popover-search.js / app.css / _filter_bar.html / _grid.html / _warnings.html / _empty_state.html / Phase 4 invariants. D-14 (a + b + c) now fully demonstrable end-to-end on a single Apply click. Plan executed exactly as written; zero deviations.
 - 04-07: gap-4 closed via D-15a (locked) close-event taxonomy in popover-search.js. Capture-phase document keydown listener (`addEventListener('keydown', onKeydown, true)`) sets `dataset.cancelling=1` on Esc BEFORE Bootstrap fires `hide.bs.dropdown`; `onDropdownHide` branches across 4 paths — (i) explicit Apply already ran, (ii) Esc-cancel revert from `data-original-selection`, (iii) no-op short-circuit when current sorted selection deep-equals stash via new `_selectionsEqual` helper, (iv) implicit Apply via `popoverApplyBtn.click()` reusing the existing Apply button's full HTMX wiring with zero divergence (gap-2 form-association + gap-3 picker_badges_oob OOB swap inherited automatically). Bootstrap's `e.clickEvent` is null on BOTH Esc and programmatic close — the keydown trick is the canonical workaround. No visual cue distinguishes implicit-Apply from explicit-Apply (D-08 preserved); grid + trigger badge swap is the affordance. 2 server-side regression tests added (`test_post_browse_grid_implicit_apply_payload_shape`, `test_post_browse_grid_idempotent_unchanged_selection`) + 1 Phase 4 invariant (`test_popover_search_js_implements_d15a_close_event_taxonomy`) grep-guarding 5 JS source markers + the `data-bs-auto-close="outside"` template precondition. Suite 274 → 277 passing. 1 Rule-1 deviation: initial JS used `.picker-*` selectors / native `<div popover>` semantics; fixup commit aligned to `.popover-*` selectors / Bootstrap dropdown event model per the plan's `<interfaces>` section. All 4 gaps in 04-HUMAN-UAT.md now resolved (gap-1, gap-2, gap-3, gap-4); ready for UAT replay.
+- 05-01: D-OV-06 picker_popover macro parameterization expanded — macro signature now `picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid")`; 3 additive kwargs preserve Phase 4 byte-stability via defaults while enabling Plan 05-05 to call with `form_id="overview-filter-form"`, `hx_post="/overview/grid"`, `hx_target="#overview-grid"` on a single shared macro (no fork). Body uses `{{ form_id }}`, `{{ hx_post }}`, `{{ hx_target }}`, `#{{ form_id }}` substitutions in 4 places (1 ul tag with 3 attrs + 1 checkbox form= attr).
+- 05-01: Phase 4 invariant `test_picker_popover_uses_d15b_auto_commit_pattern` markers 2/3/4b migrated from template-source grep to rendered-macro grep — preserves D-15b enforcement while accommodating the parameterized macro. Pattern: when a template invariant guards a contract satisfied by Jinja substitution at render-time (not template authorship), render the macro with the contract's reference inputs (Phase 4 default kwargs) and grep the rendered output. Defense-in-depth strengthened — now proves macro defaults match the Phase 4 contract end-to-end. Reusable pattern for any future v2.0 macro that gains kwargs.
+- 05-01: PROJECT.md Active section now has Overview redesign (v2.0) subsection (6 bullets covering OVERVIEW-V2-01..06) inserted between Browse — v2.0 Validated block and Ask carry-over (v2.0) Active block — closes CONTEXT.md upstream-edit-3.
 
 ### Pending Todos
 
@@ -127,7 +130,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T02:03:53.610Z
-Stopped at: Completed 04-07-PLAN.md (gap-4 closure)
+Last session: 2026-04-28T06:52:07.108Z
+Stopped at: Completed 05-01-PLAN.md (PROJECT.md subsection + picker_popover macro D-OV-06 parameterization)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
