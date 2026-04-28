@@ -3,12 +3,12 @@ status: complete
 phase: 04-browse-tab-port
 source: [04-VERIFICATION.md]
 started: 2026-04-26T23:45:00Z
-updated: 2026-04-27T13:25:00Z
+updated: 2026-04-28T00:10:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+[testing complete — gap-3 surfaced for diagnosis]
 
 ## Tests
 
@@ -29,10 +29,13 @@ expected: |
   6. Confirm grid renders with pivot data and URL bar updates
   7. Toggle Swap-axes — grid re-renders with axes flipped (index column changes)
   8. Click Clear-all — grid swaps to empty-state alert
-result: issue
-reported: "when I first select a few Platforms/Parameters and push Apply, 'Select platforms and parameters above to build the pivot grid.' is shown until I click Swap axes button, which works like a refresh."
-severity: major
-verified: 2026-04-27T13:25:00Z
+result: pass
+prior_result: issue
+prior_reported: "when I first select a few Platforms/Parameters and push Apply, 'Select platforms and parameters above to build the pivot grid.' is shown until I click Swap axes button, which works like a refresh."
+prior_severity: major
+prior_verified: 2026-04-27T13:25:00Z
+retested: 2026-04-28T00:10:00Z
+retest_note: "gap-2 closure (Plan 04-05) confirmed in browser — Apply now produces populated grid on first click. Swap-axes and Clear-all also work. Separately surfaced gap-3 (badge counter staleness) during retest."
 
 ### 2. Parameters/Platforms dropdown popover renders fully (gap-1)
 expected: |
@@ -54,11 +57,13 @@ verified: 2026-04-27T12:30:00Z
 ## Summary
 
 total: 2
-passed: 1
+passed: 2
 issues: 1
 pending: 0
 skipped: 0
 blocked: 0
+gaps_open: 1
+gaps_resolved: 2
 
 ## Gaps
 
@@ -116,7 +121,47 @@ fix: |
   Closed by Plan 04-05; zero Python production-code changes. See
   .planning/debug/gap-2-apply-no-swap.md for full root-cause evidence.
 
-### gap-1 — Parameters/Platforms popover clipped by .panel { overflow: hidden }
+### gap-3 — Trigger button count badge does not update after Apply (only after full page refresh)
+status: open
+reported: 2026-04-28T00:10:00Z
+test_ref: 1
+severity: minor
+contract_ref: D-14(b)
+symptom: |
+  After clicking Apply (which now correctly produces the populated grid per the
+  gap-2 fix), the count badge displayed next to the "Platforms" / "Parameters"
+  trigger buttons does NOT update to reflect the new selection count. The
+  badges only update on a full page refresh (F5 / hard navigation).
+  
+  Per CONTEXT.md D-14(b), Apply is contractually required to:
+    (a) close the popover
+    (b) update the trigger button's count badge
+    (c) fire a single hx-post=/browse/grid swap with the new selection
+  
+  Steps (a) and (c) are working. Step (b) is broken.
+  
+  Reproduction:
+  1. Visit http://localhost:8000/browse (badges show "(0)" or are hidden)
+  2. Open Platforms picker, tick 3 platforms, click Apply
+  3. Grid renders correctly (gap-2 fix confirmed) BUT trigger reads "Platforms" with
+     no badge — should read "Platforms (3)" per D-14(b)
+  4. Open Parameters picker, tick 5 params, click Apply
+  5. Grid re-renders BUT Parameters trigger badge stays at original value — should
+     read "Parameters (5)"
+  6. Hard-refresh the page (F5) → badges finally show correct counts ((3) and (5))
+fix_direction: |
+  Likely: the `_filter_bar.html` trigger buttons aren't part of the
+  hx-target=#browse-grid swap, so the server-rendered badge count never
+  reaches them on Apply. Fix candidates (pick one in plan):
+    - Add an OOB swap fragment for each trigger badge (server emits
+      `<span id="platforms-badge" hx-swap-oob="true">(N)</span>` alongside
+      grid swap response, lands in the persistent shell)
+    - Add client-side badge sync in popover-search.js: after Apply click,
+      count checked items in popover and update the trigger badge text
+      directly (zero server round-trip beyond the existing grid swap)
+  
+  CONTEXT.md D-14(b) is the source of truth — the badge MUST update on Apply.
+  This is a regression from the locked design, not a new behavior request.
 status: resolved
 reported: 2026-04-27T00:05:00Z
 resolved: 2026-04-27T00:15:00Z
