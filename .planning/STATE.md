@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 06-ask-tab-port/06-02-PLAN.md
-last_updated: "2026-04-28T22:54:16.283Z"
+stopped_at: Completed 06-ask-tab-port/06-03-PLAN.md
+last_updated: "2026-04-28T23:03:42.949Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 30
-  completed_plans: 26
-  percent: 87
+  completed_plans: 27
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 6 (Ask Tab Port) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -140,6 +140,9 @@ Progress: [██████████] 100%
 - 06-02: Cookie validation for pbm2_llm uses closed-set check against `{l.name for l in settings.llms}` — any other value (missing, empty, tampered, stale-config) silently falls to `settings.app.default_llm` (D-15). `request=None` default preserves all Phase 1-5 caller behavior; 4 router call sites now thread `request` so AI Summary picks up the cookie too (D-17).
 - 06-02: `load_starter_prompts()` uses module-scope imports (not function-scope as in v1.0 Streamlit page); no `lru_cache` — called only by `GET /ask`, YAML < 1KB, would mask live-edits of `config/starter_prompts.yaml` (RESEARCH.md Pattern 6).
 - 06-02: `disable_auto_commit=False` default on `picker_popover` macro preserves Phase 4/5 byte-stability for all existing callers; `True` suppresses all 5 `hx-*` attrs on the inner `<ul>` so confirmation-panel checkbox toggles do NOT fire full agent runs (RESEARCH.md Pitfall 3, D-07/D-10).
+- 06-03: ALWAYS-200 contract for all three NL outcome branches — matches summary.py precedent; HTMX #htmx-error-container is for route errors only, not NL failures (ASK-V2-06, ASK-V2-07)
+- 06-03: Module-level `run_nl_query` import in ask.py so `mocker.patch("app_v2.routers.ask.run_nl_query")` works at test time (D-19)
+- 06-03: Pitfall 6: second-turn ClarificationNeeded synthesizes AgentRunFailure(reason="llm-error") — user never sees a second confirmation panel; step-cap (5) and timeout (30s) are the hard ceiling (D-10)
 
 ### Pending Todos
 
@@ -161,7 +164,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T22:54:16.261Z
-Stopped at: Completed 06-ask-tab-port/06-02-PLAN.md
+Last session: 2026-04-28T23:03:42.924Z
+Stopped at: Completed 06-ask-tab-port/06-03-PLAN.md
 Resume file: None
 Next action: `/gsd-verify-phase 5` to verify Phase 5 (overview-redesign) completion

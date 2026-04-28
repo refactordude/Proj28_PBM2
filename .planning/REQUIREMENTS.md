@@ -76,12 +76,12 @@
 
 ### Ask Tab (Port)
 
-- [ ] **ASK-V2-01**: Ask tab at `/ask` (or `/?tab=ask`) exposes the v1.0 PydanticAI NL agent under the new shell. Question input is a Bootstrap `<textarea>` with a "Run" button; submits via HTMX `hx-post` to `/ask/query`.
-- [ ] **ASK-V2-02**: NL-05 two-turn confirmation flow: when the agent returns `ClarificationNeeded`, the response renders a multiselect of candidate `(InfoCategory, Item)` params (pre-checked with all proposals) and a "Run Query" button. HTMX form carries the user-confirmed params as hidden field values; `hx-post` to a follow-up endpoint re-invokes the agent with the confirmed params as a structured second-turn user message.
+- [x] **ASK-V2-01**: Ask tab at `/ask` (or `/?tab=ask`) exposes the v1.0 PydanticAI NL agent under the new shell. Question input is a Bootstrap `<textarea>` with a "Run" button; submits via HTMX `hx-post` to `/ask/query`.
+- [x] **ASK-V2-02**: NL-05 two-turn confirmation flow: when the agent returns `ClarificationNeeded`, the response renders a multiselect of candidate `(InfoCategory, Item)` params (pre-checked with all proposals) and a "Run Query" button. HTMX form carries the user-confirmed params as hidden field values; `hx-post` to a follow-up endpoint re-invokes the agent with the confirmed params as a structured second-turn user message.
 - [ ] **ASK-V2-03**: Answer panel renders: result table (via `<table>` with same TextColumn-only rule), plain-text LLM summary (escaped, displayed in a `<div>`), collapsed SQL expander using Bootstrap `<details>` with the validated/limited SQL inside a `<code>` block. (Phase 6 D-11: no Regenerate button — editing the textarea and clicking Run is the regeneration mechanism.)
 - [x] **ASK-V2-05**: LLM backend selector lives in a small page-header strip at the top of the Ask page (`/ask`) ONLY — NOT in the global navbar (Phase 6 D-12). The selector is a Bootstrap dropdown labelled `"LLM: Ollama ▾"` / `"LLM: OpenAI ▾"` (active backend's display name baked into the visible label) with two `<button class="dropdown-item">` entries (one per configured backend). Backend preference is stored in a plain unsigned cookie `pbm2_llm` (`Path=/; SameSite=Lax; Max-Age=31536000; HttpOnly`; no `Secure` because intranet HTTP); validated on read against `settings.llms[].name`, falling back silently to `settings.app.default_llm` on any invalid value (Phase 6 D-15). Cookie effect is GLOBAL across the app — AI Summary on Overview also picks up the cookie via the shared `llm_resolver` (Phase 6 D-17). NO OpenAI sensitivity-warning banner anywhere (Phase 6 D-18 — the visible dropdown label IS the affordance).
-- [ ] **ASK-V2-06**: All agent calls route through `app/core/agent/nl_service.run_nl_query()` (from INFRA-07). Safety harness (SAFE-02..06) is never bypassed — any v2.0 route that touches NL runs through `nl_service`.
-- [ ] **ASK-V2-07**: SAFE-04 abort banner: if the agent exceeds step-cap or timeout, a red Bootstrap alert shows with the exact copy from v1.0 UI-SPEC, and partial output (if any) is rendered in a collapsed `<details>` expander.
+- [x] **ASK-V2-06**: All agent calls route through `app/core/agent/nl_service.run_nl_query()` (from INFRA-07). Safety harness (SAFE-02..06) is never bypassed — any v2.0 route that touches NL runs through `nl_service`.
+- [x] **ASK-V2-07**: SAFE-04 abort banner: if the agent exceeds step-cap or timeout, a red Bootstrap alert shows with the exact copy from v1.0 UI-SPEC, and partial output (if any) is rendered in a collapsed `<details>` expander.
 - [x] **ASK-V2-08**: 8 curated starter prompts render as a Bootstrap 4×2 grid on the Ask page when no question has been asked yet. Prompts load from `config/starter_prompts.yaml` (same file as v1.0). Clicking a prompt fills the textarea; does NOT auto-submit.
 
 ## Future Requirements (Deferred to later milestones)
@@ -154,13 +154,13 @@
 | OVERVIEW-V2-04 | Phase 5 | Complete |
 | OVERVIEW-V2-05 | Phase 5 | Complete |
 | OVERVIEW-V2-06 | Phase 5 | Complete |
-| ASK-V2-01 | Phase 6 | Pending |
-| ASK-V2-02 | Phase 6 | Pending |
+| ASK-V2-01 | Phase 6 | Complete |
+| ASK-V2-02 | Phase 6 | Complete |
 | ASK-V2-03 | Phase 6 | Complete |
 | ASK-V2-04 | (deferred — see ASK-V2-F01) | Out of Scope |
 | ASK-V2-05 | Phase 6 | Complete |
-| ASK-V2-06 | Phase 6 | Pending |
-| ASK-V2-07 | Phase 6 | Pending |
+| ASK-V2-06 | Phase 6 | Complete |
+| ASK-V2-07 | Phase 6 | Complete |
 | ASK-V2-08 | Phase 6 | Complete |
 
 **Totals:**
