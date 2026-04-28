@@ -557,3 +557,164 @@ def test_post_browse_grid_apply_button_payload_renders_populated_grid(client, mo
     assert captured.get("items") == ("vendor_id",), (
         f"fetch_cells received wrong items tuple: {captured.get('items')!r}"
     )
+
+
+# -----------------------------------------------------------------------
+# gap-3 regression — picker badge OOB swap on Apply (2026-04-28)
+# See: .planning/phases/04-browse-tab-port/04-HUMAN-UAT.md gap-3
+#      D-14(b) — Apply MUST update the trigger button's count badge
+# -----------------------------------------------------------------------
+
+
+def test_post_browse_grid_emits_picker_badge_oob_blocks(client, monkeypatch):
+    """gap-3 regression: POST /browse/grid emits OOB picker badge updates.
+
+    D-14(b): clicking Apply MUST update the trigger button's count badge.
+    The badges live in .browse-filter-bar OUTSIDE #browse-grid, so they
+    cannot be reached by the primary innerHTML swap on #browse-grid.
+    Fix: the route emits a `picker_badges_oob` block alongside the grid,
+    carrying two hx-swap-oob spans (one per picker) that HTMX merges by
+    id into the persistent shell.
+
+    This test sends a POST with non-empty platforms+params (2 platforms,
+    1 param) and asserts:
+      - Both `picker-platforms-badge` and `picker-params-badge` spans
+        appear in the response
+      - Each carries `hx-swap-oob="true"`
+      - The text content of each equals the count of currently-selected
+        items (2 for platforms, 1 for params)
+      - The visibility class is NOT `d-none` (badges should be visible
+        when count > 0 per D-08)
+    """
+    _patch_cache(monkeypatch, platforms=["P1", "P2"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1", "P2"],
+            "InfoCategory": ["attribute", "attribute"],
+            "Item": ["vendor_id", "vendor_id"],
+            "Result": ["0xA1", "0xB2"],
+        }), False,
+    ))
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("platforms", "P2"),
+        ("params", "attribute · vendor_id"),
+    ])
+    assert r.status_code == 200
+
+    # Both badge OOB spans must appear in the response body.
+    assert 'id="picker-platforms-badge"' in r.text, (
+        "gap-3 regression: picker-platforms-badge OOB span missing from "
+        "POST /browse/grid response. Apply will not update the platforms "
+        "trigger badge — D-14(b) breached."
+    )
+    assert 'id="picker-params-badge"' in r.text, (
+        "gap-3 regression: picker-params-badge OOB span missing from "
+        "POST /browse/grid response. Apply will not update the params "
+        "trigger badge — D-14(b) breached."
+    )
+
+    # Each badge must carry hx-swap-oob="true" (otherwise HTMX will not
+    # merge it into the persistent shell — it would land inside #browse-grid
+    # via the primary swap and immediately get wiped on the next swap).
+    # Slice each badge's tag and confirm the OOB attribute.
+    for badge_id, expected_count in [
+        ("picker-platforms-badge", "2"),
+        ("picker-params-badge", "1"),
+    ]:
+        i = r.text.index(f'id="{badge_id}"')
+        tag_start = r.text.rfind("<span", 0, i)
+        tag_end = r.text.find("</span>", i)
+        assert tag_start != -1 and tag_end != -1, (
+            f"could not locate <span>...</span> for {badge_id} in response"
+        )
+        tag = r.text[tag_start : tag_end + len("</span>")]
+        assert 'hx-swap-oob="true"' in tag, (
+            f"gap-3: {badge_id} missing hx-swap-oob — HTMX will not merge "
+            f"it into the persistent shell. Got: {tag!r}"
+        )
+        # Text content equals the integer count.
+        inner_start = tag.index(">", tag.index("<span")) + 1
+        inner_end = tag.index("</span>")
+        inner = tag[inner_start:inner_end].strip()
+        assert inner == expected_count, (
+            f"gap-3: {badge_id} text content is {inner!r}, "
+            f"expected {expected_count!r} (count of selected items)"
+        )
+        # Non-empty selection — badge must NOT be hidden via d-none.
+        assert "d-none" not in tag, (
+            f"gap-3: {badge_id} carries d-none even though selection is "
+            f"non-empty — D-08 visual contract breached. Tag: {tag!r}"
+        )
+
+
+def test_post_browse_grid_picker_badge_zero_count_renders_hidden(client, monkeypatch):
+    """gap-3 regression: badge OOB still emits even when selection is empty.
+
+    Why: HTMX needs a stable target to merge into. If the OOB block were
+    conditional ({% if vm.selected_platforms %}<span>...</span>{% endif %}),
+    the post-Apply round-trip from non-empty -> empty would NOT emit the
+    OOB span, and the trigger badge would stay at the previous (stale)
+    count instead of getting hidden.
+
+    D-08 visual contract (no visible badge when empty) is preserved by
+    toggling the `d-none` Bootstrap class on the always-emitted span,
+    not by emit-or-omit.
+
+    This test sends a POST with empty selection (Clear-all reset path —
+    D-18) and asserts:
+      - Both badge OOB spans STILL appear in the response (stable target)
+      - Each carries `hx-swap-oob="true"`
+      - The text content is "0" (the integer count, not omitted)
+      - The class string contains `d-none` (visually hidden per D-08)
+      - The empty-state alert renders in the grid block (sanity check
+        that the empty-selection path still works post-fix)
+    """
+    def _no_call(*args, **kwargs):
+        raise AssertionError(
+            "fetch_cells must NOT be called when selection is empty"
+        )
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=_no_call)
+
+    r = _post_form_pairs(client, "/browse/grid", [])
+    assert r.status_code == 200
+
+    # Empty-selection branch confirmed (sanity — empties the grid).
+    assert (
+        "Select platforms and parameters above to build the pivot grid."
+        in r.text
+    )
+
+    # Both badge OOB spans MUST still emit — even though the selection is
+    # empty. HTMX needs the stable target to merge "0" + d-none into the
+    # persistent badges; without it, stale counts persist.
+    for badge_id in ("picker-platforms-badge", "picker-params-badge"):
+        assert f'id="{badge_id}"' in r.text, (
+            f"gap-3 regression: {badge_id} missing from response when "
+            f"selection is empty. The OOB block must ALWAYS emit so HTMX "
+            f"has a stable swap target — otherwise non-empty -> empty "
+            f"transitions leave the trigger badge stuck on the prior count."
+        )
+        i = r.text.index(f'id="{badge_id}"')
+        tag_start = r.text.rfind("<span", 0, i)
+        tag_end = r.text.find("</span>", i)
+        tag = r.text[tag_start : tag_end + len("</span>")]
+        assert 'hx-swap-oob="true"' in tag, (
+            f"{badge_id} missing hx-swap-oob in empty-selection response: {tag!r}"
+        )
+        # Text content equals "0" (count).
+        inner_start = tag.index(">", tag.index("<span")) + 1
+        inner_end = tag.index("</span>")
+        inner = tag[inner_start:inner_end].strip()
+        assert inner == "0", (
+            f"{badge_id} text content for empty selection is {inner!r}, "
+            f"expected '0'"
+        )
+        # Visually hidden via d-none — D-08 contract.
+        assert "d-none" in tag, (
+            f"gap-3: {badge_id} for empty selection MUST carry d-none "
+            f"(D-08: no visible badge when count is 0). Got: {tag!r}"
+        )
