@@ -170,7 +170,9 @@ def test_no_safe_filter_in_browse_templates():
 # -----------------------------------------------------------------------
 
 def test_no_browse_stub_in_root_router():
-    """Plan 04-02 deleted the Phase 1 GET /browse stub from routers/root.py."""
+    """Plan 04-02 deleted the Phase 1 GET /browse stub from routers/root.py.
+    Plan 06-03 also deleted the Phase 1 GET /ask stub (ask.py now owns /ask).
+    """
     src = _read("routers/root.py")
     assert "def browse_page" not in src, (
         "Plan 04-02 contract: the Phase 1 GET /browse stub must be deleted "
@@ -179,9 +181,11 @@ def test_no_browse_stub_in_root_router():
     assert '@router.get("/browse"' not in src, (
         "Plan 04-02 contract: routers/root.py must not declare a /browse route."
     )
-    # Sanity: the /ask stub should still be there (Phase 5 owns it later).
-    assert "def ask_page" in src, (
-        "Plan 04-02 must NOT remove the /ask stub — Phase 5 still relies on it."
+    # Phase 6 Plan 06-03: the /ask stub is NOW removed from root.py.
+    # ask.py (app_v2/routers/ask.py) owns /ask from Phase 6 onward.
+    assert "def ask_page" not in src, (
+        "Plan 06-03 contract: the Phase 1 GET /ask stub must be deleted "
+        "from routers/root.py (ask.py now owns /ask)."
     )
 
 

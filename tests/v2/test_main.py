@@ -98,6 +98,11 @@ def test_get_browse_returns_200_with_phase_placeholder(client):
     assert "alert" in r.text  # Bootstrap alert class
 
 
+@pytest.mark.skip(
+    reason="Phase 1 stub replaced by Phase 6 router. /ask now owned by "
+    "app_v2/routers/ask.py; full-page render requires ask/index.html "
+    "which ships in Plan 06-04. Plan 06-05 will add proper integration tests."
+)
 def test_get_ask_returns_200_with_phase_placeholder(client):
     r = client.get("/ask")
     assert r.status_code == 200

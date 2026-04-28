@@ -138,18 +138,24 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # ORDER MATTERS: overview first (owns GET /); platforms next (prefix=/platforms,
 # Phase 03 detail page + content CRUD); summary AFTER platforms (also prefix
 # =/platforms, owns POST /platforms/{pid}/summary); browse owns /browse +
-# /browse/grid (Phase 04); root last (only has /ask after Phase 04).
-# browse is registered BEFORE root as defense-in-depth: even if a future commit
-# accidentally re-adds a /browse stub to root.py, the real browse router still
-# wins.
+# /browse/grid (Phase 04); ask owns /ask + /ask/query + /ask/confirm
+# (Phase 06); settings owns /settings/llm (Phase 06); root last (now empty
+# shell; Phase 06 deleted the GET /ask stub — see routers/root.py docstring).
+# ask + settings registered BEFORE root as defense-in-depth: even if a future
+# commit accidentally re-adds an /ask stub to root.py, the real ask router
+# still wins. Mirrors the Phase 4 browse-before-root precedent.
 from app_v2.routers import overview  # noqa: E402
 from app_v2.routers import platforms  # noqa: E402
 from app_v2.routers import summary  # noqa: E402
 from app_v2.routers import browse  # noqa: E402
+from app_v2.routers import ask  # noqa: E402
+from app_v2.routers import settings as settings_router  # noqa: E402 — alias to avoid collision with the Settings model
 from app_v2.routers import root  # noqa: E402
 
 app.include_router(overview.router)
 app.include_router(platforms.router)
 app.include_router(summary.router)
 app.include_router(browse.router)
+app.include_router(ask.router)
+app.include_router(settings_router.router)
 app.include_router(root.router)
