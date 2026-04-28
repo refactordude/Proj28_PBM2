@@ -120,3 +120,121 @@ def get_content_mtime_ns(platform_id: str, content_dir: Path = DEFAULT_CONTENT_D
         return target.stat().st_mtime_ns
     except FileNotFoundError:
         return None
+
+
+# ---------------------------------------------------------------------
+# Phase 5 — Overview Tab Redesign: read_frontmatter (D-OV-02, D-OV-12)
+# ---------------------------------------------------------------------
+# Defensive YAML frontmatter parser for content pages. Used by the
+# overview_grid_service (Plan 05-03) to source per-platform PM metadata.
+#
+# Contracts:
+# - NEVER raises. Every exception path returns {}.
+# - Uses yaml.safe_load EXCLUSIVELY (T-05-02-01: the unsafe full loader is
+#   banned by acceptance grep — see verification block in Plan 05-02).
+# - Memoized by (platform_id, mtime_ns) — implicit invalidation when the
+#   content file changes (D-OV-12).
+# - Returns dict[str, str] — all values stringified. yaml.safe_load may
+#   yield int / float / bool / datetime.date / None for individual values;
+#   the service layer treats every metadata field as text. None values
+#   are DROPPED (key absent from result).
+# ---------------------------------------------------------------------
+import yaml as _yaml
+
+_FRONTMATTER_CACHE: dict[tuple[str, int], dict[str, str]] = {}
+
+
+def _parse_frontmatter_text(text: str) -> dict[str, str]:
+    """Extract YAML frontmatter dict from ``text``. Returns {} on any failure.
+
+    Recognized format::
+
+        ---\\n
+        <yaml body>
+        ---\\n        ← closing fence may be ``---\\n`` or ``---`` at EOF
+        <body markdown — ignored>
+
+    If ``text`` does not start with ``---\\n``, returns {}.
+    If no closing ``---`` is found after the leading fence, returns {}.
+    """
+    # Frontmatter MUST start with '---\n' on the very first line.
+    if not text.startswith("---\n"):
+        return {}
+    body_after_first_fence = text[4:]  # strip leading '---\n'
+    # Find the closing fence: a line that is exactly '---' (followed by
+    # newline OR end-of-string).
+    # Search for '\n---\n' first (mid-document closing fence).
+    end_idx = body_after_first_fence.find("\n---\n")
+    if end_idx >= 0:
+        yaml_text = body_after_first_fence[:end_idx]
+    else:
+        # Fall back to '\n---' at end of string (no trailing newline).
+        if body_after_first_fence.endswith("\n---"):
+            yaml_text = body_after_first_fence[:-4]
+        else:
+            return {}
+
+    try:
+        data = _yaml.safe_load(yaml_text)
+    except _yaml.YAMLError:
+        return {}
+    except Exception:  # noqa: BLE001 — defensive; never raise on caller
+        return {}
+
+    if not isinstance(data, dict):
+        # Empty fences (yaml.safe_load returns None) or non-mapping
+        # top-level (list, scalar) — neither is valid frontmatter.
+        return {}
+
+    # Coerce every value to str; DROP keys whose value is None.
+    result: dict[str, str] = {}
+    for k, v in data.items():
+        if v is None:
+            continue
+        result[str(k)] = str(v)
+    return result
+
+
+def read_frontmatter(
+    platform_id: str,
+    content_dir: Path = DEFAULT_CONTENT_DIR,
+) -> dict[str, str]:
+    """Return YAML frontmatter as ``dict[str, str]``. Returns ``{}`` on any error.
+
+    Defensive contract (D-OV-02):
+
+    - Missing file → ``{}``
+    - Path traversal → ``{}``
+    - No leading ``---`` → ``{}``
+    - Missing closing ``---`` → ``{}``
+    - Malformed YAML → ``{}``
+    - YAML body is not a dict (e.g. list, scalar) → ``{}``
+    - All values stringified; ``None`` values dropped
+
+    Memoized by ``(platform_id, mtime_ns)`` per D-OV-12. The cache is
+    process-local and bounded by the curated platform count (typically <
+    ~100). Implicit invalidation when the file's ``mtime_ns`` changes.
+    """
+    try:
+        mtime_ns = get_content_mtime_ns(platform_id, content_dir)
+    except Exception:  # noqa: BLE001
+        return {}
+    if mtime_ns is None:
+        # File does not exist or path traversal blocked. Do NOT cache.
+        return {}
+
+    cache_key = (platform_id, mtime_ns)
+    cached = _FRONTMATTER_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        text = read_content(platform_id, content_dir)
+    except Exception:  # noqa: BLE001
+        return {}
+    if text is None:
+        return {}
+
+    parsed = _parse_frontmatter_text(text)
+    _FRONTMATTER_CACHE[cache_key] = parsed
+    return parsed
