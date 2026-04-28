@@ -1,14 +1,14 @@
 ---
-status: complete
+status: diagnosed
 phase: 04-browse-tab-port
 source: [04-VERIFICATION.md]
 started: 2026-04-26T23:45:00Z
-updated: 2026-04-28T00:10:00Z
+updated: 2026-04-28T11:00:00Z
 ---
 
 ## Current Test
 
-[testing complete — gap-3 surfaced for diagnosis]
+[testing complete — gap-4 surfaced: outside-click on popover currently cancels per D-15; user reports this should auto-Apply]
 
 ## Tests
 
@@ -58,11 +58,11 @@ verified: 2026-04-27T12:30:00Z
 
 total: 2
 passed: 2
-issues: 1
+issues: 2
 pending: 0
 skipped: 0
 blocked: 0
-gaps_open: 0
+gaps_open: 1
 gaps_resolved: 3
 
 ## Gaps
@@ -185,8 +185,71 @@ fix: |
   changes are confined to 2 templates + 1 router + 1 test file.
   Closed by Plan 04-06.
 
-status: resolved
-reported: 2026-04-27T00:05:00Z
+### gap-4 — Clicking outside the popover discards selection (should auto-Apply)
+status: open
+reported: 2026-04-28T11:00:00Z
+test_ref: 1
+severity: minor
+contract_ref: D-15 (re-open)
+symptom: |
+  When the user opens the Platforms (or Parameters) picker, ticks one or more
+  checkboxes, then clicks anywhere outside the popover (or presses Esc, or
+  scrolls the page so Bootstrap auto-closes the dropdown), the selection is
+  silently discarded — the popover restores the original checked-state and
+  the grid does not swap. The user expected outside-click to commit the new
+  selection (i.e. behave as Apply).
+
+  Reproduction:
+  1. Visit http://localhost:8000/browse
+  2. Click "Platforms" trigger → popover opens
+  3. Tick 3 platforms (do NOT click Apply)
+  4. Click anywhere outside the popover (e.g. on the page background, on the
+     Parameters trigger, or on the grid area)
+  5. Popover closes; the trigger badge stays at the previous count; the grid
+     does not swap
+
+  This is the current intentional behavior per locked decision D-15
+  ("Closing the popover without Apply restores original selection — restore-on-cancel
+  via stashed state in `data-original-selection` on the popover root"). The
+  popover-search.js `onDropdownHide` handler explicitly reads
+  `dataset.originalSelection` and reverts checkbox state when
+  `dataset.applied !== '1'`.
+
+  User-reported expectation contradicts D-15 — they want outside-click to be
+  treated as implicit Apply (commit), not Cancel (revert). This is a UX
+  decision change, not a code regression.
+
+fix_direction: |
+  This is a CONTRACT change first, code change second. Two paths:
+
+    Path 1 — Overturn D-15:
+      Update CONTEXT.md D-15 (and any cross-references in D-09 / D-14) so
+      that close-without-explicit-Cancel = implicit Apply. Modify
+      popover-search.js so `onDropdownHide` fires the same path as
+      `onApplyClick` (set dataset.applied=1 + trigger HTMX hx-post on the
+      Apply button programmatically) UNLESS an explicit Cancel/Esc path
+      was taken (Bootstrap fires `hide.bs.dropdown` with `e.clickEvent` —
+      can distinguish outside-click from Esc / programmatic-close).
+      Server-side picker_badges_oob block from gap-3 fix already gives a
+      stable swap target — no new template work; the Apply button must
+      still carry form="browse-filter-form" so the implicit-Apply request
+      includes the popover's checked items.
+
+    Path 2 — Keep D-15, add explicit visual cue:
+      Tighten the popover footer copy or animation so the Apply button
+      reads as the only commit affordance (e.g. pulse on close-without-
+      Apply). Cheaper but doesn't satisfy the user's actual ask.
+
+  Recommend Path 1. Risk: a misclick now permanently commits — but the
+  Clear-all button is already a single-click revert, so the cost is low.
+  Esc-as-cancel must still work to give users an opt-out.
+
+  Plan should also extend tests in tests/v2/test_browse_routes.py to assert
+  the implicit-Apply HTMX request contract on outside-click — and add a
+  Phase 4 invariant in tests/v2/test_phase04_invariants.py that pins the
+  new D-15 contract so it can't regress silently.
+
+
 resolved: 2026-04-27T00:15:00Z
 test_ref: 2
 symptom: |
