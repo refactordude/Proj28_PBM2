@@ -141,3 +141,59 @@
   font-weight: 500;
   color: var(--ink-2);
 }
+
+/* ============================================================
+   Phase 05 — Overview Tab Redesign (D-OV-05, OVERVIEW-V2-01)
+   Mirrors Phase 04 Browse pivot-grid styling for visual consistency.
+   ============================================================ */
+
+/* Overview grid scroll container — vertical scroll for sticky-thead to
+   work (Pattern 5 / Pitfall 1 from Phase 4). Mirrors .browse-grid-body. */
+.overview-grid-body {
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.overview-grid-body .alert { margin: 16px; }
+
+/* Overview filter bar spacing above the table */
+.overview-filter-bar {
+  padding: 0 26px;
+}
+
+/* Overview table — mirrors .pivot-table (Phase 4 D-26..D-28) but allows
+   text wrapping in metadata columns (Title / Customer can be long). */
+.overview-table { margin-bottom: 0; }
+.overview-table thead.sticky-top { z-index: 2; }
+.overview-table thead th {
+  background: var(--bs-light);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mute);
+  white-space: nowrap;
+  border-bottom: 2px solid var(--line-2);
+  padding: 8px 16px;
+}
+.overview-table thead th:first-child { padding-left: 24px; }
+.overview-table tbody td { padding: 8px 16px; vertical-align: middle; }
+.overview-table tbody td:first-child {
+  padding-left: 24px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.overview-table tbody td a { color: var(--accent); }
+
+/* Sortable column header buttons — flat, full-width clickable area */
+.overview-table thead th button {
+  color: var(--mute);
+  font-size: 12px;
+  font-weight: 600;
+}
+.overview-table thead th button:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+.overview-table thead th[aria-sort="ascending"] button,
+.overview-table thead th[aria-sort="descending"] button {
+  color: var(--ink);
+}
