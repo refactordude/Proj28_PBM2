@@ -25,7 +25,8 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [ ] **Phase 2: Overview Tab + Filters** - Curated platform list, add/remove, HTMX-swapped faceted filters
 - [ ] **Phase 3: Content Pages + AI Summary** - Per-platform markdown CRUD, safe rendering, in-place LLM summary
 - [x] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps under Bootstrap (export deferred per D-19..D-22)
-- [ ] **Phase 5: Ask Tab Port** - NL agent, two-turn confirmation, history, LLM backend selector, safety harness
+- [ ] **Phase 5: Overview Tab Redesign** - Replace list view with sortable Bootstrap table mirroring Browse pivot grid; YAML-frontmatter metadata fields per content page; popover-checklist multi-filters (Status / Customer / AP Company / Device / Controller / Application) reusing Browse picker pattern (D-15b auto-commit)
+- [ ] **Phase 6: Ask Tab Port** - NL agent, two-turn confirmation, history, LLM backend selector, safety harness
 
 ## Phase Details
 
@@ -97,7 +98,21 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 04-07-PLAN.md — gap-4 closure: D-15a close-event taxonomy in popover-search.js (outside-click implicit-Apply, Esc explicit-cancel, no-op short-circuit) + 2 regression tests + 1 Phase 4 invariant
 **UI hint**: yes
 
-### Phase 5: Ask Tab Port
+### Phase 5: Overview Tab Redesign
+**Goal**: Users can browse the curated Overview as a sortable Bootstrap table whose styling mirrors the Phase 4 Browse pivot grid, with rich per-platform PM metadata (Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End) sourced from YAML frontmatter on each existing `content/platforms/<PLATFORM_ID>.md`, and apply popover-checklist multi-filters on Status / Customer / AP Company / Device / Controller / Application using the same auto-commit-with-debounce pattern (D-15b) that closes Phase 4.
+**Depends on**: Phase 2 (curated list / overview_store), Phase 3 (content pages exist), Phase 4 (popover-checklist + D-15b pattern + Browse table CSS)
+**Requirements**: OVERVIEW-V2-01, OVERVIEW-V2-02, OVERVIEW-V2-03, OVERVIEW-V2-04, OVERVIEW-V2-05, OVERVIEW-V2-06
+**Success Criteria** (what must be TRUE):
+  1. The Overview tab renders as a `<table class="table table-striped table-hover table-sm">` with sticky-top header (same classes/styling as Browse pivot grid). Columns left to right: Title | Status | Customer | Model Name | AP Company | AP Model | Device | Controller | Application | 담당자 | Start | End | (Link button) | (AI Summary button). The Remove button is gone.
+  2. Each row's metadata is read from YAML frontmatter on `content/platforms/<PLATFORM_ID>.md`. Platforms in the curated list with no content page (or content page with no frontmatter / empty fields) render with `—` cells; AI Summary button stays disabled (existing D-13 contract); Title falls back to PLATFORM_ID.
+  3. Popover-checklist filters (Status, Customer, AP Company, Device, Controller, Application) sit in a filter bar above the table and use the same `_picker_popover.html` macro as Browse with D-15b auto-commit + 250ms debounce. Toggling a checkbox swaps the table body server-side via HTMX; trigger badge updates via OOB swap (gap-3 pattern).
+  4. Column headers are clickable to sort (cycle: asc → desc → unsorted, or asc → desc only — planner decides). Default sort is Start descending (latest on top). Sort state survives URL round-trip (e.g. `?sort=start&order=desc`) so the URL is shareable.
+  5. AI Summary button stays in the row's last cell and continues to swap content in-place (existing Phase 3 behavior preserved); no row-expand drawer.
+  6. The existing Add platform input row at the top of the page continues to work; the legacy `<select>` filters (brand / soc / year / has_content) and the legacy `_filter_alert.html` partial are removed; the Remove button is removed.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 6: Ask Tab Port
 **Goal**: Users can ask natural-language questions about the UFS database through the Ask tab, go through the two-turn parameter-confirmation flow, see results with the LLM summary and SQL expander, switch between Ollama and OpenAI backends, and rely on the full v1.0 safety harness — all under the new Bootstrap shell.
 **Depends on**: Phase 1, Phase 3
 **Requirements**: ASK-V2-01, ASK-V2-02, ASK-V2-03, ASK-V2-04, ASK-V2-05, ASK-V2-06, ASK-V2-07, ASK-V2-08
@@ -115,7 +130,8 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
-| 2. Overview Tab + Filters | v2.0 | 0/3 | Not started | - |
-| 3. Content Pages + AI Summary | v2.0 | 0/4 | Not started | - |
-| 4. Browse Tab Port | v2.0 | 6/7 | In progress (gap-4 closure) | -          |
-| 5. Ask Tab Port | v2.0 | 0/? | Not started | - |
+| 2. Overview Tab + Filters | v2.0 | 3/3 | Complete | 2026-04-25 |
+| 3. Content Pages + AI Summary | v2.0 | 4/4 | Complete | 2026-04-26 |
+| 4. Browse Tab Port | v2.0 | 7/7 | Complete | 2026-04-28 |
+| 5. Overview Tab Redesign | v2.0 | 0/? | Not started | - |
+| 6. Ask Tab Port | v2.0 | 0/? | Not started | - |

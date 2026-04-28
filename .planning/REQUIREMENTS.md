@@ -65,6 +65,15 @@
 - [x] **BROWSE-V2-03**: Row-count and column-count indicators, 30-column cap warning, 200-row cap warning — all mirror v1.0's BROWSE-04, BROWSE-06 behavior with exact copy preserved.
 - [x] **BROWSE-V2-05**: Filter state round-trips via URL query params so links are shareable (`/browse?platforms=...&params=...&swap=1`).
 
+### Overview Tab Redesign (Phase 5)
+
+- [ ] **OVERVIEW-V2-01**: Overview tab at `/` (or `/overview`) renders the curated platform list as a `<table class="table table-striped table-hover table-sm">` with sticky-top header, mirroring the Phase 4 Browse pivot grid styling exactly. Columns left-to-right: Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End, (Link button), (AI Summary button). The legacy `<ul class="list-group">` list view + Remove button + brand/SoC/year/has_content `<select>` filters + `_filter_alert.html` partial are removed.
+- [ ] **OVERVIEW-V2-02**: Each table row is sourced from YAML frontmatter on the existing `content/platforms/<PLATFORM_ID>.md` content page. Required frontmatter keys: `title`, `status`, `customer`, `model_name`, `ap_company`, `ap_model`, `device`, `controller`, `application`, `assignee` (담당자), `start` (ISO date), `end` (ISO date). Curated platforms with no content page or empty/missing fields render with `—` cells; `title` falls back to PLATFORM_ID; AI Summary button stays disabled (existing D-13 contract preserved).
+- [ ] **OVERVIEW-V2-03**: Filter bar above the table uses six popover-checklist multi-filters (Status, Customer, AP Company, Device, Controller, Application) built with the same `_picker_popover.html` Jinja macro and `popover-search.js` module that Phase 4 ships. Each filter follows D-15b (auto-commit on checkbox change with 250ms HTMX `delay:` debounce); trigger badge counts update via OOB swap (gap-3 `picker_badges_oob` pattern). Title, Model Name, 담당자, Start, End are NOT filterable.
+- [ ] **OVERVIEW-V2-04**: Column headers are clickable to sort. Default sort: `start` descending (most-recent on top). Sort state survives URL round-trip (e.g. `/overview?sort=customer&order=asc`) and click-toggles cycle the order (asc → desc → unsorted, or asc → desc — planner picks one and pins it).
+- [ ] **OVERVIEW-V2-05**: AI Summary button stays in the row's last data cell and continues to swap content in-place (existing Phase 3 behavior preserved). No row-expand drawer.
+- [ ] **OVERVIEW-V2-06**: The existing Add platform input row at the top of the page continues to work unchanged. Filter changes do not full-reload — fragment swap into the table body via HTMX. URL state from filter + sort is HX-Push-Url'd so the link is shareable.
+
 ### Ask Tab (Port)
 
 - [ ] **ASK-V2-01**: Ask tab at `/ask` (or `/?tab=ask`) exposes the v1.0 PydanticAI NL agent under the new shell. Question input is a Bootstrap `<textarea>` with a "Run" button; submits via HTMX `hx-post` to `/ask/query`.
@@ -140,16 +149,22 @@
 | BROWSE-V2-02 | Phase 4 | Complete |
 | BROWSE-V2-03 | Phase 4 | Complete |
 | BROWSE-V2-05 | Phase 4 | Complete |
-| ASK-V2-01 | Phase 5 | Pending |
-| ASK-V2-02 | Phase 5 | Pending |
-| ASK-V2-03 | Phase 5 | Pending |
-| ASK-V2-04 | Phase 5 | Pending |
-| ASK-V2-05 | Phase 5 | Pending |
-| ASK-V2-06 | Phase 5 | Pending |
-| ASK-V2-07 | Phase 5 | Pending |
-| ASK-V2-08 | Phase 5 | Pending |
+| OVERVIEW-V2-01 | Phase 5 | Pending |
+| OVERVIEW-V2-02 | Phase 5 | Pending |
+| OVERVIEW-V2-03 | Phase 5 | Pending |
+| OVERVIEW-V2-04 | Phase 5 | Pending |
+| OVERVIEW-V2-05 | Phase 5 | Pending |
+| OVERVIEW-V2-06 | Phase 5 | Pending |
+| ASK-V2-01 | Phase 6 | Pending |
+| ASK-V2-02 | Phase 6 | Pending |
+| ASK-V2-03 | Phase 6 | Pending |
+| ASK-V2-04 | Phase 6 | Pending |
+| ASK-V2-05 | Phase 6 | Pending |
+| ASK-V2-06 | Phase 6 | Pending |
+| ASK-V2-07 | Phase 6 | Pending |
+| ASK-V2-08 | Phase 6 | Pending |
 
 **Totals:**
-- v2.0 Requirements: **45** (9 INFRA + 6 OVERVIEW + 4 FILTER + 8 CONTENT + 7 SUMMARY + 4 BROWSE-V2 + 8 ASK-V2)
+- v2.0 Requirements: **51** (9 INFRA + 6 OVERVIEW + 4 FILTER + 8 CONTENT + 7 SUMMARY + 4 BROWSE-V2 + 6 OVERVIEW-V2 + 8 ASK-V2)
 - Deferred: 7
 - Mapped to phases: 45 / 45 (Phase 1: 9, Phase 2: 10, Phase 3: 15, Phase 4: 4, Phase 5: 8)
