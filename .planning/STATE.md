@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 06-ask-tab-port/06-03-PLAN.md
-last_updated: "2026-04-28T23:03:42.949Z"
+stopped_at: Completed 06-ask-tab-port/06-04-PLAN.md
+last_updated: "2026-04-28T23:12:23.387Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 30
-  completed_plans: 27
-  percent: 90
+  completed_plans: 28
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 6 (Ask Tab Port) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -143,6 +143,9 @@ Progress: [██████████] 100%
 - 06-03: ALWAYS-200 contract for all three NL outcome branches — matches summary.py precedent; HTMX #htmx-error-container is for route errors only, not NL failures (ASK-V2-06, ASK-V2-07)
 - 06-03: Module-level `run_nl_query` import in ask.py so `mocker.patch("app_v2.routers.ask.run_nl_query")` works at test time (D-19)
 - 06-03: Pitfall 6: second-turn ClarificationNeeded synthesizes AgentRunFailure(reason="llm-error") — user never sees a second confirmation panel; step-cap (5) and timeout (30s) are the hard ceiling (D-10)
+- 06-04: D-08 enforcement: three answer-zone-replacing fragments (_confirm_panel, _answer, _abort_banner) each carry id=answer-zone on outermost wrapper so HTMX outerHTML swaps are idempotent regardless of which branch the route returns
+- 06-04: Jinja2 comment hygiene: when plan has grep-count-0 success criteria, the literal token must be absent from Jinja2 comments too (not just rendered HTML) — mirrors Phase 05-02 yaml.load comment hygiene convention
+- 06-04: picker_popover macro called with disable_auto_commit=True in _confirm_panel.html — checkbox toggles do NOT fire HTMX requests; Run Query is the sole commit trigger (D-07/D-10/Pitfall 3)
 
 ### Pending Todos
 
@@ -164,7 +167,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T23:03:42.924Z
-Stopped at: Completed 06-ask-tab-port/06-03-PLAN.md
+Last session: 2026-04-28T23:12:23.365Z
+Stopped at: Completed 06-ask-tab-port/06-04-PLAN.md
 Resume file: None
 Next action: `/gsd-verify-phase 5` to verify Phase 5 (overview-redesign) completion
