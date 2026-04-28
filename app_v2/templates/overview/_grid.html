@@ -1,0 +1,93 @@
+{# app_v2/templates/overview/_grid.html
+   <tbody> partial — rendered inside the {% block grid %} of index.html.
+   D-OV-05: "_grid.html is the fragment partial; just the <tbody> + empty-state <tr>"
+   D-OV-08: dates rendered as raw strings (em-dash for empty/None).
+   D-OV-09: em-dash sentinel for missing values; title NOT routed through
+            this — service layer falls back to platform_id.
+   D-OV-10: AI Summary cell preserves Phase 3 SUMMARY-02 contract:
+            hx-post=/platforms/{pid}/summary, hx-target=#summary-{pid},
+            hx-disabled-elt=this, disabled when not row.has_content.
+   Defense-in-depth XSS: every dynamic output uses the explicit-escape
+   filter; the autoescape-bypass filter and inline scripts are banned by
+   acceptance grep (audit-grep-friendly comment hygiene per Plan 05-02). #}
+
+{# Em-dash sentinel for missing values — D-OV-09. Title is NOT routed
+   through this; title falls back to platform_id at the service layer.
+   Defined inline in this partial (NOT in index.html) to avoid Jinja2
+   macro-scope ambiguity across {% include %} boundaries. #}
+{% macro maybe(value) %}{{ value | e if value else "—" }}{% endmacro %}
+
+<tbody>
+  {% if vm.rows %}
+    {% for row in vm.rows %}
+      <tr>
+        {# Title — never None (service falls back to platform_id, D-OV-09).
+           Cell is a link to the platform's content page (Phase 3 view).
+           T-05-05-05: row.platform_id is regex-validated upstream
+           (^[A-Za-z0-9_\-]{1,128}$ — Phase 3 CONTENT-02), so the path
+           component cannot host a protocol prefix or external host. #}
+        <td>
+          <a href="/platforms/{{ row.platform_id | e }}" class="text-decoration-none">
+            {{ row.title | e }}
+          </a>
+        </td>
+        {# Optional fields — em-dash via maybe() macro defined above. #}
+        <td>{{ maybe(row.status) }}</td>
+        <td>{{ maybe(row.customer) }}</td>
+        <td>{{ maybe(row.model_name) }}</td>
+        <td>{{ maybe(row.ap_company) }}</td>
+        <td>{{ maybe(row.ap_model) }}</td>
+        <td>{{ maybe(row.device) }}</td>
+        <td>{{ maybe(row.controller) }}</td>
+        <td>{{ maybe(row.application) }}</td>
+        <td>{{ maybe(row.assignee) }}</td>
+        {# Date columns — D-OV-08: raw string verbatim (no transform); em-dash for empty. #}
+        <td>{{ maybe(row.start) }}</td>
+        <td>{{ maybe(row.end) }}</td>
+        {# Link cell — view the platform's content page. #}
+        <td class="text-end">
+          <a href="/platforms/{{ row.platform_id | e }}"
+             class="btn btn-sm btn-outline-secondary"
+             aria-label="Open platform page for {{ row.title | e }}">
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+            View
+          </a>
+        </td>
+        {# AI Summary cell — D-OV-10. Phase 3 SUMMARY-02 contract preserved.
+           disabled when no content page (D-13 from Phase 3); has_content
+           flag computed by overview_grid_service via has_content_file. #}
+        <td class="text-end">
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary ai-btn"
+                  hx-post="/platforms/{{ row.platform_id | e }}/summary"
+                  hx-target="#summary-{{ row.platform_id | e }}"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="this"
+                  {% if not row.has_content %}disabled title="No content page to summarize yet"{% endif %}
+                  aria-label="Generate AI summary for {{ row.title | e }}">
+            AI Summary
+          </button>
+          <div id="summary-{{ row.platform_id | e }}" class="mt-1"></div>
+        </td>
+      </tr>
+    {% endfor %}
+  {% else %}
+    {# Empty state — distinguish "no curated platforms" vs "filters
+       narrowed to zero". The active_filter_counts dict tells us which:
+       if all 6 counts are 0, the curated list itself is empty (or
+       genuinely no rows). If any count > 0, filters narrowed to nothing. #}
+    {% set total_filters = active_filter_counts.values() | sum %}
+    <tr>
+      <td colspan="14" class="text-center py-4">
+        {% if total_filters == 0 %}
+          <div class="alert alert-info mb-0" role="alert">
+            <i class="bi bi-arrow-up-circle me-1" aria-hidden="true"></i>
+            No platforms in your overview yet. Use the search above to add your first one.
+          </div>
+        {% else %}
+          <span class="text-muted">No platforms match the current filters.</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endif %}
+</tbody>
