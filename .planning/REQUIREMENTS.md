@@ -156,9 +156,9 @@
 | OVERVIEW-V2-06 | Phase 5 | Complete |
 | ASK-V2-01 | Phase 6 | Pending |
 | ASK-V2-02 | Phase 6 | Pending |
-| ASK-V2-03 | Phase 6 | Pending |
+| ASK-V2-03 | Phase 6 | Complete |
 | ASK-V2-04 | (deferred — see ASK-V2-F01) | Out of Scope |
-| ASK-V2-05 | Phase 6 | Pending |
+| ASK-V2-05 | Phase 6 | Complete |
 | ASK-V2-06 | Phase 6 | Pending |
 | ASK-V2-07 | Phase 6 | Pending |
 | ASK-V2-08 | Phase 6 | Pending |

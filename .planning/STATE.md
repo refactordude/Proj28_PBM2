@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Phase 6 context gathered (4 areas, 22 decisions, 3 spec deviations to apply)
-last_updated: "2026-04-28T22:41:40.159Z"
-last_activity: 2026-04-28 -- Phase 6 planning complete
+stopped_at: Completed 06-ask-tab-port/06-01-PLAN.md
+last_updated: "2026-04-28T22:46:38.410Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 30
-  completed_plans: 24
-  percent: 80
+  completed_plans: 25
+  percent: 83
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-25)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 05 — overview-redesign
+**Current focus:** Phase 6 — Ask Tab Port
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 6 (Ask Tab Port) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-04-28 -- Phase 6 planning complete
+Last activity: 2026-04-28
 
 Progress: [██████████] 100%
 
@@ -158,7 +158,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T16:02:14.788Z
-Stopped at: Phase 6 context gathered (4 areas, 22 decisions, 3 spec deviations to apply)
-Resume file: .planning/phases/06-ask-tab-port/06-CONTEXT.md
+Last session: 2026-04-28T22:46:38.389Z
+Stopped at: Completed 06-ask-tab-port/06-01-PLAN.md
+Resume file: None
 Next action: `/gsd-verify-phase 5` to verify Phase 5 (overview-redesign) completion
