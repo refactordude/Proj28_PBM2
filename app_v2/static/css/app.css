@@ -213,3 +213,49 @@
 .overview-table thead th[aria-sort="descending"] button {
   color: var(--ink);
 }
+
+/* ----------------------------------------------------------------------- */
+/* Phase 6 — Ask page (ASK-V2-01..08)                                      */
+/* ----------------------------------------------------------------------- */
+/* Single new component class: .ai-chip — Dashboard rounded-pill style     */
+/* (CONTEXT.md D-02). Used by ask/_starter_chips.html in the 4x2 grid.    */
+/* Source: Dashboard_v2.html lines 306-342, simplified to the parts that  */
+/* fit Phase 6's Bootstrap context (no flexbox tweaks that would conflict */
+/* with .col-md-3 column behavior).                                        */
+
+.ai-chip {
+  display: inline-block;
+  width: 100%;
+  padding: 8px 14px;
+  background: #f4f6f8;
+  color: var(--ink, #171c24);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.ai-chip:hover,
+.ai-chip:focus-visible {
+  background: var(--accent-soft, #ebf1ff);
+  border-color: var(--accent, #3366ff);
+  color: var(--accent, #3366ff);
+  outline: none;
+}
+
+.ai-chip:active {
+  background: #e3e7ec;
+}
+
+/* Ask-page page-header LLM dropdown — no special class needed; relies on
+   Bootstrap's .dropdown-menu-end + .btn-outline-secondary. The dropdown
+   item's .active state uses Bootstrap default (subtle bg). */
+
+/* Ask-page textarea clear button is positioned via inline Bootstrap
+   utility classes (.position-absolute.top-0.end-0); no Phase 6 CSS rule
+   needed. Existing .position-relative on the parent <div> in index.html
+   provides the anchor.                                                    */
