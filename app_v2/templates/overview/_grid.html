@@ -44,32 +44,29 @@
         {# Date columns — D-OV-08: raw string verbatim (no transform); em-dash for empty. #}
         <td>{{ maybe(row.start) }}</td>
         <td>{{ maybe(row.end) }}</td>
-        {# Link cell — view the platform's content page. #}
-        <td class="text-end">
+        {# Actions cell (D-OV-15.1 — refines D-OV-15): View + AI buttons
+           share a single cell with identical Bootstrap shape so the table
+           gets one fewer column.
+             - View   → static link to /platforms/{pid} (Phase 3 detail page)
+             - AI ✨  → opens #summary-modal popup; Phase 3 SUMMARY-02 wiring
+                       (hx-post, hx-disabled-elt, has_content disabled state)
+                       preserved verbatim. The per-row <div id="summary-{pid}">
+                       slot stays removed; modal owns the result surface.
+           Both buttons use `btn btn-sm btn-outline-secondary` so visual
+           weight is identical. The AI button keeps a `data-bs-toggle="modal"`
+           attribute pair so Bootstrap opens the modal alongside HTMX firing
+           the request. The summary route reads HX-Target and threads it
+           through to inner Retry/Regen buttons (modal-body for Overview,
+           summary-{pid} for the detail page caller). #}
+        <td class="text-end text-nowrap">
           <a href="/platforms/{{ row.platform_id | e }}"
-             class="btn btn-sm btn-outline-secondary"
+             class="btn btn-sm btn-outline-secondary me-1"
              aria-label="Open platform page for {{ row.title | e }}">
             <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
             View
           </a>
-        </td>
-        {# AI Summary cell — D-OV-15 (supersedes D-OV-10): icon-only ✨
-           button + modal popup target. Phase 3 SUMMARY-02 wiring (hx-post,
-           hx-disabled-elt, has_content disabled state) preserved verbatim;
-           only the surface changed:
-             - button text "AI Summary" → "✨"
-             - hx-target=#summary-{pid} (in-row slot) → #summary-modal-body
-             - data-bs-toggle/target opens the global #summary-modal modal
-               located at the bottom of overview/index.html
-             - per-row <div id="summary-{pid}"> slot removed (modal owns it)
-           D-OV-15 rationale: error/retry rendered inside a table cell was
-           visually weird; modal gives the result room to breathe and keeps
-           the table dense. Detail page (Phase 3) keeps inline behavior — the
-           summary route reads HX-Target and renders inner Retry/Regen
-           buttons against whatever target the caller specified. #}
-        <td class="text-end ai-sparkle-cell">
           <button type="button"
-                  class="btn btn-sm btn-link p-1 ai-sparkle"
+                  class="btn btn-sm btn-outline-secondary"
                   hx-post="/platforms/{{ row.platform_id | e }}/summary"
                   hx-target="#summary-modal-body"
                   hx-swap="innerHTML"
@@ -80,6 +77,7 @@
                   {% if not row.has_content %}disabled title="No content page to summarize yet"{% endif %}
                   aria-label="Generate AI summary for {{ row.title | e }}">
             <span aria-hidden="true">✨</span>
+            AI
           </button>
         </td>
       </tr>
@@ -91,7 +89,7 @@
        genuinely no rows). If any count > 0, filters narrowed to nothing. #}
     {% set total_filters = active_filter_counts.values() | sum %}
     <tr>
-      <td colspan="14" class="text-center py-4">
+      <td colspan="13" class="text-center py-4">
         {% if total_filters == 0 %}
           <div class="alert alert-info mb-0" role="alert">
             <i class="bi bi-arrow-up-circle me-1" aria-hidden="true"></i>

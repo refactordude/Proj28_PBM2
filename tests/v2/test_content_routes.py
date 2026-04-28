@@ -367,8 +367,8 @@ def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
 
     r = client.get("/")
     body = r.text
-    # D-OV-15 button class — icon-only sparkle.
-    assert 'class="btn btn-sm btn-link p-1 ai-sparkle"' in body
+    # D-OV-15.1 button class — same shape as View button.
+    assert 'class="btn btn-sm btn-outline-secondary"' in body
     # Disabled with tooltip — appears in the rendered row
     assert "disabled" in body
     assert "No content page to summarize yet" in body
@@ -390,8 +390,8 @@ def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
 
     r = client.get("/")
     body = r.text
-    # D-OV-15 button class — icon-only sparkle.
-    assert 'class="btn btn-sm btn-link p-1 ai-sparkle"' in body
+    # D-OV-15.1 button class — same shape as View button.
+    assert 'class="btn btn-sm btn-outline-secondary"' in body
     # SUMMARY-02 wiring preserved on the hx-post path.
     assert f'hx-post="/platforms/{_PID}/summary"' in body
     # D-OV-15 modal target (replaces in-row slot target).

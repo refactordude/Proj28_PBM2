@@ -155,18 +155,24 @@ def test_picker_popover_macro_is_shared_not_forked():
 # -----------------------------------------------------------------------
 
 def test_ai_summary_cell_d_ov_15_modal_surface():
-    """D-OV-15: AI Summary button in overview/_grid.html is an icon-only ✨
-    button that targets the global #summary-modal popup. SUMMARY-02 wiring
-    (hx-post path, hx-disabled-elt, has_content disabled state) preserved
-    verbatim from the original D-OV-10 contract — only the result surface
-    changed (in-row slot → modal popup):
+    """D-OV-15 (refined by 15.1): AI Summary button shares a single
+    Actions cell with the View button. Both use identical Bootstrap shape
+    (`btn btn-sm btn-outline-secondary`) — the AI button uses ✨ as icon
+    and "AI" as label. Result renders in the global #summary-modal popup.
+
+    SUMMARY-02 wiring (hx-post path, hx-disabled-elt, has_content disabled
+    state) preserved verbatim from the original D-OV-10 contract — only
+    the surface changed (in-row slot → modal popup; standalone column →
+    shared Actions cell):
       - hx-post="/platforms/{pid}/summary"               (preserved)
-      - hx-target="#summary-modal-body"                  (CHANGED)
+      - hx-target="#summary-modal-body"                  (CHANGED vs D-OV-10)
       - data-bs-toggle="modal" + data-bs-target=…modal   (NEW)
       - hx-disabled-elt="this"                           (preserved)
       - disabled attr when not row.has_content           (preserved)
-      - per-row <div id="summary-{pid}"> slot REMOVED    (CHANGED)
-      - button label is the ✨ sparkle, NOT "AI Summary" (CHANGED)
+      - per-row <div id="summary-{pid}"> slot REMOVED    (CHANGED vs D-OV-10)
+      - button is `btn btn-sm btn-outline-secondary`     (D-OV-15.1: same
+        shape as the View button; replaces the link-style sparkle)
+      - button label = ✨ icon + "AI" text                (D-OV-15.1)
     """
     src = (OVERVIEW_TPL_DIR / "_grid.html").read_text(encoding="utf-8")
     # SUMMARY-02 wiring preserved
@@ -191,7 +197,12 @@ def test_ai_summary_cell_d_ov_15_modal_surface():
         "D-OV-15 — AI Summary data-bs-target must point at #summary-modal"
     )
     assert "✨" in src, (
-        "D-OV-15 — AI Summary button label must be the ✨ sparkle icon"
+        "D-OV-15 — AI Summary button label must include the ✨ sparkle icon"
+    )
+    # D-OV-15.1: AI button shape matches View button.
+    assert 'class="btn btn-sm btn-outline-secondary"' in src, (
+        "D-OV-15.1 — AI button must share Bootstrap shape "
+        "`btn btn-sm btn-outline-secondary` with the View button"
     )
     # Per-row inline slot must be GONE (modal owns the result surface).
     assert 'id="summary-{{ row.platform_id | e }}"' not in src, (
@@ -199,10 +210,10 @@ def test_ai_summary_cell_d_ov_15_modal_surface():
         "result renders in #summary-modal-body instead"
     )
     # The literal "AI Summary" button text must be gone from _grid.html.
-    # (The column header in index.html still contains the visually-hidden
-    # accessible label — that test lives separately.)
+    # (The modal title in index.html still contains "AI Summary" for the
+    # screen-reader accessible label — that test lives separately.)
     assert ">AI Summary<" not in src, (
-        "D-OV-15 — 'AI Summary' button text replaced by ✨ icon"
+        "D-OV-15 — 'AI Summary' button text replaced by ✨ + 'AI' label"
     )
 
 

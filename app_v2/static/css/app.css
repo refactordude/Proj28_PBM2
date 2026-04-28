@@ -86,13 +86,12 @@
 .properties-table td { padding: 7px 0; color: var(--ink-1); vertical-align: top; word-break: break-word; }
 
 /* D-OV-15 — Overview AI Summary surface (supersedes D-OV-10).
-   The ✨ button is icon-only and sits in a narrow column. The whole result
-   (success or error) renders inside the #summary-modal popup, not in-row. */
-.ai-sparkle-cell { width: 2.4em; padding-left: 4px; padding-right: 4px; }
-.ai-sparkle { font-size: 14px; line-height: 1; border: none; }
-.ai-sparkle:hover:not(:disabled) { transform: scale(1.18); transition: transform 120ms ease-out; }
-.ai-sparkle:disabled { opacity: 0.35; filter: grayscale(0.8); cursor: not-allowed; }
-.ai-sparkle:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; border-radius: 4px; }
+   The View + AI ✨ buttons share a single Actions column with identical
+   Bootstrap shape (btn btn-sm btn-outline-secondary). The result (success
+   or error) renders inside the #summary-modal popup, not in-row. No
+   bespoke styling needed — Bootstrap handles button shape; the only
+   table-level concern is keeping the cell tight: handled inline via
+   `class="text-end text-nowrap"` in _grid.html. */
 
 /* ============================================================
    Phase 04 — Browse Tab (UI-SPEC §Components, D-26..D-28)
