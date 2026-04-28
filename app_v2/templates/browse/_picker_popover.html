@@ -30,7 +30,7 @@
    defense against XSS via PLATFORM_ID / parameter-label content from the DB
    — T-04-03-01, T-04-03-02, T-04-03-04). NEVER bypass autoescape here.
 #}
-{% macro picker_popover(name, label, options, selected) %}
+{% macro picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid") %}
 <div class="dropdown">
   <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
           type="button"
@@ -73,10 +73,10 @@
         style="max-height: 320px; overflow-y: auto;"
         role="listbox"
         aria-label="{{ label }} options"
-        hx-post="/browse/grid"
-        hx-target="#browse-grid"
+        hx-post="{{ hx_post }}"
+        hx-target="{{ hx_target }}"
         hx-swap="innerHTML swap:200ms"
-        hx-include="#browse-filter-form"
+        hx-include="#{{ form_id }}"
         hx-trigger="change delay:250ms from:closest .popover-search-root">
       {% for opt in options %}
         <li data-label="{{ opt | e }}" role="option">
@@ -86,7 +86,7 @@
                    class="form-check-input flex-none"
                    name="{{ name }}"
                    value="{{ opt | e }}"
-                   form="browse-filter-form"
+                   form="{{ form_id }}"
                    {% if opt in selected %}checked{% endif %}>
             <span class="text-truncate">{{ opt | e }}</span>
           </label>

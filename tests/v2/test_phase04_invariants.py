@@ -244,9 +244,21 @@ def test_picker_popover_uses_d15b_auto_commit_pattern():
 
     Required markers in app_v2/templates/browse/_picker_popover.html:
       1. NO popover-apply-btn class (Apply button removed)
-      2. <ul class="popover-search-list"> carries hx-post="/browse/grid"
-      3. <ul class="popover-search-list"> carries hx-target="#browse-grid"
+      2. <ul class="popover-search-list"> renders with hx-post="/browse/grid"
+         when the macro is called with Phase 4 default kwargs (verified by
+         RENDERING the macro — Plan 05-01 / D-OV-06 added the additive
+         `hx_post` / `hx_target` / `form_id` kwargs to support cross-page
+         reuse. The template source now contains `hx-post="{{ hx_post }}"`
+         which renders to "/browse/grid" via the `hx_post="/browse/grid"`
+         default, preserving Phase 4 byte-stability.)
+      3. <ul class="popover-search-list"> renders hx-target="#browse-grid"
+         under Phase 4 defaults (same reasoning as marker 2)
       4. <ul class="popover-search-list"> hx-trigger contains "delay:250ms"
+         (still a literal in template source — unaffected by D-OV-06)
+      4b. <ul class="popover-search-list"> renders hx-include="#browse-filter-form"
+         under Phase 4 defaults (same reasoning as marker 2; the source now
+         carries `hx-include="#{{ form_id }}"` which renders to
+         "#browse-filter-form" via the `form_id="browse-filter-form"` default)
       5. data-bs-auto-close="outside" on the trigger button stays (D-09)
 
     Required markers in app_v2/static/js/popover-search.js:
@@ -268,31 +280,46 @@ def test_picker_popover_uses_d15b_auto_commit_pattern():
         "auto-commit on change is the only commit path."
     )
 
-    # Markers 2 + 3: hx-post + hx-target on the <ul>.
-    # Use a regex that allows arbitrary attribute order/whitespace inside
-    # the <ul ...> tag.
+    # Markers 2, 3, 4, 4b: render the macro with Phase 4 default kwargs and
+    # assert the resulting <ul ...> tag contains the required hx-* attributes.
+    # The macro signature gained additive kwargs in Plan 05-01 (D-OV-06):
+    #   picker_popover(name, label, options, selected,
+    #                  form_id="browse-filter-form",
+    #                  hx_post="/browse/grid",
+    #                  hx_target="#browse-grid")
+    # Phase 4 callers in _filter_bar.html still pass exactly 4 positional
+    # args, so the defaults preserve byte-stable Phase 4 output. This test
+    # asserts on RENDERED output (not template source) so it cannot
+    # false-fail on the expected Jinja `{{ var }}` substitutions.
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+    _env = Environment(
+        loader=FileSystemLoader(str(APP_V2_ROOT / "templates")),
+        autoescape=select_autoescape(["html"]),
+    )
+    _wrap = _env.from_string(
+        '{% from "browse/_picker_popover.html" import picker_popover %}'
+        '{{ picker_popover("x", "X", ["a", "b"], ["a"]) }}'
+    )
+    rendered = _wrap.render()
     ul_tag_pattern = re.compile(
         r'<ul\b[^>]*\bclass="[^"]*\bpopover-search-list\b[^"]*"[^>]*>',
         re.DOTALL,
     )
-    ul_tags = ul_tag_pattern.findall(tpl_src)
-    # Filter out short matches (e.g., literal <ul class="popover-search-list">
-    # examples that may appear inside the macro docstring). The real opening
-    # tag spans multiple lines and is well over 100 chars.
+    ul_tags = ul_tag_pattern.findall(rendered)
     ul_tags = [t for t in ul_tags if len(t) > 100]
     assert ul_tags, (
         "D-15b — could not locate the real <ul class=\"popover-search-list\"> "
-        "opening tag in _picker_popover.html (no multi-line tag matched). "
+        "opening tag in the rendered macro output (no multi-line tag matched). "
         "The auto-commit checklist wiring lives on this element."
     )
     for tag in ul_tags:
         assert 'hx-post="/browse/grid"' in tag, (
-            "D-15b marker 2 — <ul class=\"popover-search-list\"> missing "
-            f"hx-post=\"/browse/grid\". Tag: {tag!r}"
+            "D-15b marker 2 — <ul class=\"popover-search-list\"> rendered with "
+            f"Phase 4 defaults missing hx-post=\"/browse/grid\". Tag: {tag!r}"
         )
         assert 'hx-target="#browse-grid"' in tag, (
-            "D-15b marker 3 — <ul class=\"popover-search-list\"> missing "
-            f"hx-target=\"#browse-grid\". Tag: {tag!r}"
+            "D-15b marker 3 — <ul class=\"popover-search-list\"> rendered with "
+            f"Phase 4 defaults missing hx-target=\"#browse-grid\". Tag: {tag!r}"
         )
         # Marker 4: delay:250ms in hx-trigger.
         assert "delay:250ms" in tag, (
@@ -307,12 +334,12 @@ def test_picker_popover_uses_d15b_auto_commit_pattern():
         # element triggers HTMX's form.elements iteration, which includes
         # form-associated controls via the form= attribute (gap-2 mechanism).
         assert 'hx-include="#browse-filter-form"' in tag, (
-            "D-15b marker 4b — <ul class=\"popover-search-list\"> missing "
-            "hx-include=\"#browse-filter-form\". Without it, HTMX's "
-            "getInputValues() iterates only direct <input> children of the "
-            "<ul> (the checkboxes are NOT direct children — they're under "
-            "<li><label>) and the POST body arrives empty. Same mechanism "
-            "that closed gap-2; same regression class if dropped. "
+            "D-15b marker 4b — <ul class=\"popover-search-list\"> rendered "
+            "with Phase 4 defaults missing hx-include=\"#browse-filter-form\". "
+            "Without it, HTMX's getInputValues() iterates only direct <input> "
+            "children of the <ul> (the checkboxes are NOT direct children — "
+            "they're under <li><label>) and the POST body arrives empty. Same "
+            f"mechanism that closed gap-2; same regression class if dropped. "
             f"Tag: {tag!r}"
         )
 
