@@ -24,13 +24,20 @@
    - Popover-internal Clear button unchecks all in this picker; the bubbling
      change events fire the same debounced commit. NO separate hx-* on the
      Clear button needed.
+   - **Phase 6 D-07 / Pitfall 3:** When ``disable_auto_commit=True`` is passed
+     (the NL-05 confirmation panel does this), the inner ``<ul>`` omits its
+     ``hx-post``/``hx-target``/``hx-swap``/``hx-include``/``hx-trigger``
+     attributes so checkbox toggles do NOT fire HTMX requests. The CALLING
+     template is responsible for its own explicit commit trigger (e.g. the
+     "Run Query ▸" button in ``_confirm_panel.html``). Default ``False``
+     preserves Phase 4 / Phase 5 auto-commit behavior byte-stable.
 
    Every dynamic output uses Jinja2 explicit-escape (autoescape is also
    globally on for .html templates; the explicit filter is belt-and-suspenders
    defense against XSS via PLATFORM_ID / parameter-label content from the DB
    — T-04-03-01, T-04-03-02, T-04-03-04). NEVER bypass autoescape here.
 #}
-{% macro picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid") %}
+{% macro picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid", disable_auto_commit=False) %}
 <div class="dropdown">
   <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
           type="button"
@@ -72,12 +79,12 @@
     <ul class="list-unstyled m-0 popover-search-list"
         style="max-height: 320px; overflow-y: auto;"
         role="listbox"
-        aria-label="{{ label }} options"
+        aria-label="{{ label }} options"{% if not disable_auto_commit %}
         hx-post="{{ hx_post }}"
         hx-target="{{ hx_target }}"
         hx-swap="innerHTML swap:200ms"
         hx-include="#{{ form_id }}"
-        hx-trigger="change delay:250ms from:closest .popover-search-root">
+        hx-trigger="change delay:250ms from:closest .popover-search-root"{% endif %}>
       {% for opt in options %}
         <li data-label="{{ opt | e }}" role="option">
           <label class="dropdown-item d-flex align-items-center gap-2"
