@@ -113,7 +113,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 05-01-PLAN.md — Docs prep (PROJECT.md subsection) + picker_popover macro form_id parameterization (D-OV-06)
 - [x] 05-02-PLAN.md — read_frontmatter parser in content_store.py with mtime_ns memoize (D-OV-02, D-OV-12)
 - [x] 05-03-PLAN.md — overview_grid_service.py with OverviewGridViewModel + filter/sort orchestration (D-OV-03, D-OV-07, D-OV-08)
-- [ ] 05-04-PLAN.md — Routes: GET /overview + POST /overview/grid + HX-Push-Url; remove DELETE/filter/reset (D-OV-04, D-OV-11, D-OV-13)
+- [x] 05-04-PLAN.md — Routes: GET /overview + POST /overview/grid + HX-Push-Url; remove DELETE/filter/reset (D-OV-04, D-OV-11, D-OV-13)
 - [ ] 05-05-PLAN.md — Templates: full rewrite of overview/index.html + new _grid.html + _filter_bar.html; delete legacy partials (D-OV-05, D-OV-06, D-OV-09, D-OV-10)
 - [ ] 05-06-PLAN.md — Tests: rewrite test_overview_routes.py + new test_phase05_invariants.py; delete test_overview_filter.py (D-OV-14)
 **UI hint**: yes

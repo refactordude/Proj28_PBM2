@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: "Completed 05-03-PLAN.md (overview_grid_service: OverviewRow + OverviewGridViewModel + build_overview_grid_view_model, 18 tests, two-pass stable sort with empty-partition pattern)"
-last_updated: "2026-04-28T07:11:12.384Z"
+stopped_at: "Completed 05-04-PLAN.md (overview router rewire: D-OV-04 routes + D-OV-11 add behavior; 1 Rule-3 deviation for Pydantic+FastAPI default-factory incompat)"
+last_updated: "2026-04-28T07:19:08.677Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 24
-  completed_plans: 21
-  percent: 88
+  completed_plans: 22
+  percent: 92
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 05 (overview-redesign) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
-Progress: [██████████] 100%
+Progress: [█████████░] 92%
 
 ## Accumulated Context
 
@@ -123,6 +123,9 @@ Progress: [██████████] 100%
 - 05-03: Title fallback to platform_id (D-OV-09) implemented at `build_overview_grid_view_model` orchestrator level — NOT in `OverviewRow` Pydantic model definition. The model stays oblivious to fallback policy; all other missing PM fields stay None on the model so the template (Plan 05-05) can render None as the em-dash sentinel `—`. Reusable pattern for any future view-model with conditional defaults: keep policy in the orchestrator, keep the model declarative.
 - 05-03: `_validate_sort` hard-whitelists `sort_col` against tuple constant `SORTABLE_COLUMNS` BEFORE `getattr(row, sort_col)` — T-05-03-01 mitigation (sort_col injection cannot reach dunder attributes like `__class__` or `__init__`; `getattr` only resolves the 14 OverviewRow fields). `_normalize_filters` strips non-string and whitespace-only filter values via `isinstance(v, str) and v.strip()` — T-05-03-05 mitigation (defense against `filters={"status": [None, b"\\x00"]}` payloads). Reusable defense pattern for any column-driven sort/filter view-model.
 - 05-03: 18 unit tests in `tests/v2/test_overview_grid_service.py` (plan gate ≥15 → 18 collected). 15 from `<behavior>` spec + 3 structural invariants (`FILTERABLE_COLUMNS` literal pin, `SORTABLE_COLUMNS` length+date presence, `OverviewRow.model_fields` field set). Full v2 suite: 308 passed, 1 skipped (was 290+1 baseline → +18 new, zero regressions). TDD RED → GREEN landed cleanly first pass; no debug cycle, no REFACTOR commit needed.
+- 05-04: D-OV-04 routes shipped — GET / + GET /overview stacked decorators on overview_page; POST /overview/grid returns block_names=["grid","count_oob","filter_badges_oob"] + sets HX-Push-Url to canonical /overview?... URL composed via urllib.parse.urlencode(quote_via=urllib.parse.quote) for %20 spaces (Pitfall 6). DELETE /overview/{pid}, POST /overview/filter, POST /overview/filter/reset removed. POST /overview/add success returns HTTP 200 + HX-Redirect:/overview header per D-OV-11 (full GET /overview reload, NOT a fragment swap — simpler than synthesizing a one-row swap whose frontmatter may not exist at moment of add). 4xx error paths return plain-text Response (decouples router from Plan 05-05 deletion of overview/_filter_alert.html).
+- 05-04: Pydantic v2.13 + FastAPI 0.136 default-factory incompatibility (Phase 4 04-02 lesson re-applied) — GET `Annotated[list[str], Query(default_factory=list)]` cannot coexist with literal `= []` default; raises `TypeError: cannot specify both default and default_factory` at module-import time, blocking app boot. Fix: drop the literal `= []` on GET filter params (Query keeps `default_factory=list` only). POST `Form()` params correctly retain `= []` (Pydantic accepts Form with literal default — asymmetric but locked). Inline comment on `overview_page` quotes the Phase 4 deviation. Reusable for any future v2.0 router with multi-value GET params. Rule-3 Blocking auto-fix.
+- 05-04: Legacy helpers `_entity_dict` + `_build_overview_context` kept in `app_v2/routers/overview.py` for transitional template render during Wave 3 — Plan 05-05 rewrites overview/index.html to consume only `vm`-related keys. GET / and GET /overview pass BOTH the legacy ctx (entities/filter_brands/all_platform_ids/...) and the new ctx (vm + selected_filters + active_filter_counts + sort_col + sort_order) in the same TemplateResponse dict; both coexisting is harmless because Jinja2 only reads what the template asks for. Cleanup is a follow-up trivial commit after Plan 05-05 lands; not blocking this plan.
 
 ### Pending Todos
 
@@ -142,7 +145,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T07:11:12.365Z
-Stopped at: Completed 05-03-PLAN.md (overview_grid_service: OverviewRow + OverviewGridViewModel + build_overview_grid_view_model, 18 tests, two-pass stable sort with empty-partition pattern)
+Last session: 2026-04-28T07:19:08.654Z
+Stopped at: Completed 05-04-PLAN.md (overview router rewire: D-OV-04 routes + D-OV-11 add behavior; 1 Rule-3 deviation for Pydantic+FastAPI default-factory incompat)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
