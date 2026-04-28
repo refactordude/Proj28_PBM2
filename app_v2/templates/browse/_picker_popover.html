@@ -1,27 +1,29 @@
 {# app_v2/templates/browse/_picker_popover.html
-   Reusable Jinja macro for the popover-checklist multiselect (D-07..D-11, D-14, D-15).
+   Reusable Jinja macro for the popover-checklist multiselect (D-07..D-11, D-15b).
    Called identically for both Platforms and Parameters pickers from _filter_bar.html.
 
    Behavior contract:
    - Trigger button shows count badge ONLY when selection is non-empty (D-08)
    - Popover stays open during checkbox interaction (data-bs-auto-close="outside") (D-09)
-   - Selections inside popover are LOCAL until Apply is clicked (D-14, D-15)
-   - Apply fires hx-post to /browse/grid; closes the dropdown via Bootstrap API
-   - Popover-internal Clear empties checkboxes only — does NOT fire HTMX (D-15)
-   - Closing the popover without Apply restores original selection (handled by
-     popover-search.js via data-original-selection)
-   - Each checkbox AND the Apply submit button use form="browse-filter-form"
-     so they associate with the filter form even though the dropdown menu is
-     not a DOM-descendant of it. HTMX auto-includes element.form in the POST
-     body via dn()/Nt() (htmx.min.js getInputValues path) — no hx-include
-     needed. (Pitfall 4 of 04-RESEARCH.md; gap-2 closure 2026-04-27.)
+   - **D-15b (gap-5 closure 2026-04-28):** Auto-commit on each checkbox change
+     with 250ms client-side debounce. The <ul class="popover-search-list">
+     carries hx-post + hx-trigger="change changed delay:250ms"; bubbling
+     change events from inner checkboxes fire a single debounced POST. There
+     is NO Apply button — D-14, D-15, D-15a are superseded by D-15b.
+   - Each checkbox uses form="browse-filter-form" so it associates with the
+     filter form even though the dropdown menu is not a DOM-descendant of it.
+     HTMX auto-includes element.form in the POST body via dn()/Nt()
+     (htmx.min.js getInputValues path). (gap-2 closure 2026-04-27.)
    - The trigger-button count badge <span> is ALWAYS emitted with a stable
-     id="picker-{name}-badge" so POST /browse/grid responses can carry an
+     id="picker-{name}-badge" so POST /browse/grid responses carry an
      OOB-swap fragment ({% block picker_badges_oob %} in index.html) that
-     updates the count after Apply (D-14(b)). Visibility follows D-08
+     updates the count after each debounced commit. Visibility follows D-08
      (no badge when empty) via Bootstrap d-none — the <span> stays in DOM
      either way so HTMX has a target to merge into. (gap-3 closure
      2026-04-28; precedent: Pattern 6 / count_oob OOB swap.)
+   - Popover-internal Clear button unchecks all in this picker; the bubbling
+     change events fire the same debounced commit. NO separate hx-* on the
+     Clear button needed.
 
    Every dynamic output uses Jinja2 explicit-escape (autoescape is also
    globally on for .html templates; the explicit filter is belt-and-suspenders
@@ -54,11 +56,17 @@
     </div>
 
     {# Body: scrollable checklist (D-09). Each <li> carries data-label for
-       client-side substring filter (D-10). #}
+       client-side substring filter (D-10). The <ul> itself carries the
+       hx-* wiring (D-15b 2026-04-28); checkbox change events bubble up and
+       HTMX's `delay:250ms` modifier debounces bursts into a single POST. #}
     <ul class="list-unstyled m-0 popover-search-list"
         style="max-height: 320px; overflow-y: auto;"
         role="listbox"
-        aria-label="{{ label }} options">
+        aria-label="{{ label }} options"
+        hx-post="/browse/grid"
+        hx-target="#browse-grid"
+        hx-swap="innerHTML swap:200ms"
+        hx-trigger="change changed delay:250ms from:closest .popover-search-root">
       {% for opt in options %}
         <li data-label="{{ opt | e }}" role="option">
           <label class="dropdown-item d-flex align-items-center gap-2"
@@ -75,24 +83,14 @@
       {% endfor %}
     </ul>
 
-    {# Footer: Clear selection (left, no HTMX) + Apply (right, fires hx-post)
-       — D-09, D-14, D-15. NO client-side push-url on Apply; the server sets
-       HX-Push-Url response header from Plan 04-02 D-32. #}
-    <div class="p-2 border-top d-flex justify-content-between align-items-center bg-light sticky-bottom">
+    {# Footer: Clear selection only (D-15b). Clicking Clear unchecks all
+       checkboxes in this picker; the bubbling change events fire the same
+       debounced commit on the <ul> above. No HTMX on this button. #}
+    <div class="p-2 border-top d-flex justify-content-end align-items-center bg-light sticky-bottom">
       <button type="button"
               class="btn btn-link btn-sm popover-clear-btn text-secondary"
               aria-label="Clear {{ label | lower }} selection">
         Clear selection
-      </button>
-      <button type="button"
-              class="btn btn-primary btn-sm popover-apply-btn"
-              form="browse-filter-form"
-              hx-post="/browse/grid"
-              hx-target="#browse-grid"
-              hx-swap="innerHTML swap:200ms"
-              hx-on:click="bootstrap.Dropdown.getInstance(document.getElementById('picker-{{ name }}-trigger')).hide()"
-              aria-label="Apply {{ label | lower }} selection">
-        Apply <span class="popover-apply-count badge bg-light text-primary ms-1">{{ selected | length }}</span>
       </button>
     </div>
 
