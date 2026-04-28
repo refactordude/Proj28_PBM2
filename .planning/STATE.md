@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 04-05-PLAN.md (gap-2 closure)
-last_updated: "2026-04-27T23:55:03.803Z"
-last_activity: 2026-04-27
+stopped_at: Completed 04-06-PLAN.md (gap-3 closure)
+last_updated: "2026-04-28T00:51:17.509Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 17
+  completed_plans: 17
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 04 (browse-tab-port) — COMPLETE (gap-2 closed)
-Plan: 5 of 5
-Status: Phase complete — ready for UAT replay + verification
-Last activity: 2026-04-27 — Plan 04-05 closed gap-2 (Apply button form-association)
+Phase: 04 (browse-tab-port) — COMPLETE (all 6 plans + gap-2 + gap-3 closed)
+Plan: 6 of 6 (Plan 04-06 — gap-3 closure — completed)
+Status: Phase 04 ready for verification + UAT replay; Phase 05 (ask-tab-nl-agent) is the next phase to execute
+Last activity: 2026-04-28
 
 Progress: [██████████] 100%
 
@@ -106,6 +106,7 @@ Progress: [██████████] 100%
 - 04-04: Static-analysis tests construct forbidden literals at runtime (`'"' + ' / ' + '"'`, `"/browse/" + "export"`, `"| " + "safe"`) so the test file ITSELF does not contain the substring it scans for under `app_v2/`. Eliminates self-match false-positive risk; no carve-out logic needed.
 - 04-04: 4 deviations — 1 Rule-3 (httpx 0.28 form encoding), 3 Rule-1 acceptance compliance (SQLi test split into POST+GET planes; tautological-literal docstring rephrase in test_browse_routes.py; v1.0-slash-separator literals removed from browse_service.py docstrings). Same pattern as Plan 04-02 / 04-03 deviations 3-4. Zero scope creep, zero behavior change in production code.
 - 04-05: gap-2 closed via single-attribute fix in `_picker_popover.html` — Apply button now carries `form="browse-filter-form"` (mirrors Swap-axes pattern in `_filter_bar.html` line 38); broken `hx-include="#browse-filter-form input:checked"` CSS-descendant selector removed. HTMX's dn()/Nt() resolves element.form for non-GET requests and iterates form.elements (browser DOM API enumerates all form-associated controls regardless of DOM tree position). 2 regression tests added to `tests/v2/test_browse_routes.py` (smoke + recording-mock end-to-end) — file now has 14 tests. Full v2 suite green (272 passed, 1 skipped). Zero Python production-code changes — `git diff --quiet HEAD~2 -- routers/services/adapters/index.html/_filter_bar.html` returns 0. Plan executed exactly as written; zero deviations.
+- 04-06: gap-3 closed via Candidate A (server-side OOB) — extended count_oob/warnings_oob OOB pattern with new `picker_badges_oob` block in `app_v2/templates/browse/index.html` emitting two `hx-swap-oob="true"` spans (id="picker-platforms-badge", id="picker-params-badge") on every POST /browse/grid. Trigger badge in `_picker_popover.html` now uses stable id + d-none for visibility (instead of conditional emit) so HTMX has a permanent merge target while D-08's "no badge when empty" visual contract is preserved. `block_names` extended 3 → 4 with "picker_badges_oob"; one-line router change. 2 regression tests added to `tests/v2/test_browse_routes.py` (non-empty: counts + visible; empty: stable target hidden via d-none) — file now has 16 tests. Full v2 suite green (274 passed, 1 skipped, up from 272). Production-code invariance: zero changes to services / adapters / popover-search.js / app.css / _filter_bar.html / _grid.html / _warnings.html / _empty_state.html / Phase 4 invariants. D-14 (a + b + c) now fully demonstrable end-to-end on a single Apply click. Plan executed exactly as written; zero deviations.
 
 ### Pending Todos
 
@@ -125,7 +126,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-27T23:55:03.783Z
-Stopped at: Completed 04-05-PLAN.md (gap-2 closure)
+Last session: 2026-04-28T00:51:17.489Z
+Stopped at: Completed 04-06-PLAN.md (gap-3 closure)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
