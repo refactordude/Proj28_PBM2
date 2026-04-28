@@ -84,6 +84,12 @@
   function onDropdownShow(e) {
     var root = e.target.querySelector ? e.target.querySelector('.popover-search-root') : null;
     if (!root) return;
+    // D-15a: clear any flags carried over from the prior close cycle so this
+    // open starts clean. Without this, a no-op short-circuit close leaves
+    // dataset.applied=1, and the next Esc on this picker would be swallowed
+    // by branch (i) of onDropdownHide instead of reverting per branch (ii).
+    delete root.dataset.applied;
+    delete root.dataset.cancelling;
     // D-15: stash sorted current selection so close-without-Apply can
     // (a) detect no-op short-circuit (D-15a) and (b) revert on Esc.
     var checked = Array.prototype.slice.call(
@@ -106,8 +112,7 @@
     var original;
     try { original = JSON.parse(originalJsonStr || '[]'); }
     catch (err) { return false; }
-    if (!Object.prototype.toString.call(original) === '[object Array]') return false;
-    if (!original || typeof original.length !== 'number') return false;
+    if (!Array.isArray(original)) return false;
     if (currentArr.length !== original.length) return false;
     var a = currentArr.slice().sort();
     var b = original.slice().sort();
