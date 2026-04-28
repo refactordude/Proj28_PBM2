@@ -99,6 +99,14 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - [ ] Summary swapped in-place via HTMX — no navigation
 - [ ] Button disabled / hidden when no content file exists
 
+#### Overview redesign (v2.0)
+- [ ] Overview tab renders curated platform list as a sortable Bootstrap table mirroring Phase 4 Browse pivot grid styling (`<table class="table table-striped table-hover table-sm">` + `sticky-top` thead) — replaces the legacy `<ul class="list-group">` row layout
+- [ ] Per-platform PM metadata (Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End) sourced from YAML frontmatter on each existing `content/platforms/<PLATFORM_ID>.md` content page — `—` em-dash sentinel for missing fields; Title falls back to PLATFORM_ID
+- [ ] Six popover-checklist multi-filters (Status, Customer, AP Company, Device, Controller, Application) reuse Phase 4's `_picker_popover.html` macro (no fork) with D-15b auto-commit + 250ms debounce
+- [ ] Sortable column headers (asc → desc → asc) with default `start desc`; sort state survives URL round-trip (`?sort=start&order=desc`)
+- [ ] AI Summary stays in the row's last cell with existing Phase 3 in-place HTMX swap UX preserved (no row-expand drawer)
+- [ ] Add platform input row preserved; legacy `<select>` brand/SoC/year/has_content filters and Remove (×) button removed
+
 #### Ask carry-over (v2.0)
 - [ ] NL agent (PydanticAI + dual OpenAI/Ollama) reachable from the Ask tab
 - [ ] Same safety harness (sqlparse validator, LIMIT injector, scrub, step-cap, timeout, `<db_data>` wrapper)
