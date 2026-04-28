@@ -305,18 +305,26 @@ def _run_second_turn(request: Request, composed: str, original_question: str) ->
     if nl_result.kind == "ok":
         return _render_ok(request, nl_result)
     if nl_result.kind == "clarification_needed":
-        # Pitfall 6 — treat as failure (loop prevention). Synthesize a failure
-        # NLResult for _render_failure_kind.
-        from app.core.agent.nl_agent import AgentRunFailure  # local import — no top-level couple
-        synth = NLResult(
-            kind="failure",
-            failure=AgentRunFailure(
-                reason="llm-error",
-                last_sql="",
-                detail="Agent requested clarification a second time; aborting to prevent loop.",
-            ),
-        )
+        # Pitfall 6 — treat as failure (loop prevention). WR-02 fix: render the
+        # abort banner directly with reason="loop-aborted" so the user sees
+        # actionable copy ("The model could not narrow your question even with
+        # explicit parameters. Edit the question above ...") instead of the
+        # generic catch-all ("Something went wrong. (...) Try rephrasing your
+        # question."), which left users guessing whether their picker
+        # selections had been received. AgentRunFailure.reason is a Literal
+        # restricted to {step-cap, timeout, llm-error}, so we bypass
+        # _render_failure_kind here and call TemplateResponse directly rather
+        # than widen the domain model.
         _log.warning("Second-turn ClarificationNeeded suppressed (D-10 / Pitfall 6)")
-        return _render_failure_kind(request, synth)
+        return templates.TemplateResponse(
+            request,
+            "ask/_abort_banner.html",
+            {
+                "reason": "loop-aborted",
+                "last_sql": "",
+                "detail": "",
+            },
+            status_code=200,
+        )
     # kind == "failure"
     return _render_failure_kind(request, nl_result)
