@@ -3,12 +3,13 @@ status: diagnosed
 phase: 04-browse-tab-port
 source: [04-VERIFICATION.md]
 started: 2026-04-26T23:45:00Z
-updated: 2026-04-28T11:00:00Z
+updated: 2026-04-28T01:55:00Z
 ---
 
 ## Current Test
 
 [testing complete — gap-4 surfaced: outside-click on popover currently cancels per D-15; user reports this should auto-Apply]
+[gap-4 closed by Plan 04-07 (2026-04-28); ready for UAT replay]
 
 ## Tests
 
@@ -62,8 +63,8 @@ issues: 2
 pending: 0
 skipped: 0
 blocked: 0
-gaps_open: 1
-gaps_resolved: 3
+gaps_open: 0
+gaps_resolved: 4
 
 ## Gaps
 
@@ -186,11 +187,12 @@ fix: |
   Closed by Plan 04-06.
 
 ### gap-4 — Clicking outside the popover discards selection (should auto-Apply)
-status: open
+status: resolved
 reported: 2026-04-28T11:00:00Z
+resolved: 2026-04-28T01:55:00Z
 test_ref: 1
 severity: minor
-contract_ref: D-15 (re-open)
+contract_ref: D-15 (amended) + D-15a (locked)
 symptom: |
   When the user opens the Platforms (or Parameters) picker, ticks one or more
   checkboxes, then clicks anywhere outside the popover (or presses Esc, or
@@ -248,6 +250,47 @@ fix_direction: |
   the implicit-Apply HTMX request contract on outside-click — and add a
   Phase 4 invariant in tests/v2/test_phase04_invariants.py that pins the
   new D-15 contract so it can't regress silently.
+
+fix: |
+  Implemented Path 1 (overturn original D-15) — CONTEXT.md amended
+  2026-04-28 with D-15 (amended) + D-15a (close-event taxonomy);
+  popover-search.js rewritten to implement the new contract.
+  onDropdownHide now branches:
+    (i)  dataset.applied=1 (explicit Apply already ran)         -> exit
+    (ii) dataset.cancelling=1 (Esc was pressed)                  -> revert
+    (iii) current sorted selection deep-equals originalSelection -> no-op
+    (iv) otherwise                                               -> implicit Apply
+                                                                     (programmatic
+                                                                      popoverApplyBtn.click())
+  A new document keydown listener (capture phase) sets
+  dataset.cancelling=1 on Escape BEFORE Bootstrap fires
+  hide.bs.dropdown — the canonical workaround for the fact that
+  e.clickEvent on hide.bs.dropdown is null on BOTH Esc and
+  programmatic close. The implicit-Apply path reuses the existing
+  Apply button's HTMX wiring via programmatic click —
+  gap-2 form-association (form="browse-filter-form") AND gap-3
+  picker_badges_oob OOB swap both fire automatically with zero
+  divergence from the explicit-Apply code path. A new
+  _selectionsEqual helper drives the no-op short-circuit
+  (sorted-array deep equality between current and stashed selection).
+  Macro header comment in _picker_popover.html unchanged at the
+  body — data-bs-auto-close="outside" on the trigger button (the
+  precondition) preserved unchanged. Two server-side regression
+  tests in tests/v2/test_browse_routes.py pin the implicit-Apply
+  HTTP contract (test_post_browse_grid_implicit_apply_payload_shape,
+  test_post_browse_grid_idempotent_unchanged_selection); one
+  Phase 4 invariant in tests/v2/test_phase04_invariants.py
+  grep-guards popover-search.js for the five D-15a contract
+  markers (dataset.cancelling, capture-phase keydown listener,
+  programmatic .popover-apply-btn click, _selectionsEqual helper,
+  D-15a comment citation) AND pins data-bs-auto-close="outside"
+  on the trigger button. TestClient cannot exercise the JS-side
+  distinguisher directly — server-side tests + JS grep guards
+  + manual UAT replay together pin the contract end-to-end. Suite:
+  274 -> 277 passing. Closed by Plan 04-07; zero changes to
+  routers / services / adapters / index.html / _filter_bar.html /
+  app.css. See .planning/phases/04-browse-tab-port/04-CONTEXT.md
+  D-15 (amended) and D-15a for the locked contract.
 
 
 resolved: 2026-04-27T00:15:00Z
