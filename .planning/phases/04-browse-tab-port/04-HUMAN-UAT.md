@@ -62,8 +62,8 @@ issues: 1
 pending: 0
 skipped: 0
 blocked: 0
-gaps_open: 1
-gaps_resolved: 2
+gaps_open: 0
+gaps_resolved: 3
 
 ## Gaps
 
@@ -122,8 +122,9 @@ fix: |
   .planning/debug/gap-2-apply-no-swap.md for full root-cause evidence.
 
 ### gap-3 — Trigger button count badge does not update after Apply (only after full page refresh)
-status: open
+status: resolved
 reported: 2026-04-28T00:10:00Z
+resolved: 2026-04-28T01:30:00Z
 test_ref: 1
 severity: minor
 contract_ref: D-14(b)
@@ -162,6 +163,28 @@ fix_direction: |
   
   CONTEXT.md D-14(b) is the source of truth — the badge MUST update on Apply.
   This is a regression from the locked design, not a new behavior request.
+fix: |
+  Adopted Candidate A (server-side OOB) — extended the existing
+  count_oob / warnings_oob OOB pattern with a new picker_badges_oob
+  block in app_v2/templates/browse/index.html that emits two
+  hx-swap-oob spans (id="picker-platforms-badge", id="picker-params-badge")
+  on every POST /browse/grid response. The trigger button badge in
+  _picker_popover.html is now ALWAYS rendered with a stable
+  id="picker-{{ name }}-badge" and uses the d-none class when the
+  selection is empty (instead of conditional <span> emission), so
+  HTMX always has a stable swap target while D-08's "no badge when
+  empty" visual contract is preserved. browse_grid's block_names
+  list extended from 3 -> 4 elements with "picker_badges_oob"
+  added; one-line router change. Verified by two regression tests
+  in tests/v2/test_browse_routes.py
+  (test_post_browse_grid_emits_picker_badge_oob_blocks,
+  test_post_browse_grid_picker_badge_zero_count_renders_hidden).
+  D-14(a) (popover close) and D-14(c) (single hx-post grid swap)
+  continue to work; gap-2 form-association fix not regressed.
+  Zero changes to services / adapters / popover-search.js / app.css;
+  changes are confined to 2 templates + 1 router + 1 test file.
+  Closed by Plan 04-06.
+
 status: resolved
 reported: 2026-04-27T00:05:00Z
 resolved: 2026-04-27T00:15:00Z
