@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 05-01-PLAN.md (PROJECT.md subsection + picker_popover macro D-OV-06 parameterization)
-last_updated: "2026-04-28T06:52:07.127Z"
+stopped_at: Completed 05-02-PLAN.md (read_frontmatter parser added to content_store with mtime_ns memoize, 15 tests passing)
+last_updated: "2026-04-28T07:01:04.741Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 24
-  completed_plans: 19
-  percent: 79
+  completed_plans: 20
+  percent: 83
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 05 (overview-redesign) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -111,6 +111,12 @@ Progress: [██████████] 100%
 - 05-01: D-OV-06 picker_popover macro parameterization expanded — macro signature now `picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid")`; 3 additive kwargs preserve Phase 4 byte-stability via defaults while enabling Plan 05-05 to call with `form_id="overview-filter-form"`, `hx_post="/overview/grid"`, `hx_target="#overview-grid"` on a single shared macro (no fork). Body uses `{{ form_id }}`, `{{ hx_post }}`, `{{ hx_target }}`, `#{{ form_id }}` substitutions in 4 places (1 ul tag with 3 attrs + 1 checkbox form= attr).
 - 05-01: Phase 4 invariant `test_picker_popover_uses_d15b_auto_commit_pattern` markers 2/3/4b migrated from template-source grep to rendered-macro grep — preserves D-15b enforcement while accommodating the parameterized macro. Pattern: when a template invariant guards a contract satisfied by Jinja substitution at render-time (not template authorship), render the macro with the contract's reference inputs (Phase 4 default kwargs) and grep the rendered output. Defense-in-depth strengthened — now proves macro defaults match the Phase 4 contract end-to-end. Reusable pattern for any future v2.0 macro that gains kwargs.
 - 05-01: PROJECT.md Active section now has Overview redesign (v2.0) subsection (6 bullets covering OVERVIEW-V2-01..06) inserted between Browse — v2.0 Validated block and Ask carry-over (v2.0) Active block — closes CONTEXT.md upstream-edit-3.
+- 05-02: `read_frontmatter(platform_id, content_dir) -> dict[str, str]` added to `app_v2/services/content_store.py` (D-OV-02) — defensive YAML parser using `yaml.safe_load` EXCLUSIVELY (T-05-02-01 mitigation; bare `yaml.load` token absent from file per acceptance grep, including comments — illustrative comment rephrased to "the unsafe full loader is banned by acceptance grep"), never raises, returns `{}` on every error path (missing file, no leading fence, missing closing fence, malformed YAML, non-dict YAML, traversal, empty fences). Existing 5 functions (`render_markdown`, `_safe_target`, `read_content`, `save_content`, `delete_content`, `get_content_mtime_ns`) byte-stable.
+- 05-02: Memoize cache `_FRONTMATTER_CACHE: dict[tuple[str, int], dict[str, str]]` keyed by `(platform_id, mtime_ns)` per D-OV-12 — implicit invalidation when file changes (no `cache.clear()` needed). Cache key shape structurally enforced by `test_frontmatter_cache_key_is_pid_mtime_tuple` so future widening (e.g., adding `content_dir` to the key for multi-dir support) requires lockstep test update.
+- 05-02: Defensive parser pattern — pure-text helper (`_parse_frontmatter_text`, no I/O, exhaustive return-`{}`-on-error) + thin I/O wrapper (`read_frontmatter`: mtime check + cache lookup + `read_content` + delegate to helper). Reusable for any future content-page extractor (TOC scanner, body summarizer). Two-tier exception catching in helper: explicit `_yaml.YAMLError` + bare `Exception` (`noqa: BLE001`) — defense against any libyaml C-binding anomaly.
+- 05-02: Value coercion contract — `str(v)` for every non-None value (handles `datetime.date` → ISO string, `int`/`bool` → repr-string, `float` → str). `None` values DROPPED from result (caller can use `key in result` to test missing-vs-empty without coercing `'None'` string to a meaningful value). Empty fences (`---\n---\n`) and non-mapping top-level YAML (list/scalar) both caught by single `not isinstance(data, dict): return {}` guard.
+- 05-02: Audit-grep-friendly comment hygiene convention established — when a security contract is enforced via `grep -cE pattern returns 0`, even illustrative mentions of the banned pattern in source comments must avoid the bare token. Plan 05-02's docblock rephrased "yaml.load is unsafe" to "the unsafe full loader is banned by acceptance grep" to satisfy the strict audit. Reusable Phase-5+ convention. (Rule-3 Blocking auto-fix necessary for plan's own acceptance criterion to pass.)
+- 05-02: 15 tests in `tests/v2/test_content_store_frontmatter.py` (plan gate ≥14 → 15 collected) cover happy path (12 PM keys, all `isinstance(str)`, `assignee=홍길동`), 7 defensive-return paths, Korean unicode round-trip, cache hit + cache key shape, mtime-change invalidation (Test 10 uses `os.utime(target, ns=(_, +1_000_000_000))` for deterministic ns-precision bump independent of FS resolution), date/int/bool/None coercion. Full v2 suite 290 passed +1 skipped (vs 275/1 baseline → +15 new, zero regressions).
 
 ### Pending Todos
 
@@ -130,7 +136,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T06:52:07.108Z
-Stopped at: Completed 05-01-PLAN.md (PROJECT.md subsection + picker_popover macro D-OV-06 parameterization)
+Last session: 2026-04-28T07:01:04.721Z
+Stopped at: Completed 05-02-PLAN.md (read_frontmatter parser added to content_store with mtime_ns memoize, 15 tests passing)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
