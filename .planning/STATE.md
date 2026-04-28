@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: executing
-stopped_at: Completed 05-02-PLAN.md (read_frontmatter parser added to content_store with mtime_ns memoize, 15 tests passing)
-last_updated: "2026-04-28T07:01:04.741Z"
+stopped_at: "Completed 05-03-PLAN.md (overview_grid_service: OverviewRow + OverviewGridViewModel + build_overview_grid_view_model, 18 tests, two-pass stable sort with empty-partition pattern)"
+last_updated: "2026-04-28T07:11:12.384Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 24
-  completed_plans: 20
-  percent: 83
+  completed_plans: 21
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 ## Current Position
 
 Phase: 05 (overview-redesign) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
@@ -117,6 +117,12 @@ Progress: [██████████] 100%
 - 05-02: Value coercion contract — `str(v)` for every non-None value (handles `datetime.date` → ISO string, `int`/`bool` → repr-string, `float` → str). `None` values DROPPED from result (caller can use `key in result` to test missing-vs-empty without coercing `'None'` string to a meaningful value). Empty fences (`---\n---\n`) and non-mapping top-level YAML (list/scalar) both caught by single `not isinstance(data, dict): return {}` guard.
 - 05-02: Audit-grep-friendly comment hygiene convention established — when a security contract is enforced via `grep -cE pattern returns 0`, even illustrative mentions of the banned pattern in source comments must avoid the bare token. Plan 05-02's docblock rephrased "yaml.load is unsafe" to "the unsafe full loader is banned by acceptance grep" to satisfy the strict audit. Reusable Phase-5+ convention. (Rule-3 Blocking auto-fix necessary for plan's own acceptance criterion to pass.)
 - 05-02: 15 tests in `tests/v2/test_content_store_frontmatter.py` (plan gate ≥14 → 15 collected) cover happy path (12 PM keys, all `isinstance(str)`, `assignee=홍길동`), 7 defensive-return paths, Korean unicode round-trip, cache hit + cache key shape, mtime-change invalidation (Test 10 uses `os.utime(target, ns=(_, +1_000_000_000))` for deterministic ns-precision bump independent of FS resolution), date/int/bool/None coercion. Full v2 suite 290 passed +1 skipped (vs 275/1 baseline → +15 new, zero regressions).
+- 05-03: Two-pass stable sort algorithm in `_sort_rows` — partition empties from non-empties; sort `non_empty` by `platform_id` ASC FIRST, then by primary key with `reverse=(order=='desc')`. Python sort stability preserves the platform_id ASC tiebreaker even when the primary is reversed for desc (D-OV-07). Empty group always sorts platform_id ASC and concatenates AFTER non-empty regardless of primary order (D-OV-08). Verified by Test 5 (tiebreaker stable for both asc/desc) + Test 3 (empties to END for both orders). Chosen over `functools.cmp_to_key` for readability (the partition step makes the "to END" invariant a structural fact) and to reuse Python's C-level sort.
+- 05-03: filter_options computed across ALL rows (NOT the filtered subset) — picker dropdowns must always show every available value so users can expand selection; narrowing on filter would create a trapdoor UX. Verified by Test 15 (status filter narrows rows to 1 but `filter_options['status']` still shows all 3 values across the curated list). Reusable invariant for any future view-model with picker dropdowns over filterable columns.
+- 05-03: read_frontmatter is the ONE filesystem touchpoint inside `overview_grid_service` — no `os` / `pathlib.Path` instantiation / `read_text` / `stat` calls in this module; `has_content_file` (also pre-existing, framework-agnostic) is the only other touch. Preserves Plan 05-02's path-traversal defenses (Pitfall 2 / D-04) without re-opening that attack surface here. T-05-03-06 mitigation reuses the upstream `_safe_target` guard via the import boundary.
+- 05-03: Title fallback to platform_id (D-OV-09) implemented at `build_overview_grid_view_model` orchestrator level — NOT in `OverviewRow` Pydantic model definition. The model stays oblivious to fallback policy; all other missing PM fields stay None on the model so the template (Plan 05-05) can render None as the em-dash sentinel `—`. Reusable pattern for any future view-model with conditional defaults: keep policy in the orchestrator, keep the model declarative.
+- 05-03: `_validate_sort` hard-whitelists `sort_col` against tuple constant `SORTABLE_COLUMNS` BEFORE `getattr(row, sort_col)` — T-05-03-01 mitigation (sort_col injection cannot reach dunder attributes like `__class__` or `__init__`; `getattr` only resolves the 14 OverviewRow fields). `_normalize_filters` strips non-string and whitespace-only filter values via `isinstance(v, str) and v.strip()` — T-05-03-05 mitigation (defense against `filters={"status": [None, b"\\x00"]}` payloads). Reusable defense pattern for any column-driven sort/filter view-model.
+- 05-03: 18 unit tests in `tests/v2/test_overview_grid_service.py` (plan gate ≥15 → 18 collected). 15 from `<behavior>` spec + 3 structural invariants (`FILTERABLE_COLUMNS` literal pin, `SORTABLE_COLUMNS` length+date presence, `OverviewRow.model_fields` field set). Full v2 suite: 308 passed, 1 skipped (was 290+1 baseline → +18 new, zero regressions). TDD RED → GREEN landed cleanly first pass; no debug cycle, no REFACTOR commit needed.
 
 ### Pending Todos
 
@@ -136,7 +142,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 
 ## Session Continuity
 
-Last session: 2026-04-28T07:01:04.721Z
-Stopped at: Completed 05-02-PLAN.md (read_frontmatter parser added to content_store with mtime_ns memoize, 15 tests passing)
+Last session: 2026-04-28T07:11:12.365Z
+Stopped at: Completed 05-03-PLAN.md (overview_grid_service: OverviewRow + OverviewGridViewModel + build_overview_grid_view_model, 18 tests, two-pass stable sort with empty-partition pattern)
 Resume file: None
 Next action: `/gsd-verify-phase 4` to verify Phase 4 (browse-tab-port) completion
