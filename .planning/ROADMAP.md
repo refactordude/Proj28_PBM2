@@ -87,13 +87,14 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
   1. User can select platforms and parameters, and the pivot grid updates in the Browse tab without a full page reload; the sticky header remains visible while scrolling
   2. The 30-column cap warning and 200-row cap warning appear when the respective limits are reached — matching v1.0 behavior exactly
   3. A Browse URL with query params (e.g. `?platforms=...&params=...&swap=1`) renders the correct filtered pivot grid when opened directly — the link is shareable
-**Plans**: 6 plans (4 original + 2 gap-closure)
+**Plans**: 7 plans (4 original + 3 gap-closure)
 - [x] 04-01-PLAN.md — Upstream doc edits (move v2.0 Browse export to Out of Scope per D-19..D-22)
 - [x] 04-02-PLAN.md — browse_service + browse router (GET /browse + POST /browse/grid + HX-Push-Url) (BROWSE-V2-01, BROWSE-V2-03, BROWSE-V2-05)
 - [x] 04-03-PLAN.md — Templates (Jinja macro + filter bar + grid + warnings + empty state) + popover-search.js + Phase 04 CSS (BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05)
 - [x] 04-04-PLAN.md — Integration tests (TestClient + URL round-trip + caps + XSS) + codebase invariant guards (BROWSE-V2-01..03, -05)
 - [x] 04-05-PLAN.md — gap-2 closure: Apply button form-association fix in `_picker_popover.html` + 2 regression tests
 - [x] 04-06-PLAN.md — gap-3 closure: picker_badges_oob OOB swap on Apply (D-14(b)) + always-emit-with-d-none pattern + 2 regression tests
+- [ ] 04-07-PLAN.md — gap-4 closure: D-15a close-event taxonomy in popover-search.js (outside-click implicit-Apply, Esc explicit-cancel, no-op short-circuit) + 2 regression tests + 1 Phase 4 invariant
 **UI hint**: yes
 
 ### Phase 5: Ask Tab Port
@@ -116,5 +117,5 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
 | 2. Overview Tab + Filters | v2.0 | 0/3 | Not started | - |
 | 3. Content Pages + AI Summary | v2.0 | 0/4 | Not started | - |
-| 4. Browse Tab Port | v2.0 | 6/6 | Complete   | 2026-04-28 |
+| 4. Browse Tab Port | v2.0 | 6/7 | In progress (gap-4 closure) | -          |
 | 5. Ask Tab Port | v2.0 | 0/? | Not started | - |
