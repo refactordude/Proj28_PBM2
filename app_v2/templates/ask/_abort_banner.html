@@ -26,7 +26,7 @@
    The dropdown label is the only active-backend signal.
 
    Context shape provided by routes (Plan 06-03):
-     reason: str  ("step-cap" | "timeout" | "llm-error")
+     reason: str  ("step-cap" | "timeout" | "unconfigured" | "llm-error")
      last_sql: str
      detail: str
 #}
@@ -36,6 +36,8 @@
       Agent stopped: reached the 5-step limit. Try rephrasing your question with more specific parameters.
     {% elif reason == "timeout" %}
       Agent stopped: query timed out after 30 seconds. Try a more targeted question or switch to a faster model.
+    {% elif reason == "unconfigured" %}
+      No LLM backend configured. Open Settings and select a backend, then try again.
     {% else %}
       Something went wrong. {% if detail %}({{ detail | e }}){% endif %} Try rephrasing your question.
     {% endif %}

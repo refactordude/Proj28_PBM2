@@ -180,14 +180,21 @@ def _build_deps(request: Request, llm_cfg) -> AgentDeps | None:
 
 
 def _render_unconfigured(request: Request) -> HTMLResponse:
-    """No LLM configured — render the abort banner with reason='llm-error'."""
+    """No LLM configured — render the abort banner with reason='unconfigured'.
+
+    WR-01 fix: the dedicated ``unconfigured`` template branch renders a single
+    actionable message ("No LLM backend configured. Open Settings ...") instead
+    of the generic catch-all ("Something went wrong. (...) Try rephrasing your
+    question."), which awkwardly told users to rephrase a question that has
+    nothing to do with the underlying configuration problem.
+    """
     return templates.TemplateResponse(
         request,
         "ask/_abort_banner.html",
         {
-            "reason": "llm-error",
+            "reason": "unconfigured",
             "last_sql": "",
-            "detail": "No LLM backend configured — set one in Settings.",
+            "detail": "",
         },
         status_code=200,
     )
