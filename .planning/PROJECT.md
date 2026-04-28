@@ -68,6 +68,10 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - ✓ Settings UI for DB and LLM connection CRUD with per-row Test button — v1.0
 - ⏳ Streamlit intranet deployment — v1.0 scaffolding complete (auth deferred to pre-deployment phase per D-04; `streamlit-authenticator` and cookie-key guard still to be enabled before team-wide rollout)
 
+#### Browse — v2.0
+- ✓ Wide-form pivot grid (platform × parameter) re-rendered in Bootstrap tables — v2.0 (Phase 4)
+- ✓ Same filter / swap-axes / row-cap / col-cap behavior as v1.0; HTMX in-place swap, sticky header, shareable URLs (HX-Push-Url round-trip); Apply form-association + picker badge OOB-swap restored after gap closure (Plans 04-05, 04-06) — v2.0 (Phase 4). Export remains on v1.0 Streamlit per D-19..D-22.
+
 ### Active
 
 <!-- v2.0 Bootstrap Shell — rewrite UI onto FastAPI + Bootstrap + HTMX. -->
@@ -94,10 +98,6 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - [ ] Button on each overview entity calls the LLM (reusing v1.0's openai SDK + backend radio) to summarize the content page markdown
 - [ ] Summary swapped in-place via HTMX — no navigation
 - [ ] Button disabled / hidden when no content file exists
-
-#### Browse carry-over (v2.0)
-- [ ] Wide-form pivot grid (platform × parameter) re-rendered in Bootstrap tables
-- [ ] Same filter / swap-axes / row-cap / col-cap behavior as v1.0
 
 #### Ask carry-over (v2.0)
 - [ ] NL agent (PydanticAI + dual OpenAI/Ollama) reachable from the Ask tab
@@ -190,4 +190,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-26 after Phase 03 (Content Pages + AI Summary) complete*
+*Last updated: 2026-04-28 after Phase 04 (Browse Tab Port) complete — pivot grid + URL round-trip + sticky header validated; gap-2 (Apply form-association) and gap-3 (picker badge OOB swap) closed.*
