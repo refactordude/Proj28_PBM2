@@ -4,7 +4,7 @@ milestone: v2.0
 milestone_name: Bootstrap Shell — Active
 status: verifying
 stopped_at: "Completed 05-06-PLAN.md (Phase 5 test suite + invariants: 22-test rewrite of test_overview_routes.py + new test_phase05_invariants.py with 11 D-OV guards + delete legacy test_overview_filter.py per D-OV-14 + 2 Rule-1 deviations: sortable_th macro-scope fix for jinja2-fragments single-block render + 2 content-routes ai-btn assertion updates. Full v2 suite green: 293 passed + 1 skipped + 0 failed. Phase 5 COMPLETE.)"
-last_updated: "2026-04-28T07:47:30.000Z"
+last_updated: "2026-04-28T15:19:33.477Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 6
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-04-25)
 
 ## Current Position
 
-Phase: 05 (overview-redesign) — COMPLETE
-Plan: 6 of 6 (last plan)
+Phase: 6
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-04-28
 
