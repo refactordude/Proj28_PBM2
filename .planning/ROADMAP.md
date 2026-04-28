@@ -133,7 +133,7 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 - [x] 06-02-PLAN.md — llm_resolver `request` extension + 4 caller updates + starter_prompts service port + picker macro `disable_auto_commit` kwarg (ASK-V2-05, ASK-V2-08; D-15, D-17, Pitfall 3)
 - [x] 06-03-PLAN.md — Ask + settings routers (GET /ask, POST /ask/query, POST /ask/confirm, POST /settings/llm) + main.py registration; root.py /ask stub deletion (ASK-V2-01, ASK-V2-02, ASK-V2-05, ASK-V2-06, ASK-V2-07; D-08, D-10, D-13, D-14, D-16, Pitfalls 1, 4, 6)
 - [x] 06-04-PLAN.md — 5 ask templates (index, _starter_chips, _confirm_panel, _answer, _abort_banner) + LLM dropdown + Phase 6 CSS appendix (.ai-chip) (ASK-V2-01..03, -05, -07, -08; D-01..D-04, D-06, D-07, D-11, D-18; verbatim v1.0 UI-SPEC copy port)
-- [ ] 06-05-PLAN.md — test_ask_routes.py + test_settings_routes.py + test_phase06_invariants.py + test_llm_resolver.py cookie-path additions (D-19 module-level mock, D-20 no threat-model tests at route layer)
+- [x] 06-05-PLAN.md — test_ask_routes.py + test_settings_routes.py + test_phase06_invariants.py + test_llm_resolver.py cookie-path additions (D-19 module-level mock, D-20 no threat-model tests at route layer)
 - [ ] 06-06-PLAN.md — D-22 v1.0 Streamlit Ask deletion + STATE.md regression bar update + Phase 6 invariant polarity flip
 **UI hint**: yes
 
@@ -146,4 +146,4 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 | 3. Content Pages + AI Summary | v2.0 | 4/4 | Complete | 2026-04-26 |
 | 4. Browse Tab Port | v2.0 | 7/7 | Complete | 2026-04-28 |
 | 5. Overview Tab Redesign | v2.0 | 6/6 | Complete   | 2026-04-28 |
-| 6. Ask Tab Port | v2.0 | 4/6 | In Progress|  |
+| 6. Ask Tab Port | v2.0 | 5/6 | In Progress|  |
