@@ -197,9 +197,9 @@ def test_v1_streamlit_ask_deleted_per_d22():
     v1_test = REPO / "tests" / "pages" / "test_ask_page.py"
     assert not v1_test.exists(), "D-22: tests/pages/test_ask_page.py must be deleted"
 
-    # streamlit_app.py must not reference the deleted file
-    streamlit_src = (REPO / "streamlit_app.py").read_text()
-    assert "app/pages/ask.py" not in streamlit_src, "streamlit_app.py still references the deleted Ask page"
+    # streamlit_app.py was deleted in quick task 260429-kn7 (v1.0 sunset)
+    assert not (REPO / "streamlit_app.py").exists(), \
+        "streamlit_app.py must not exist after v1.0 Streamlit sunset (quick task 260429-kn7)"
 
     # D-22 #5 — framework-agnostic preserves
     nl_service = REPO / "app" / "core" / "agent" / "nl_service.py"
