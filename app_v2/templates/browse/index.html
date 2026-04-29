@@ -100,6 +100,7 @@
   <span id="picker-platforms-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_platforms %} d-none{% endif %}" aria-live="polite">{{ vm.selected_platforms | length }}</span>
   <span id="picker-params-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_params or vm.params_disabled %} d-none{% endif %}" aria-live="polite">{{ vm.selected_params | length }}</span>
 {% endblock picker_badges_oob %}
+{% endblock %}
 
 {# OOB Parameters picker — emitted by POST /browse/grid alongside the grid
    swap so the Parameters picker re-renders whenever Platforms changes. The
@@ -107,7 +108,12 @@
    Defense-in-depth: even if the platforms picker badge OOB above lands but
    this OOB is dropped, the next Apply still passes through build_view_model
    which intersects selected_params against the filtered catalog — no stale
-   label can reach fetch_cells. (260429-qyv) #}
+   label can reach fetch_cells. (260429-qyv)
+
+   DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this
+   block in isolation via `block_names=["params_picker_oob"]` WITHOUT it
+   spilling into the full-page render of GET /browse (which would produce a
+   second, visible Parameters dropdown beneath the panel). #}
 {% block params_picker_oob %}
   <div id="params-picker-slot" hx-swap-oob="true">
     {% from 'browse/_picker_popover.html' import picker_popover %}
@@ -118,11 +124,14 @@
 {# Standalone Parameters picker block — used by POST /browse/params-fragment
    for direct refresh paths (test fixture + future graceful-degradation hook).
    Renders the picker WITHOUT hx-swap-oob — the route's hx-target replaces
-   the wrapper div in-place. (260429-qyv) #}
+   the wrapper div in-place. (260429-qyv)
+
+   Same `outside-of-content` placement as `params_picker_oob` above, for the
+   same reason: prevents a third Parameters dropdown from appearing in the
+   full-page GET /browse output. #}
 {% block params_picker %}
   {% from 'browse/_picker_popover.html' import picker_popover %}
   <div id="params-picker-slot">
     {{ picker_popover("params", "Parameters", vm.all_param_labels, vm.selected_params, disabled=vm.params_disabled) }}
   </div>
 {% endblock params_picker %}
-{% endblock %}
