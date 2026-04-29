@@ -2,7 +2,7 @@
 
 ## What This Is
 
-PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analysts) can browse and query a large, EAV-form MySQL parameter database (`ufs_data`) that stores UFS subsystem profiles of Android platforms. The app lets users slice, pivot, filter, visualize, and export this long-form data — and ask natural-language questions on top — without ever writing SQL or reasoning about the schema themselves.
+PBM2 is an internal FastAPI + Bootstrap 5 + HTMX website where a team of non-SQL users (PMs, analysts) can browse and query a large, EAV-form MySQL parameter database (`ufs_data`) that stores UFS subsystem profiles of Android platforms. The app lets users slice, pivot, filter, visualize, and export this long-form data — and ask natural-language questions on top — without ever writing SQL or reasoning about the schema themselves.
 
 ## Core Value
 
@@ -87,7 +87,7 @@ Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md), [milesto
 <!-- v2.0 Bootstrap Shell — rewrite UI onto FastAPI + Bootstrap + HTMX. -->
 
 #### Platform (v2.0)
-- [ ] FastAPI app with Bootstrap 5 + HTMX shell, parallel to archived v1.0 Streamlit code
+- [ ] FastAPI app with Bootstrap 5 + HTMX shell — v1.0 Streamlit code removed in quick task 260429-kn7
 - [ ] Horizontal top-nav tabs: Overview / Browse / Ask
 - [ ] Intranet deployment target unchanged; auth still deferred (re-enable in a later milestone)
 
@@ -124,7 +124,7 @@ Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md), [milesto
 - **Multi-table / cross-table joins** — The entire domain is the single-table EAV `ufs_data`. Supporting arbitrary schemas is a different product.
 - **Editing / correcting platform data from the UI** — DB is read-only by contract; any correction flow lives upstream in the system that populates `ufs_data`.
 - **Training / fine-tuning an in-house LLM** — v1 relies on the LLM adapters already scaffolded (OpenAI cloud or Ollama local).
-- **v2.0 Browse Excel/CSV export** — v1.0 Streamlit Browse remains the export surface until v1.0 sunset; v2.0 Browse is view-only by design choice (2026-04-26 user decision). The v1.0 export_dialog component remains in place and is NOT touched, copied, or imported by app_v2/.
+- **v2.0 Browse Excel/CSV export** — v2.0 Browse is view-only by design choice (2026-04-26 user decision). The v1.0 export_dialog component was removed in quick task 260429-kn7 along with the rest of the Streamlit shell; export resurrection (if needed) will design a v2.0-native flow rather than restoring Streamlit.
 
 ## Context
 
@@ -157,7 +157,7 @@ All three contribute equally, so solving only one is not enough.
 
 ## Constraints
 
-- **Tech stack**: Streamlit + SQLAlchemy (pymysql driver) + pandas + Pydantic v2 + python-dotenv — Why: scaffolding is already in place; no reason to diverge.
+- **Tech stack**: FastAPI + Bootstrap 5 + HTMX + Jinja2 + jinja2-fragments + SQLAlchemy (pymysql driver) + pandas + Pydantic v2 + python-dotenv — Why: v2.0 milestone shipped this stack 2026-04-29 (tag v2.0); v1.0 Streamlit shell sunset in quick task 260429-kn7.
 - **Data**: Single-table EAV MySQL (`ufs_data`), read-only — Why: Real deployment; write path is owned by another system.
 - **Scale**: ~100k+ rows across many platforms — Why: User flagged "too large"; a full dump must be pre-filtered before it hits the LLM, a chart, or an export.
 - **Deployment**: Company intranet, shared team creds — Why: User selected this explicitly; no public-internet exposure is planned.
@@ -171,7 +171,7 @@ All three contribute equally, so solving only one is not enough.
 |----------|-----------|---------|
 | Ad-hoc browsing is the v1 must-work feature; NL is secondary | User explicitly chose "Fast ad-hoc browsing" over "NL → correct answer" when forced to pick one — UI must stand on its own | ✓ Good — v1.0 Browse is complete and independently valuable; NL layered on top |
 | Dual LLM backends (OpenAI + Ollama), user-selectable at runtime | Scaffolding already supports it; lets team pick per-question based on data sensitivity and quality needs | ✓ Good — both backends reachable via same `openai` SDK path (PydanticAI abstracts it) |
-| Shared-credential intranet auth via existing `streamlit-authenticator` | Team is small, on internal network; proper SSO is not worth the complexity in v1 | ⚠️ Revisit — D-04 deferred auth to a pre-deployment phase. Must enable streamlit-authenticator + cookie-key guard before team-wide rollout |
+| Shared-credential intranet auth via existing `streamlit-authenticator` | Team is small, on internal network; proper SSO is not worth the complexity in v1 | ⚠️ Revisit — D-04 deferred auth to a pre-deployment phase. streamlit-authenticator + auth.yaml removed in 260429-kn7 (v1.0 sunset); fresh credential strategy to be picked when auth is re-enabled |
 | Name "PBM2" left unexpanded | Internal tool; acronym does not need to be marketable | ✓ Good |
 | Discovery aids = all four: catalog + search + LLM suggest + starter prompts | User ranked discovery pain equal to EAV and SQL pain; partial solutions leave real users stuck | ✓ Good — all four shipped (catalog multiselect, typeahead, NL-05 agent suggest, starter gallery) |
 | DB is strictly read-only in v1; no upload / write UI | "Someone else maintains the DB" — ingestion belongs upstream | ✓ Good — enforced at DB adapter (readonly user) + service layer (`SET SESSION TRANSACTION READ ONLY`) + SQL validator (SELECT-only) |
@@ -180,7 +180,7 @@ All three contribute equally, so solving only one is not enough.
 | NL-05 uses `st.multiselect` pre-checked with agent candidates; "Run Query" to execute | Preserves Browse-page mental model; user can add/remove candidates before committing | ✓ Good |
 | Path scrub (`/sys/`, `/proc/`, `/dev/`) applied only when OpenAI backend active | Local Ollama sees raw data; cloud LLM gets scrubbed data — protects sensitive filesystem paths from leaving the intranet | ✓ Good — re-review caught case-insensitive miss (uppercase paths) and fixed |
 | Phase 1 auth deferred to pre-deployment phase per D-04 | Team agreed to skip auth during core app build so the data-browsing value could be validated first; gitignore still in place so scaffold cannot leak demo creds | — Pending — revisit when preparing for team-wide rollout |
-| Drop v2.0 Browse export to keep the port view-only | Simpler shell migration; v1.0 Streamlit Browse still serves the export workflow until v1.0 sunset | ⚠️ Revisit at v1.0 sunset planning |
+| Drop v2.0 Browse export to keep the port view-only | Simpler shell migration; v1.0 Streamlit Browse still serves the export workflow until v1.0 sunset | ✓ Resolved — v1.0 export_dialog removed in 260429-kn7. Future export work (if any) is v2.0-native. |
 
 ## Evolution
 
@@ -200,4 +200,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-29 after Phase 6 (Ask Tab Port) plan-complete — NL agent ported under FastAPI/HTMX shell with two-turn confirmation, Ask-page-only LLM dropdown, `pbm2_llm` cookie threading through AI Summary, verbatim v1.0 abort-banner copy; v1.0 Streamlit Ask deleted per D-22. v2.0 milestone phases all complete (6/6); HUMAN-UAT pending for live-server validation.*
+*Last updated: 2026-04-29 after quick task 260429-kn7 (v1.0 Streamlit shell sunset). v2.0 milestone phases all complete (6/6); FastAPI/Bootstrap/HTMX is now the single UI; HUMAN-UAT pending for live-server validation.*

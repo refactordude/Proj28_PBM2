@@ -3,13 +3,13 @@
 
 **PBM2**
 
-PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analysts) can browse and query a large, EAV-form MySQL parameter database (`ufs_data`) that stores UFS subsystem profiles of Android platforms. The app lets users slice, pivot, filter, visualize, and export this long-form data — and ask natural-language questions on top — without ever writing SQL or reasoning about the schema themselves.
+PBM2 is an internal FastAPI + Bootstrap 5 + HTMX website where a team of non-SQL users (PMs, analysts) can browse and query a large, EAV-form MySQL parameter database (`ufs_data`) that stores UFS subsystem profiles of Android platforms. The app lets users slice, pivot, filter, visualize, and export this long-form data — and ask natural-language questions on top — without ever writing SQL or reasoning about the schema themselves.
 
 **Core Value:** **Fast ad-hoc browsing of the parameter database.** Even if the NL layer fails, the UI must let a non-SQL user quickly find the platforms they care about, the parameters they care about, and see them in a wide-form grid they can read, compare, chart, and export. NL query rides on top of this and enhances it — it does not replace it.
 
 ### Constraints
 
-- **Tech stack**: Streamlit + SQLAlchemy (pymysql driver) + pandas + Pydantic v2 + python-dotenv — Why: scaffolding is already in place; no reason to diverge.
+- **Tech stack**: FastAPI + Bootstrap 5 + HTMX + Jinja2 + jinja2-fragments + SQLAlchemy (pymysql driver) + pandas + Pydantic v2 + python-dotenv — Why: v2.0 milestone shipped this stack 2026-04-29 (tag v2.0); v1.0 Streamlit shell sunset in quick task 260429-kn7.
 - **Data**: Single-table EAV MySQL (`ufs_data`), read-only — Why: Real deployment; write path is owned by another system.
 - **Scale**: ~100k+ rows across many platforms — Why: User flagged "too large"; a full dump must be pre-filtered before it hits the LLM, a chart, or an export.
 - **Deployment**: Company intranet, shared team creds — Why: User selected this explicitly; no public-internet exposure is planned.
@@ -19,6 +19,8 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->
+> **Stack as of v2.0 (2026-04-29):** FastAPI + Bootstrap 5 + HTMX + Jinja2 superseded Streamlit as the UI primitive. The table below is the original v1.0 research; entries marked Streamlit / streamlit-authenticator / nest-asyncio are no longer active dependencies. See `.planning/PROJECT.md` Constraints for the current stack.
+
 ## Technology Stack
 
 ## Verdict on Existing Scaffolding
