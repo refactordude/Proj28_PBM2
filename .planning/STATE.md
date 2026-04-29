@@ -1,36 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Bootstrap Shell — Active
-status: verifying
-stopped_at: Completed 06-ask-tab-port/06-06-PLAN.md
-last_updated: "2026-04-29T00:12:31.026Z"
+milestone: (none — v2.0 shipped 2026-04-29)
+milestone_name: Awaiting next milestone
+status: shipped
+stopped_at: v2.0 Bootstrap Shell complete
+last_updated: "2026-04-29T00:30:00.000Z"
 last_activity: 2026-04-29
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 30
-  completed_plans: 30
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-25)
+See: .planning/PROJECT.md (updated 2026-04-29)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 6 — Ask Tab Port
+**Current focus:** Awaiting next milestone (run `/gsd-new-milestone` to define v2.1+)
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
-Status: Phase complete — ready for verification
+Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29
 Last activity: 2026-04-29
 
-Progress: [██████████] 100%
+Progress: [——————————] no active milestone
 
 ## Accumulated Context
 

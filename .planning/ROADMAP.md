@@ -3,7 +3,8 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-2 (shipped 2026-04-24) — see [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
-- 🔄 **v2.0 Bootstrap Shell** — Phases 1-5 (active)
+- ✅ **v2.0 Bootstrap Shell** — Phases 1-6 (shipped 2026-04-29) — see [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
+- 📋 **v2.1+** — TBD (run `/gsd-new-milestone` to define next milestone)
 
 ## Phases
 
@@ -19,131 +20,33 @@ Audit: [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md)
 
 </details>
 
-### v2.0 Bootstrap Shell — Active
+<details>
+<summary>✅ v2.0 Bootstrap Shell (Phases 1-6) — SHIPPED 2026-04-29</summary>
 
-- [x] **Phase 1: Pre-work + Foundation** - v1.0 refactors (ufs_service, nl_service) + FastAPI shell, static vendor, cache layer, deps (completed 2026-04-24)
-- [ ] **Phase 2: Overview Tab + Filters** - Curated platform list, add/remove, HTMX-swapped faceted filters
-- [ ] **Phase 3: Content Pages + AI Summary** - Per-platform markdown CRUD, safe rendering, in-place LLM summary
-- [x] **Phase 4: Browse Tab Port** - Pivot grid, swap-axes, row/col caps under Bootstrap (export deferred per D-19..D-22)
-- [x] **Phase 5: Overview Tab Redesign** - Replace list view with sortable Bootstrap table mirroring Browse pivot grid; YAML-frontmatter metadata fields per content page; popover-checklist multi-filters (Status / Customer / AP Company / Device / Controller / Application) reusing Browse picker pattern (D-15b auto-commit) (completed 2026-04-28)
-- [x] **Phase 6: Ask Tab Port** - NL agent, two-turn confirmation, history, LLM backend selector, safety harness (completed 2026-04-29)
+- [x] Phase 1: Pre-work + Foundation (4/4 plans) — completed 2026-04-24
+- [x] Phase 2: Overview Tab + Filters (3/3 plans) — completed 2026-04-25
+- [x] Phase 3: Content Pages + AI Summary (4/4 plans) — completed 2026-04-26
+- [x] Phase 4: Browse Tab Port (7/7 plans) — completed 2026-04-28
+- [x] Phase 5: Overview Tab Redesign (6/6 plans) — completed 2026-04-28
+- [x] Phase 6: Ask Tab Port (6/6 plans) — completed 2026-04-29
 
-## Phase Details
+Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
+Requirements archive: [milestones/v2.0-REQUIREMENTS.md](milestones/v2.0-REQUIREMENTS.md)
+Audit: [milestones/v2.0-MILESTONE-AUDIT.md](milestones/v2.0-MILESTONE-AUDIT.md)
 
-### Phase 1: Pre-work + Foundation
-**Goal**: The FastAPI v2.0 app starts cleanly alongside v1.0 Streamlit, serves the Bootstrap shell at `/`, and shares v1.0 service code without Streamlit coupling. All 171 v1.0 tests still pass. No visible UI features — only the structural plumbing every subsequent phase depends on.
-**Depends on**: Nothing (first phase of v2.0)
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, INFRA-08, INFRA-09
-**Success Criteria** (what must be TRUE):
-  1. `uvicorn app_v2.main:app` starts without error; `GET /` returns HTTP 200 with Bootstrap nav and the three tabs (Overview / Browse / Ask) visible
-  2. `pytest` still passes all 171 v1.0 tests after the ufs_service and nl_service refactors — no regressions
-  3. `python -c "import app.services.ufs_service"` in a plain Python process (no Streamlit server running) raises no exception
-  4. Bootstrap 5, HTMX, and Bootstrap Icons are served from `/static/vendor/` (not CDN-dependent); the page renders correctly with network access blocked
-  5. A validation error on any HTMX form (4xx/5xx response) shows a visible error message in the page — not silently discarded
-**Plans**: 4 plans
-- [x] 01-01-PLAN.md — Dependencies + ufs_service _core extraction (INFRA-06, INFRA-09)
-- [x] 01-02-PLAN.md — nl_service extraction from ask.py (INFRA-07)
-- [x] 01-03-PLAN.md — FastAPI shell + vendored static assets + base template (INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05)
-- [x] 01-04-PLAN.md — app_v2/services/cache.py TTLCache wrappers (INFRA-08)
-
-### Phase 2: Overview Tab + Filters
-**Goal**: Users can build and maintain a curated watchlist of platforms from the live database, filter it by Brand/SoC/Year and content status, and see each platform with its metadata badges — all without a full page reload.
-**Depends on**: Phase 1
-**Requirements**: OVERVIEW-01, OVERVIEW-02, OVERVIEW-03, OVERVIEW-04, OVERVIEW-05, OVERVIEW-06, FILTER-01, FILTER-02, FILTER-03, FILTER-04
-**Success Criteria** (what must be TRUE):
-  1. User can type a partial platform name in the typeahead input and select a platform to add it to the curated list; the list updates in-place without a page reload
-  2. User can remove a platform via the × button; after confirmation the row disappears from the list without a page reload; the list persists after browser refresh
-  3. User can filter the list by Brand, SoC, or Year (or any combination); matching entities display and non-matching entities disappear without leaving the page; "Clear all" restores the full list
-  4. When the curated list is empty (first run or all removed), an explicit "Add your first platform" prompt appears — not a blank area
-  5. The active-filter badge shows the count of applied filters; the entity list reflects filters immediately on dropdown change
-**Plans**: 3 plans
-- [x] 02-01-PLAN.md — Data layer: PLATFORM_ID parser + SoC→year lookup + overview_store YAML (FILTER-04, OVERVIEW-05)
-- [x] 02-02-PLAN.md — Overview GET + templates + POST /add + DELETE /remove (OVERVIEW-01, OVERVIEW-02, OVERVIEW-03, OVERVIEW-04, OVERVIEW-06)
-- [x] 02-03-PLAN.md — Filter service + POST /filter + POST /filter/reset with OOB badge swap (FILTER-01, FILTER-02, FILTER-03)
-**UI hint**: yes
-
-### Phase 3: Content Pages + AI Summary
-**Goal**: Each curated platform can have a markdown content page that users can add, edit, preview, and delete through the web UI. When a content page exists, a single-click AI Summary button fetches a concise LLM-generated summary in-place, with caching and graceful error handling.
-**Depends on**: Phase 1, Phase 2
-**Requirements**: CONTENT-01, CONTENT-02, CONTENT-03, CONTENT-04, CONTENT-05, CONTENT-06, CONTENT-07, CONTENT-08, SUMMARY-01, SUMMARY-02, SUMMARY-03, SUMMARY-04, SUMMARY-05, SUMMARY-06, SUMMARY-07
-**Success Criteria** (what must be TRUE):
-  1. Navigating to `/platforms/<id>` shows the rendered markdown when a content file exists, or an explicit "Add Content" button when it does not
-  2. A user can edit a platform's markdown, preview it (without saving), save it, and cancel — all without leaving the platform page or performing a full page reload; the saved content persists after browser refresh
-  3. Deleting a content page (after browser confirmation) returns the page to the empty state; no `.md` file remains on disk
-  4. The AI Summary button on an Overview entity is enabled only when a content file exists; clicking it swaps a concise summary in-place within 30 seconds; the loading spinner is visible during the request
-  5. If the LLM call fails, a Bootstrap alert with the failure reason and a Retry button appears in the summary area — never a blank or a spinner that never resolves
-  6. A second click on AI Summary (before content has changed) returns the cached result instantly; the Regenerate button bypasses the cache and triggers a fresh LLM call
-**Plans**: 4 plans
-- [x] 03-01-PLAN.md — Wave 0 infrastructure: atomic_write_bytes extraction + Dashboard tokens.css/app.css + lifespan content/platforms mkdir + .gitignore (CONTENT-01)
-- [x] 03-02-PLAN.md — Wave 1: content_store + 5 platforms routes + 4 templates + Overview row AI Summary wiring (CONTENT-02..08, SUMMARY-01)
-- [x] 03-03-PLAN.md — Wave 2: summary_prompt + summary_service (TTLCache + openai SDK + classify_error) + summary route + success/error templates (SUMMARY-02..07)
-- [x] 03-04-PLAN.md — Wave 3: D-24 cross-process race test + end-to-end integration tests + Phase 03 codebase invariant guards (completed 2026-04-25)
-**UI hint**: yes
-
-### Phase 4: Browse Tab Port
-**Goal**: Users can access the v1.0 pivot-grid experience (platform × parameter wide-form table, swap-axes, row/col caps) under the new Bootstrap shell via the Browse tab — with shareable URLs and no full page reload on filter changes. (Export remains on v1.0 Streamlit per D-19..D-22.)
-**Depends on**: Phase 1
-**Requirements**: BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05
-**Success Criteria** (what must be TRUE):
-  1. User can select platforms and parameters, and the pivot grid updates in the Browse tab without a full page reload; the sticky header remains visible while scrolling
-  2. The 30-column cap warning and 200-row cap warning appear when the respective limits are reached — matching v1.0 behavior exactly
-  3. A Browse URL with query params (e.g. `?platforms=...&params=...&swap=1`) renders the correct filtered pivot grid when opened directly — the link is shareable
-**Plans**: 7 plans (4 original + 3 gap-closure)
-- [x] 04-01-PLAN.md — Upstream doc edits (move v2.0 Browse export to Out of Scope per D-19..D-22)
-- [x] 04-02-PLAN.md — browse_service + browse router (GET /browse + POST /browse/grid + HX-Push-Url) (BROWSE-V2-01, BROWSE-V2-03, BROWSE-V2-05)
-- [x] 04-03-PLAN.md — Templates (Jinja macro + filter bar + grid + warnings + empty state) + popover-search.js + Phase 04 CSS (BROWSE-V2-01, BROWSE-V2-02, BROWSE-V2-03, BROWSE-V2-05)
-- [x] 04-04-PLAN.md — Integration tests (TestClient + URL round-trip + caps + XSS) + codebase invariant guards (BROWSE-V2-01..03, -05)
-- [x] 04-05-PLAN.md — gap-2 closure: Apply button form-association fix in `_picker_popover.html` + 2 regression tests
-- [x] 04-06-PLAN.md — gap-3 closure: picker_badges_oob OOB swap on Apply (D-14(b)) + always-emit-with-d-none pattern + 2 regression tests
-- [x] 04-07-PLAN.md — gap-4 closure: D-15a close-event taxonomy in popover-search.js (outside-click implicit-Apply, Esc explicit-cancel, no-op short-circuit) + 2 regression tests + 1 Phase 4 invariant
-**UI hint**: yes
-
-### Phase 5: Overview Tab Redesign
-**Goal**: Users can browse the curated Overview as a sortable Bootstrap table whose styling mirrors the Phase 4 Browse pivot grid, with rich per-platform PM metadata (Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End) sourced from YAML frontmatter on each existing `content/platforms/<PLATFORM_ID>.md`, and apply popover-checklist multi-filters on Status / Customer / AP Company / Device / Controller / Application using the same auto-commit-with-debounce pattern (D-15b) that closes Phase 4.
-**Depends on**: Phase 2 (curated list / overview_store), Phase 3 (content pages exist), Phase 4 (popover-checklist + D-15b pattern + Browse table CSS)
-**Requirements**: OVERVIEW-V2-01, OVERVIEW-V2-02, OVERVIEW-V2-03, OVERVIEW-V2-04, OVERVIEW-V2-05, OVERVIEW-V2-06
-**Success Criteria** (what must be TRUE):
-  1. The Overview tab renders as a `<table class="table table-striped table-hover table-sm">` with sticky-top header (same classes/styling as Browse pivot grid). Columns left to right: Title | Status | Customer | Model Name | AP Company | AP Model | Device | Controller | Application | 담당자 | Start | End | (Link button) | (AI Summary button). The Remove button is gone.
-  2. Each row's metadata is read from YAML frontmatter on `content/platforms/<PLATFORM_ID>.md`. Platforms in the curated list with no content page (or content page with no frontmatter / empty fields) render with `—` cells; AI Summary button stays disabled (existing D-13 contract); Title falls back to PLATFORM_ID.
-  3. Popover-checklist filters (Status, Customer, AP Company, Device, Controller, Application) sit in a filter bar above the table and use the same `_picker_popover.html` macro as Browse with D-15b auto-commit + 250ms debounce. Toggling a checkbox swaps the table body server-side via HTMX; trigger badge updates via OOB swap (gap-3 pattern).
-  4. Column headers are clickable to sort (cycle: asc → desc → unsorted, or asc → desc only — planner decides). Default sort is Start descending (latest on top). Sort state survives URL round-trip (e.g. `?sort=start&order=desc`) so the URL is shareable.
-  5. AI Summary button stays in the row's last cell and continues to swap content in-place (existing Phase 3 behavior preserved); no row-expand drawer.
-  6. The existing Add platform input row at the top of the page continues to work; the legacy `<select>` filters (brand / soc / year / has_content) and the legacy `_filter_alert.html` partial are removed; the Remove button is removed.
-**Plans**: 6 plans
-- [x] 05-01-PLAN.md — Docs prep (PROJECT.md subsection) + picker_popover macro form_id parameterization (D-OV-06)
-- [x] 05-02-PLAN.md — read_frontmatter parser in content_store.py with mtime_ns memoize (D-OV-02, D-OV-12)
-- [x] 05-03-PLAN.md — overview_grid_service.py with OverviewGridViewModel + filter/sort orchestration (D-OV-03, D-OV-07, D-OV-08)
-- [x] 05-04-PLAN.md — Routes: GET /overview + POST /overview/grid + HX-Push-Url; remove DELETE/filter/reset (D-OV-04, D-OV-11, D-OV-13)
-- [x] 05-05-PLAN.md — Templates: full rewrite of overview/index.html + new _grid.html + _filter_bar.html; delete legacy partials (D-OV-05, D-OV-06, D-OV-09, D-OV-10)
-- [x] 05-06-PLAN.md — Tests: rewrite test_overview_routes.py + new test_phase05_invariants.py; delete test_overview_filter.py (D-OV-14)
-**UI hint**: yes
-
-### Phase 6: Ask Tab Port
-**Goal**: Users can ask natural-language questions about the UFS database through the Ask tab, go through the two-turn parameter-confirmation flow, see results with the LLM summary and SQL expander, switch between Ollama and OpenAI backends, and rely on the full v1.0 safety harness — all under the new Bootstrap shell.
-**Depends on**: Phase 1, Phase 3
-**Requirements**: ASK-V2-01, ASK-V2-02, ASK-V2-03, ASK-V2-04, ASK-V2-05, ASK-V2-06, ASK-V2-07, ASK-V2-08
-**Success Criteria** (what must be TRUE):
-  1. User can type a natural-language question, submit it, and receive a result table with an LLM summary and a collapsible SQL block — or a parameter-confirmation step when the agent needs clarification
-  2. The two-turn confirmation flow presents pre-checked candidate parameters; user can modify the selection and click "Run Query" to execute with the confirmed params; the correct SQL runs against the DB
-  3. The Ask page header bar shows an "LLM: Ollama ▾" / "LLM: OpenAI ▾" dropdown that lets the user switch backends; the selected backend persists across page refreshes via the `pbm2_llm` cookie and the dropdown label reflects the active backend on every page render. (Phase 6 D-12 + D-18: selector is Ask-page-only; no OpenAI sensitivity-warning banner anywhere — the visible dropdown label is the affordance.)
-  4. The 8 curated starter prompts appear when no question has been asked; clicking one fills the textarea but does not auto-submit
-  5. A question that would exceed the step-cap or timeout shows the red abort banner with the exact v1.0 copy; a question designed to SELECT from a non-allowed table (e.g. `mysql.user`) is rejected before execution
-**Plans**: 6 plans
-- [x] 06-01-PLAN.md — Apply REQUIREMENTS.md spec deviations + ROADMAP SC#3 reconciliation (ASK-V2-03/04/05 deviations per D-05/D-11/D-12/D-18)
-- [x] 06-02-PLAN.md — llm_resolver `request` extension + 4 caller updates + starter_prompts service port + picker macro `disable_auto_commit` kwarg (ASK-V2-05, ASK-V2-08; D-15, D-17, Pitfall 3)
-- [x] 06-03-PLAN.md — Ask + settings routers (GET /ask, POST /ask/query, POST /ask/confirm, POST /settings/llm) + main.py registration; root.py /ask stub deletion (ASK-V2-01, ASK-V2-02, ASK-V2-05, ASK-V2-06, ASK-V2-07; D-08, D-10, D-13, D-14, D-16, Pitfalls 1, 4, 6)
-- [x] 06-04-PLAN.md — 5 ask templates (index, _starter_chips, _confirm_panel, _answer, _abort_banner) + LLM dropdown + Phase 6 CSS appendix (.ai-chip) (ASK-V2-01..03, -05, -07, -08; D-01..D-04, D-06, D-07, D-11, D-18; verbatim v1.0 UI-SPEC copy port)
-- [x] 06-05-PLAN.md — test_ask_routes.py + test_settings_routes.py + test_phase06_invariants.py + test_llm_resolver.py cookie-path additions (D-19 module-level mock, D-20 no threat-model tests at route layer)
-- [x] 06-06-PLAN.md — D-22 v1.0 Streamlit Ask deletion + STATE.md regression bar update + Phase 6 invariant polarity flip
-**UI hint**: yes
+</details>
 
 ## Progress
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1. Pre-work + Foundation | v2.0 | 4/4 | Complete   | 2026-04-24 |
-| 2. Overview Tab + Filters | v2.0 | 3/3 | Complete | 2026-04-25 |
-| 3. Content Pages + AI Summary | v2.0 | 4/4 | Complete | 2026-04-26 |
-| 4. Browse Tab Port | v2.0 | 7/7 | Complete | 2026-04-28 |
-| 5. Overview Tab Redesign | v2.0 | 6/6 | Complete   | 2026-04-28 |
-| 6. Ask Tab Port | v2.0 | 6/6 | Complete    | 2026-04-29 |
+| Milestone | Phases | Plans | Status | Shipped |
+|-----------|--------|-------|--------|---------|
+| v1.0 MVP | 2 | 13 | ✅ Shipped | 2026-04-24 |
+| v2.0 Bootstrap Shell | 6 | 30 | ✅ Shipped | 2026-04-29 |
+
+## Next Milestone
+
+Run `/gsd-new-milestone` to plan the next iteration:
+- Discovery: what user need / problem area to address next
+- Research: explore relevant patterns + tech in scope
+- Requirements: fresh REQUIREMENTS.md scoped to milestone
+- Roadmap: fresh phase list under a new milestone heading
