@@ -53,7 +53,8 @@
           type="button"
           id="picker-{{ name }}-trigger"
           {% if not disabled %}data-bs-toggle="dropdown"
-          data-bs-auto-close="outside"{% endif %}
+          data-bs-auto-close="outside"
+          data-bs-boundary="viewport"{% endif %}
           {% if disabled %}disabled aria-disabled="true"{% endif %}
           aria-expanded="false"
           aria-label="Select {{ label | lower }}{% if disabled %} (disabled — select a platform first){% elif selected %} ({{ selected | length }} selected){% endif %}">
