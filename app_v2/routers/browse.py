@@ -117,13 +117,63 @@ def browse_grid(
         swap_axes=(swap == "1"),
     )
     ctx = {"vm": vm}
+    # 260429-qyv: include `params_picker_oob` so the Parameters picker
+    # re-renders on every Platforms change, with the filtered catalog and
+    # the (possibly trimmed) checked-set already applied by build_view_model.
     response = templates.TemplateResponse(
         request,
         "browse/index.html",
         ctx,
-        block_names=["grid", "count_oob", "warnings_oob", "picker_badges_oob"],
+        block_names=[
+            "grid",
+            "count_oob",
+            "warnings_oob",
+            "picker_badges_oob",
+            "params_picker_oob",
+        ],
     )
     response.headers["HX-Push-Url"] = _build_browse_url(
         platforms, params, swap == "1"
     )
     return response
+
+
+@router.post("/browse/params-fragment", response_class=HTMLResponse)
+def browse_params_fragment(
+    request: Request,
+    platforms: Annotated[list[str], Form()] = [],
+    params: Annotated[list[str], Form()] = [],
+    db: DBAdapter | None = Depends(get_db),
+):
+    """Re-render ONLY the Parameters picker block (260429-qyv).
+
+    Fired when the Platforms picker changes (or as a graceful-degradation
+    refresh path). When `platforms` is empty, the response is the
+    disabled-state Parameters picker (no checkboxes in DOM). Otherwise the
+    response is the picker populated with the parameters that exist for the
+    selected platforms, with the previously-checked set intersected against
+    the new available set (stale labels dropped).
+
+    swap_axes is irrelevant for this fragment (the picker doesn't depend on
+    it), so it is not accepted as a form field. The primary commit path
+    (POST /browse/grid) already emits a `params_picker_oob` block alongside
+    the grid swap, so most user actions never need this endpoint — but it is
+    kept for direct testability and future graceful-degradation hooks (e.g.
+    if /browse/grid times out, the picker can still be refreshed in
+    isolation).
+    """
+    db_name = _resolve_db_name(db)
+    vm = build_view_model(
+        db,
+        db_name,
+        selected_platforms=platforms,
+        selected_param_labels=params,
+        swap_axes=False,
+    )
+    ctx = {"vm": vm}
+    return templates.TemplateResponse(
+        request,
+        "browse/index.html",
+        ctx,
+        block_names=["params_picker"],
+    )
