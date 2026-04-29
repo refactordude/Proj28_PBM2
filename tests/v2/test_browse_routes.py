@@ -909,6 +909,45 @@ def test_grid_post_emits_params_picker_oob(client, monkeypatch):
     )
 
 
+def test_get_browse_renders_exactly_one_params_picker_slot(client, monkeypatch):
+    """Regression (260429-qyv hotfix): GET /browse must render exactly ONE
+    `#params-picker-slot` element — the real one inside the filter bar.
+
+    Before the hotfix, the `params_picker_oob` and `params_picker` blocks
+    were defined INSIDE `{% block content %}`, so the full-page render
+    (extends base.html) emitted them after the panel closed, producing two
+    extra Parameters dropdown buttons in the page flow. Moving the blocks
+    OUTSIDE `{% block content %}` makes them fragment-only — accessible to
+    jinja2-fragments via `block_names=` but absent from the full page.
+    """
+    _patch_cache(monkeypatch, platforms=["P1", "P2"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False,
+    ))
+
+    # Empty state — no platforms selected
+    r1 = client.get("/browse")
+    assert r1.status_code == 200
+    assert r1.text.count('id="params-picker-slot"') == 1, (
+        "260429-qyv: GET /browse (empty state) must render exactly ONE "
+        "#params-picker-slot — the picker in the filter bar. Extra slots "
+        "indicate the OOB/fragment blocks are leaking into the full-page "
+        "render."
+    )
+
+    # State with selection — the picker is enabled and pre-checked
+    r2 = client.get("/browse?platforms=P1&params=attribute%20%C2%B7%20vendor_id")
+    assert r2.status_code == 200
+    assert r2.text.count('id="params-picker-slot"') == 1, (
+        "260429-qyv: GET /browse (with platforms selected) must still "
+        "render exactly ONE #params-picker-slot."
+    )
+
+
 def test_grid_post_filters_stale_param_labels(client, monkeypatch):
     """Defense-in-depth: a hand-crafted POST with a stale param label must
     be filtered out by build_view_model BEFORE fetch_cells is called.
