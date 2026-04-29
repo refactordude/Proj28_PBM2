@@ -99,6 +99,7 @@
         hx-target="{{ hx_target }}"
         hx-swap="innerHTML swap:200ms"
         hx-include="#{{ form_id }}"
+        hx-vals='{"_origin": "{{ name | e }}"}'
         hx-trigger="change delay:250ms from:closest .popover-search-root"{% endif %}>
       {% for opt in options %}
         <li data-label="{{ opt | e }}" role="option">

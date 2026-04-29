@@ -92,6 +92,7 @@ def browse_grid(
     platforms: Annotated[list[str], Form()] = [],
     params: Annotated[list[str], Form()] = [],
     swap: Annotated[str, Form()] = "",
+    origin: Annotated[str, Form(alias="_origin")] = "",
     db: DBAdapter | None = Depends(get_db),
 ):
     """Grid fragment — fired by Apply / swap-axes / Clear-all (BROWSE-V2-01).
@@ -107,6 +108,20 @@ def browse_grid(
 
     Clear-all (D-18) reuses this same route with empty form fields — no
     separate clear endpoint exists per CONTEXT.md decision D-18.
+
+    260429-qyv hotfix 2: `_origin` form field identifies which picker
+    triggered the request (the picker macro emits hx-vals='{"_origin":
+    "<name>"}'). When `_origin == "params"` the user is toggling a
+    parameter checkbox INSIDE the open Parameters popover — emitting the
+    `params_picker_oob` block in the response would replace the entire
+    `#params-picker-slot` div (including its open dropdown menu),
+    abruptly closing the popover after every checkbox tick. Solution:
+    skip `params_picker_oob` for params-origin requests so the popover
+    DOM stays intact while the grid + count + badges still update via
+    primary swap and the other OOBs. For platforms-origin, swap-axes,
+    and clear-all the slot OOB IS still emitted so the Parameters filter
+    re-renders with the platforms-filtered catalog and the
+    (possibly-trimmed) checked-set.
     """
     db_name = _resolve_db_name(db)
     vm = build_view_model(
@@ -117,20 +132,18 @@ def browse_grid(
         swap_axes=(swap == "1"),
     )
     ctx = {"vm": vm}
-    # 260429-qyv: include `params_picker_oob` so the Parameters picker
-    # re-renders on every Platforms change, with the filtered catalog and
-    # the (possibly trimmed) checked-set already applied by build_view_model.
+    block_names = ["grid", "count_oob", "warnings_oob", "picker_badges_oob"]
+    if origin != "params":
+        # Refresh the Parameters picker slot when the request did NOT
+        # come from the params picker itself — e.g. platforms picker
+        # change, swap-axes toggle, clear-all. Filtered catalog +
+        # intersected checked-set are already in vm.
+        block_names.append("params_picker_oob")
     response = templates.TemplateResponse(
         request,
         "browse/index.html",
         ctx,
-        block_names=[
-            "grid",
-            "count_oob",
-            "warnings_oob",
-            "picker_badges_oob",
-            "params_picker_oob",
-        ],
+        block_names=block_names,
     )
     response.headers["HX-Push-Url"] = _build_browse_url(
         platforms, params, swap == "1"
