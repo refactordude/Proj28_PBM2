@@ -9,11 +9,11 @@ Contracts (from 04-CONTEXT.md):
 - D-13: parameter labels use ' · ' (middle dot U+00B7), sorted alphabetically
         by combined label. NEVER the v1.0 slash separator (Pitfall 3).
 - D-23: row_cap=200, col_cap=30 (server-enforced, mirrors v1.0 BROWSE-04)
-- D-29: aggfunc='first' for pivot duplicates (delegated to pivot_to_wide_core)
+- D-29: aggfunc='first' for pivot duplicates (delegated to pivot_to_wide)
 - D-30..D-33: URL round-trip via repeated keys + swap='1'/omitted
 
 Threat mitigation:
-- T-04-02-01: SQL injection — fetch_cells_core uses sa.bindparam(expanding=True)
+- T-04-02-01: SQL injection — fetch_cells uses sa.bindparam(expanding=True)
   with parameterized IN; this module only passes lists, never builds SQL.
 - T-04-02-02: garbage param labels — _parse_param_label returns None for
   malformed input; the comprehension silently drops them, preventing empty
@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from app.services.ufs_service import pivot_to_wide_core
+from app.services.ufs_service import pivot_to_wide
 from app_v2.services.cache import fetch_cells, list_parameters, list_platforms
 
 # D-13: middle dot U+00B7 with surrounding spaces. NEVER the v1.0 slash separator.
@@ -142,7 +142,7 @@ def build_view_model(
         row_cap=ROW_CAP,
         db_name=db_name,
     )
-    df_wide, col_capped = pivot_to_wide_core(
+    df_wide, col_capped = pivot_to_wide(
         df_long, swap_axes=swap_axes, col_cap=COL_CAP
     )
     # Subtract the index column from total columns to get the value-col count.

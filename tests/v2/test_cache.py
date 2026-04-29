@@ -1,6 +1,6 @@
 """Unit tests for app_v2/services/cache.py — INFRA-08.
 
-Tests isolate the cache contract by mocking the underlying _core functions.
+Tests isolate the cache contract by mocking the underlying _uncached functions.
 Each test clears the cache between cases (via clear_all_caches) so cross-test
 pollution is impossible.
 """
@@ -31,7 +31,7 @@ def _clear_caches_between_tests():
 
 @pytest.fixture
 def fake_db():
-    """DBAdapter stand-in — never actually called; wrapper bypasses to _core."""
+    """DBAdapter stand-in — never actually called; wrapper bypasses to _uncached."""
     return MagicMock(spec=object)
 
 
@@ -40,7 +40,7 @@ def fake_db():
 # ---------------------------------------------------------------------------
 
 def test_list_platforms_cache_hit_returns_same_object(fake_db):
-    with patch("app_v2.services.cache.list_platforms_core",
+    with patch("app_v2.services.cache._list_platforms_uncached",
                return_value=["A", "B", "C"]) as mock_core:
         r1 = list_platforms(fake_db, db_name="X")
         r2 = list_platforms(fake_db, db_name="X")
@@ -49,7 +49,7 @@ def test_list_platforms_cache_hit_returns_same_object(fake_db):
 
 
 def test_list_platforms_distinct_db_name_separate_cache_entries(fake_db):
-    with patch("app_v2.services.cache.list_platforms_core",
+    with patch("app_v2.services.cache._list_platforms_uncached",
                side_effect=[["A"], ["B"]]) as mock_core:
         r_x = list_platforms(fake_db, db_name="X")
         r_y = list_platforms(fake_db, db_name="Y")
@@ -61,7 +61,7 @@ def test_list_platforms_distinct_db_name_separate_cache_entries(fake_db):
 def test_list_platforms_key_excludes_adapter(fake_db):
     """Two different adapter instances with the same db_name share the cache."""
     other_db = MagicMock(spec=object)
-    with patch("app_v2.services.cache.list_platforms_core",
+    with patch("app_v2.services.cache._list_platforms_uncached",
                return_value=["A"]) as mock_core:
         list_platforms(fake_db, db_name="X")
         list_platforms(other_db, db_name="X")
@@ -74,7 +74,7 @@ def test_list_platforms_key_excludes_adapter(fake_db):
 # ---------------------------------------------------------------------------
 
 def test_list_parameters_cache_hit(fake_db):
-    with patch("app_v2.services.cache.list_parameters_core",
+    with patch("app_v2.services.cache._list_parameters_uncached",
                return_value=[{"InfoCategory": "c", "Item": "i"}]) as mock_core:
         r1 = list_parameters(fake_db, db_name="X")
         r2 = list_parameters(fake_db, db_name="X")
@@ -84,9 +84,9 @@ def test_list_parameters_cache_hit(fake_db):
 
 def test_list_parameters_independent_of_list_platforms(fake_db):
     """list_platforms and list_parameters have separate caches."""
-    with patch("app_v2.services.cache.list_platforms_core",
+    with patch("app_v2.services.cache._list_platforms_uncached",
                return_value=["P"]) as mp, \
-         patch("app_v2.services.cache.list_parameters_core",
+         patch("app_v2.services.cache._list_parameters_uncached",
                return_value=[{"InfoCategory": "c", "Item": "i"}]) as mpp:
         list_platforms(fake_db, db_name="X")
         list_parameters(fake_db, db_name="X")
@@ -103,7 +103,7 @@ def test_fetch_cells_cache_hit_on_identical_filters(fake_db):
     # are NOT the same object (r1 is not r2) — but core is called only once
     # (second call hits the cache and returns a fresh copy of the cached value).
     df = pd.DataFrame({"PLATFORM_ID": ["P1"], "InfoCategory": ["c"], "Item": ["x"], "Result": ["1"]})
-    with patch("app_v2.services.cache.fetch_cells_core",
+    with patch("app_v2.services.cache._fetch_cells_uncached",
                return_value=(df, False)) as mock_core:
         r1_df, r1_capped = fetch_cells(fake_db, ("P1",), (), ("x",))
         r2_df, r2_capped = fetch_cells(fake_db, ("P1",), (), ("x",))
@@ -126,7 +126,7 @@ def test_fetch_cells_mutation_does_not_corrupt_cache(fake_db):
         "Item": ["item"],
         "Result": ["42"],
     })
-    with patch("app_v2.services.cache.fetch_cells_core",
+    with patch("app_v2.services.cache._fetch_cells_uncached",
                return_value=(original_df, False)) as mock_core:
         df1, _ = fetch_cells(fake_db, ("P1",), (), ("item",))
         # Mutate the first returned copy — add a derived column
@@ -146,7 +146,7 @@ def test_fetch_cells_mutation_does_not_corrupt_cache(fake_db):
 def test_fetch_cells_different_platforms_miss(fake_db):
     df1 = pd.DataFrame({"PLATFORM_ID": ["P1"]})
     df2 = pd.DataFrame({"PLATFORM_ID": ["P2"]})
-    with patch("app_v2.services.cache.fetch_cells_core",
+    with patch("app_v2.services.cache._fetch_cells_uncached",
                side_effect=[(df1, False), (df2, False)]) as mock_core:
         fetch_cells(fake_db, ("P1",), (), ("x",))
         fetch_cells(fake_db, ("P2",), (), ("x",))
@@ -156,7 +156,7 @@ def test_fetch_cells_different_platforms_miss(fake_db):
 def test_fetch_cells_different_row_cap_separate_cache_entries(fake_db):
     """row_cap MUST be part of the cache key — changing row_cap should miss."""
     df = pd.DataFrame({"PLATFORM_ID": ["P1"]})
-    with patch("app_v2.services.cache.fetch_cells_core",
+    with patch("app_v2.services.cache._fetch_cells_uncached",
                return_value=(df, False)) as mock_core:
         fetch_cells(fake_db, ("P1",), (), ("x",), row_cap=200)
         fetch_cells(fake_db, ("P1",), (), ("x",), row_cap=100)
@@ -165,7 +165,7 @@ def test_fetch_cells_different_row_cap_separate_cache_entries(fake_db):
 
 def test_fetch_cells_different_db_name_separate_cache_entries(fake_db):
     df = pd.DataFrame({"PLATFORM_ID": ["P1"]})
-    with patch("app_v2.services.cache.fetch_cells_core",
+    with patch("app_v2.services.cache._fetch_cells_uncached",
                return_value=(df, False)) as mock_core:
         fetch_cells(fake_db, ("P1",), (), ("x",), db_name="A")
         fetch_cells(fake_db, ("P1",), (), ("x",), db_name="B")
@@ -192,7 +192,7 @@ def test_ttl_expiry_invalidates_entry(fake_db):
     timer_obj._Timer__timer = lambda: fake_time[0]
 
     try:
-        with patch("app_v2.services.cache.list_platforms_core",
+        with patch("app_v2.services.cache._list_platforms_uncached",
                    side_effect=[["A"], ["B"]]) as mock_core:
             r1 = list_platforms(fake_db, db_name="X")
             # Advance past the 300s TTL
@@ -220,7 +220,7 @@ def test_concurrent_list_platforms_no_runtime_error(fake_db):
         except Exception as e:  # noqa: BLE001
             errors.append(e)
 
-    with patch("app_v2.services.cache.list_platforms_core",
+    with patch("app_v2.services.cache._list_platforms_uncached",
                return_value=["A", "B"]):
         threads = [threading.Thread(target=_call) for _ in range(10)]
         for t in threads:
@@ -256,7 +256,7 @@ def test_cache_module_importable_without_streamlit():
 # ---------------------------------------------------------------------------
 
 def test_clear_all_caches_invalidates_everything(fake_db):
-    with patch("app_v2.services.cache.list_platforms_core",
+    with patch("app_v2.services.cache._list_platforms_uncached",
                side_effect=[["A"], ["B"]]) as mock_core:
         list_platforms(fake_db, db_name="X")
         clear_all_caches()

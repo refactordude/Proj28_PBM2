@@ -1,7 +1,7 @@
-"""Thread-safe TTLCache wrappers for ufs_service _core() functions (INFRA-08).
+"""Thread-safe TTLCache wrappers for ufs_service functions (INFRA-08).
 
-v2.0 replacement for @st.cache_data. Every route in app_v2/ imports the wrapper
-names from THIS module, never the raw _core functions from ufs_service.
+v2.0 caching layer. Every route in app_v2/ imports the wrapper
+names from THIS module, never the raw uncached functions from ufs_service.
 
 Thread-safety contract (Pitfall 11):
     FastAPI `def` routes run concurrently in the threadpool. cachetools.TTLCache
@@ -16,11 +16,11 @@ Key contract (Pitfall 11 / T-04-02):
     share the cache (acceptable: db_name is semantically "which database" —
     identical db_name means identical data).
 
-TTL rationale (mirrors v1.0 @st.cache_data values):
+TTL rationale:
     - list_platforms: ttl=300s (catalog changes only on ingestion; ~5min is fine)
     - list_parameters: ttl=300s (same reasoning)
     - fetch_cells: ttl=60s (cell data more volatile; 1min bound for parallel
-      deployment where v1.0 ingest job may write while v2.0 reads)
+      deployment where the ingest job may write while v2.0 reads)
 """
 from __future__ import annotations
 
@@ -33,9 +33,9 @@ from cachetools.keys import hashkey
 
 from app.adapters.db.base import DBAdapter
 from app.services.ufs_service import (
-    fetch_cells_core,
-    list_parameters_core,
-    list_platforms_core,
+    fetch_cells as _fetch_cells_uncached,
+    list_parameters as _list_parameters_uncached,
+    list_platforms as _list_platforms_uncached,
 )
 
 # ---------------------------------------------------------------------------
@@ -54,9 +54,8 @@ _cells_lock = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
-# Wrappers — same public signatures as the v1.0 @st.cache_data functions but
-# with `db` (no underscore — Streamlit convention is not relevant here) and
-# explicit key lambdas that exclude the adapter.
+# Wrappers — public signatures matching the ufs_service canonical functions,
+# with explicit key lambdas that exclude the non-hashable adapter.
 # ---------------------------------------------------------------------------
 
 @cached(
@@ -69,7 +68,7 @@ def list_platforms(db: DBAdapter, db_name: str = "") -> list[str]:
 
     Key: hashkey(db_name). The adapter is NOT hashed.
     """
-    return list_platforms_core(db, db_name)
+    return _list_platforms_uncached(db, db_name)
 
 
 @cached(
@@ -79,7 +78,7 @@ def list_platforms(db: DBAdapter, db_name: str = "") -> list[str]:
 )
 def list_parameters(db: DBAdapter, db_name: str = "") -> list[dict]:
     """Return sorted distinct (InfoCategory, Item) rows (cached per db_name)."""
-    return list_parameters_core(db, db_name)
+    return _list_parameters_uncached(db, db_name)
 
 
 @cached(
@@ -100,7 +99,7 @@ def _fetch_cells_cached(
 
     Do NOT call this directly. Use fetch_cells() which returns a defensive copy.
     """
-    return fetch_cells_core(db, platforms, infocategories, items, row_cap, db_name)
+    return _fetch_cells_uncached(db, platforms, infocategories, items, row_cap, db_name)
 
 
 def fetch_cells(

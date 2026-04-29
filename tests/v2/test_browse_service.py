@@ -8,7 +8,7 @@ the importing module).
 Covers:
 - D-13 ' · ' middle-dot separator (NOT v1.0 ' / ' — Pitfall 3)
 - D-23 row_cap=200 / col_cap=30
-- D-29 aggfunc='first' (delegated to pivot_to_wide_core)
+- D-29 aggfunc='first' (delegated to pivot_to_wide)
 - D-30..D-33 URL round-trip composition
 - Empty-selection short-circuit (no DB call when either dimension empty)
 - Garbage-label defense (silently dropped — T-04-02-02 mitigation)
@@ -200,7 +200,7 @@ def test_build_view_model_row_capped_signal(mocker):
 
 
 def test_build_view_model_col_capped_signal(mocker):
-    """Test 9: pivot_to_wide_core returns col_capped=True → vm.col_capped=True
+    """Test 9: pivot_to_wide returns col_capped=True → vm.col_capped=True
     AND n_value_cols_total equals the number of selected param labels."""
     db = object()
     mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
@@ -210,7 +210,7 @@ def test_build_view_model_col_capped_signal(mocker):
     )
     capped_wide = pd.DataFrame({"PLATFORM_ID": ["P1"], "vendor_id": ["0xA1"]})
     mocker.patch.object(
-        browse_service, "pivot_to_wide_core", return_value=(capped_wide, True)
+        browse_service, "pivot_to_wide", return_value=(capped_wide, True)
     )
 
     selected_params = [

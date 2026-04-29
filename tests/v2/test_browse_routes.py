@@ -253,7 +253,7 @@ def test_post_browse_grid_row_cap_warning(client, monkeypatch):
 def test_post_browse_grid_col_cap_warning(client, monkeypatch):
     # 35 selected param labels with cat="attribute" and items "i00".."i34".
     # Stubbed fetch_cells returns a long DataFrame containing all 35 items
-    # for one platform; pivot_to_wide_core (real, not mocked) caps at 30.
+    # for one platform; pivot_to_wide (real, not mocked) caps at 30.
     labels = [f"attribute · i{n:02d}" for n in range(35)]
     long_df = pd.DataFrame({
         "PLATFORM_ID": ["P1"] * 35,
