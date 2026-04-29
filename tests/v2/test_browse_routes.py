@@ -948,6 +948,119 @@ def test_get_browse_renders_exactly_one_params_picker_slot(client, monkeypatch):
     )
 
 
+def test_grid_post_with_origin_params_omits_params_picker_oob(client, monkeypatch):
+    """Regression (260429-qyv hotfix 2 — bug 2):
+
+    When the user toggles a Parameter checkbox INSIDE the open Parameters
+    popover, the picker's <ul> fires POST /browse/grid with
+    `_origin=params` (set via hx-vals in the picker macro). The response
+    MUST omit the `params_picker_oob` block — otherwise the OOB swap
+    replaces the entire `#params-picker-slot` div, destroying the open
+    Bootstrap dropdown and abruptly closing the popover after every tick.
+
+    The grid swap, count caption, and badge OOBs still fire (so the
+    table + badge update). Only the slot-replacement OOB is suppressed.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+        {"InfoCategory": "attribute", "Item": "device_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False,
+    ))
+
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+        ("_origin", "params"),
+    ])
+    assert r.status_code == 200
+    body = r.text
+
+    # The grid block IS present (primary swap target).
+    assert "pivot-table" in body, "primary grid swap must still render"
+    # The badge OOB IS present (so the trigger badge updates).
+    assert 'id="picker-params-badge" hx-swap-oob="true"' in body
+    # The grid count OOB IS present.
+    assert 'id="grid-count" hx-swap-oob="true"' in body
+    # CRITICAL: the params-picker-slot OOB is NOT in the response. If it
+    # were, HTMX would replace the entire slot and close the open popover.
+    assert 'id="params-picker-slot"' not in body, (
+        "260429-qyv hotfix 2: POST /browse/grid with _origin=params MUST "
+        "omit the params_picker_oob block. Including it would destroy the "
+        "open Parameters popover after every checkbox tick (bug 2)."
+    )
+
+
+def test_grid_post_with_origin_platforms_includes_params_picker_oob(client, monkeypatch):
+    """Regression (260429-qyv hotfix 2 — bug 1):
+
+    When the user toggles a Platform checkbox in the Platforms popover,
+    the picker's <ul> fires POST /browse/grid with `_origin=platforms`.
+    The response MUST include the `params_picker_oob` block so the
+    Parameters filter re-renders with the platforms-filtered catalog AND
+    the (possibly-trimmed) checked-set — that is the path that drops a
+    now-stale parameter from the visible filter and from the badge count.
+
+    This is the headline 260429-qyv guarantee: the user un-checks the
+    only platform that owned a unique parameter, and that parameter
+    disappears from the Parameters filter and from the badge.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False,
+    ))
+
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+        ("_origin", "platforms"),
+    ])
+    assert r.status_code == 200
+    assert 'id="params-picker-slot"' in r.text, (
+        "260429-qyv hotfix 2: POST /browse/grid with _origin=platforms "
+        "MUST include the params_picker_oob block so the Parameters "
+        "filter re-renders when platforms change."
+    )
+    # And it carries hx-swap-oob (so HTMX actually performs the swap).
+    i = r.text.index('id="params-picker-slot"')
+    tag_start = r.text.rfind("<div", 0, i)
+    tag_end = r.text.find(">", i)
+    tag = r.text[tag_start : tag_end + 1]
+    assert 'hx-swap-oob="true"' in tag
+
+
+def test_grid_post_without_origin_includes_params_picker_oob(client, monkeypatch):
+    """Backward-compat: requests with NO `_origin` field (e.g. swap-axes
+    toggle, clear-all link, the existing test fixtures) still get the
+    full OOB set including `params_picker_oob`.
+
+    Default behavior is conservative — only the explicit `_origin=params`
+    flag suppresses the slot OOB.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False,
+    ))
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+        # NO _origin field
+    ])
+    assert r.status_code == 200
+    assert 'id="params-picker-slot"' in r.text
+
+
 def test_grid_post_filters_stale_param_labels(client, monkeypatch):
     """Defense-in-depth: a hand-crafted POST with a stale param label must
     be filtered out by build_view_model BEFORE fetch_cells is called.
