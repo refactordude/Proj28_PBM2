@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-29)
 ## Current Position
 
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29
-Last activity: 2026-04-29
+Last activity: 2026-04-29 — Completed quick task 260429-e76: Fix Overview filter popover clipping
 
 Progress: [——————————] no active milestone
 
@@ -172,6 +172,7 @@ None — roadmap complete, 45 v2.0 requirements mapped (Phase 4 trimmed per D-19
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260427-uoh | Add SQLite DB adapter and demo data seeder for Phase 4 UAT testing | 2026-04-27 | 43e51e1 | [260427-uoh-add-sqlite-db-adapter-and-demo-data-seed](./quick/260427-uoh-add-sqlite-db-adapter-and-demo-data-seed/) |
+| 260429-e76 | Fix Overview filter popover clipping (extend `.panel:has()` to cover `.overview-filter-bar`) | 2026-04-29 | c9f9bcd | [260429-e76-fix-overview-filter-popover-clipping-ext](./quick/260429-e76-fix-overview-filter-popover-clipping-ext/) |
 
 ## Session Continuity
 
