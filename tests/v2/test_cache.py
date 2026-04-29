@@ -17,6 +17,7 @@ from app_v2.services.cache import (
     clear_all_caches,
     fetch_cells,
     list_parameters,
+    list_parameters_for_platforms,
     list_platforms,
 )
 
@@ -92,6 +93,97 @@ def test_list_parameters_independent_of_list_platforms(fake_db):
         list_parameters(fake_db, db_name="X")
     assert mp.call_count == 1
     assert mpp.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# list_parameters_for_platforms — cached per (platforms, db_name) (260429-qyv)
+# ---------------------------------------------------------------------------
+
+def test_list_parameters_for_platforms_caches_per_platforms_tuple(fake_db):
+    """Same (platforms, db_name) -> single underlying call. Different platforms
+    tuple -> second call hits the underlying function (cache miss)."""
+    with patch(
+        "app_v2.services.cache._list_parameters_for_platforms_uncached",
+        return_value=[{"InfoCategory": "c", "Item": "i"}],
+    ) as mock_core:
+        r1 = list_parameters_for_platforms(fake_db, ("P1",), db_name="db_a")
+        r2 = list_parameters_for_platforms(fake_db, ("P1",), db_name="db_a")
+        # Same key — single underlying call
+        assert mock_core.call_count == 1
+        assert r1 is r2
+        # Different platforms tuple — must miss
+        list_parameters_for_platforms(fake_db, ("P2",), db_name="db_a")
+        assert mock_core.call_count == 2
+
+
+def test_list_parameters_for_platforms_distinct_db_name_separate_cache(fake_db):
+    """Different db_name -> different cache slot."""
+    with patch(
+        "app_v2.services.cache._list_parameters_for_platforms_uncached",
+        side_effect=[
+            [{"InfoCategory": "a", "Item": "1"}],
+            [{"InfoCategory": "b", "Item": "2"}],
+        ],
+    ) as mock_core:
+        r_x = list_parameters_for_platforms(fake_db, ("P1",), db_name="X")
+        r_y = list_parameters_for_platforms(fake_db, ("P1",), db_name="Y")
+    assert r_x == [{"InfoCategory": "a", "Item": "1"}]
+    assert r_y == [{"InfoCategory": "b", "Item": "2"}]
+    assert mock_core.call_count == 2
+
+
+def test_list_parameters_for_platforms_order_variants_partition_separately(fake_db):
+    """The cache key uses the platforms tuple as-is — order is the caller's
+    responsibility (browse_service sort+tuples for stable keys; this matches
+    the existing fetch_cells contract).
+
+    Verifies: ("P1","P2") and ("P2","P1") are distinct cache keys at this layer.
+    The caller must normalize before calling — same as fetch_cells.
+    """
+    with patch(
+        "app_v2.services.cache._list_parameters_for_platforms_uncached",
+        return_value=[{"InfoCategory": "c", "Item": "i"}],
+    ) as mock_core:
+        list_parameters_for_platforms(fake_db, ("P1", "P2"), db_name="db_a")
+        list_parameters_for_platforms(fake_db, ("P2", "P1"), db_name="db_a")
+    # Two different tuples -> two underlying calls (the cache does NOT
+    # canonicalize order; it's the caller's job — matches fetch_cells idiom).
+    assert mock_core.call_count == 2
+
+
+def test_list_parameters_for_platforms_independent_of_list_parameters(fake_db):
+    """The unfiltered list_parameters wrapper and the platforms-filtered
+    wrapper have separate caches — used by Ask (full catalog) and Browse
+    (platforms-filtered) respectively, so a hit on one MUST NOT affect the
+    other."""
+    with patch(
+        "app_v2.services.cache._list_parameters_uncached",
+        return_value=[{"InfoCategory": "all", "Item": "*"}],
+    ) as mp_full, patch(
+        "app_v2.services.cache._list_parameters_for_platforms_uncached",
+        return_value=[{"InfoCategory": "filtered", "Item": "x"}],
+    ) as mp_filtered:
+        list_parameters(fake_db, db_name="X")
+        list_parameters_for_platforms(fake_db, ("P1",), db_name="X")
+    assert mp_full.call_count == 1
+    assert mp_filtered.call_count == 1
+
+
+def test_clear_all_caches_invalidates_parameters_for_platforms(fake_db):
+    """clear_all_caches() must drop the new cache entries too — otherwise
+    test isolation breaks and an admin "force refresh" is incomplete."""
+    with patch(
+        "app_v2.services.cache._list_parameters_for_platforms_uncached",
+        side_effect=[
+            [{"InfoCategory": "a", "Item": "1"}],
+            [{"InfoCategory": "b", "Item": "2"}],
+        ],
+    ) as mock_core:
+        list_parameters_for_platforms(fake_db, ("P1",), db_name="X")
+        clear_all_caches()
+        r = list_parameters_for_platforms(fake_db, ("P1",), db_name="X")
+    assert r == [{"InfoCategory": "b", "Item": "2"}]
+    assert mock_core.call_count == 2
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +336,7 @@ def test_cache_module_importable_without_streamlit():
     import sys
     r = subprocess.run(
         [sys.executable, "-c",
-         "from app_v2.services.cache import list_platforms, list_parameters, fetch_cells; print('ok')"],
+         "from app_v2.services.cache import list_platforms, list_parameters, list_parameters_for_platforms, fetch_cells; print('ok')"],
         capture_output=True, text=True, timeout=30,
     )
     assert r.returncode == 0, f"stderr: {r.stderr}"
