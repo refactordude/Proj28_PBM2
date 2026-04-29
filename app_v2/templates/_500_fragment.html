@@ -1,0 +1,15 @@
+{# Server-error fragment — INFRA-02 (HTMX path).
+
+   Used by app_v2/main.py exception handlers when the request carries
+   `HX-Request: true`. Returned standalone (NO `{% extends "base.html" %}`)
+   so HTMX can swap it into `#htmx-error-container` without re-injecting
+   another navbar/shell. The full-page `500.html` is still used for
+   direct browser navigation.
+
+   No "Return to Overview" link here — the navbar is already in the
+   surrounding shell, and the user is mid-flow on the failing page. #}
+<div class="alert alert-danger" role="alert">
+  <h4 class="alert-heading"><i class="bi bi-x-octagon"></i> 500 — Internal server error</h4>
+  <p class="mb-0">Something went wrong. Try again — if the problem persists, check the server logs.</p>
+  {% if detail %}<hr><p class="mb-0 text-muted">{{ detail }}</p>{% endif %}
+</div>

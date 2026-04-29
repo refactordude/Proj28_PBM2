@@ -28,6 +28,12 @@
       var errorContainer = document.getElementById("htmx-error-container");
       if (errorContainer) {
         evt.detail.target = errorContainer;
+        // Force innerHTML swap regardless of the originating element's
+        // hx-swap setting (typical forms use outerHTML, which would replace
+        // the container itself and remove its id — a follow-up error swap
+        // would then have nowhere to land). innerHTML places the fragment
+        // INSIDE the container so its id survives across multiple errors.
+        evt.detail.swapOverride = "innerHTML";
       }
     }
   }

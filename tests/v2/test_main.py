@@ -122,6 +122,81 @@ def test_get_nonexistent_route_returns_bootstrap_404(client):
     assert "nav nav-tabs" in body, "Expected custom 404.html with nav-tabs, got default handler"
 
 
+def test_htmx_request_404_returns_fragment_not_full_page(client):
+    """INFRA-02 (260429-qyv hotfix 3): when an HTMX request 404s, the
+    response must be a FRAGMENT — no `<html>`, no `<nav class="navbar">`,
+    no second `#htmx-error-container`. Otherwise htmx-error-handler.js
+    swaps the entire base.html shell into `#htmx-error-container`,
+    producing a duplicate navbar beneath the real one."""
+    r = client.get("/this-does-not-exist", headers={"HX-Request": "true"})
+    assert r.status_code == 404
+    body = r.text
+    # The alert content IS present.
+    assert "404" in body
+    assert "Page not found" in body
+    # The shell is NOT — no second navbar, no nested error container.
+    assert "<html" not in body.lower(), (
+        "HTMX 404 must be a fragment, not a full HTML document"
+    )
+    assert "navbar-brand" not in body, (
+        "HTMX 404 fragment must not include the navbar"
+    )
+    assert 'id="htmx-error-container"' not in body, (
+        "HTMX 404 fragment must not contain another #htmx-error-container "
+        "(would nest under the real one and confuse subsequent error swaps)"
+    )
+
+
+@pytest.fixture
+def crashing_client(monkeypatch):
+    """TestClient with `raise_server_exceptions=False` so the registered
+    `unhandled_exception_handler` is exercised instead of the test re-raising.
+    Patches `_build_overview_context` to throw — any HTTP method on `/` then
+    triggers the catch-all 500."""
+    from app_v2.routers import overview as overview_router
+
+    def _explode(*_args, **_kwargs):
+        raise RuntimeError("simulated upstream failure")
+
+    monkeypatch.setattr(overview_router, "_build_overview_context", _explode)
+    with TestClient(app, raise_server_exceptions=False) as c:
+        yield c
+
+
+def test_htmx_request_500_via_unhandled_exception_returns_fragment(crashing_client):
+    """INFRA-02 (260429-qyv hotfix 3): when an HTMX request triggers an
+    unhandled exception, the catch-all handler must return a FRAGMENT,
+    not the full 500.html page. Reproduces the duplicate-navbar bug from
+    the Ask page when the LLM backend 500s."""
+    r = crashing_client.get("/", headers={"HX-Request": "true"})
+    assert r.status_code == 500
+    body = r.text
+    assert "500" in body
+    assert "Internal server error" in body
+    # The fragment must NOT contain the base.html shell.
+    assert "<html" not in body.lower(), (
+        "HTMX 500 must be a fragment, not a full HTML document — "
+        "otherwise htmx-error-handler.js injects a second navbar."
+    )
+    assert "navbar-brand" not in body
+    assert 'id="htmx-error-container"' not in body
+
+
+def test_browser_request_500_still_returns_full_page(crashing_client):
+    """Direct browser navigation (no HX-Request header) must still get the
+    full 500.html with the navbar — unchanged from prior behavior."""
+    r = crashing_client.get("/")  # no HX-Request header
+    assert r.status_code == 500
+    body = r.text
+    assert "500" in body
+    # Full page DOES include the shell so direct navigation gets the navbar.
+    assert "<html" in body.lower()
+    assert "navbar-brand" in body
+    # The persistent error container is still in the shell for HTMX errors
+    # that happen later.
+    assert 'id="htmx-error-container"' in body
+
+
 # --- Static mount (INFRA-04) --------------------------------------------
 
 def test_static_vendor_serves_bootstrap_css(client):

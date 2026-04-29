@@ -108,17 +108,35 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
+def _is_htmx_request(request: Request) -> bool:
+    """Return True when the request was issued by HTMX.
+
+    HTMX always sends `HX-Request: true` on its XHR calls. Used by the
+    exception handlers to pick a fragment template (no base.html shell)
+    over a full page — otherwise the htmx-error-handler.js swap would
+    inject an entire HTML document (navbar + body + ...) into
+    `#htmx-error-container`, producing a duplicate navbar beneath the
+    real one.
+    """
+    return request.headers.get("HX-Request") == "true"
+
+
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Render Bootstrap-styled 404/500 pages (INFRA-02).
 
     For 404 and 500 return the custom template. Other status codes fall through
-    to the default response.
+    to the default response. HTMX requests get fragment templates so
+    htmx-error-handler.js can swap them into `#htmx-error-container` without
+    re-injecting the base.html shell.
     """
+    htmx = _is_htmx_request(request)
     if exc.status_code == 404:
-        return templates.TemplateResponse(request, "404.html", {"detail": exc.detail}, status_code=404)
+        tpl = "_404_fragment.html" if htmx else "404.html"
+        return templates.TemplateResponse(request, tpl, {"detail": exc.detail}, status_code=404)
     if exc.status_code == 500:
-        return templates.TemplateResponse(request, "500.html", {"detail": exc.detail}, status_code=500)
+        tpl = "_500_fragment.html" if htmx else "500.html"
+        return templates.TemplateResponse(request, tpl, {"detail": exc.detail}, status_code=500)
     # Fall through to FastAPI default for other codes.
     # exc.detail is escaped to prevent XSS — Jinja2 autoescape does not apply here.
     return HTMLResponse(
@@ -129,9 +147,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    """Catch-all: render 500.html for any unhandled exception."""
+    """Catch-all: render 500 for any unhandled exception. Fragment for HTMX,
+    full page for direct browser navigation."""
     _log.exception("Unhandled exception on %s: %s", request.url.path, exc)
-    return templates.TemplateResponse(request, "500.html", {"detail": f"{type(exc).__name__}: Internal server error"}, status_code=500)
+    detail = f"{type(exc).__name__}: Internal server error"
+    tpl = "_500_fragment.html" if _is_htmx_request(request) else "500.html"
+    return templates.TemplateResponse(request, tpl, {"detail": detail}, status_code=500)
 
 
 # Router registration — keep imports at the bottom to avoid circular deps
