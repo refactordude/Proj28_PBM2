@@ -60,14 +60,19 @@ def test_param_label_sep_is_middle_dot():
 # ---------------------------------------------------------------------------
 
 def test_build_view_model_empty_selection_no_fetch(mocker):
-    """Test 5: both dimensions empty → is_empty_selection=True, fetch_cells NOT called."""
+    """Test 5: both dimensions empty → is_empty_selection=True, fetch_cells NOT called.
+
+    260429-qyv: when selected_platforms is empty the params catalog is also
+    skipped (params_disabled=True) — list_parameters_for_platforms must NOT
+    be called.
+    """
     db = object()  # sentinel — non-None but never used (short-circuit before DB)
     mock_list_platforms = mocker.patch.object(
         browse_service, "list_platforms", return_value=["P1", "P2"]
     )
-    mock_list_parameters = mocker.patch.object(
+    mock_list_params_for_platforms = mocker.patch.object(
         browse_service,
-        "list_parameters",
+        "list_parameters_for_platforms",
         return_value=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
     )
     mock_fetch_cells = mocker.patch.object(browse_service, "fetch_cells")
@@ -86,10 +91,11 @@ def test_build_view_model_empty_selection_no_fetch(mocker):
     assert vm.n_cols == 0
     assert vm.row_capped is False
     assert vm.col_capped is False
-    # Catalog calls happen even on empty selection (popovers need full lists).
+    # Platforms catalog still runs — popover needs the full platforms list.
     mock_list_platforms.assert_called_once()
-    mock_list_parameters.assert_called_once()
-    # But fetch_cells must NOT be called — short-circuit (DATA-05 echo).
+    # Params catalog SKIPPED when no platforms — picker is disabled (260429-qyv).
+    mock_list_params_for_platforms.assert_not_called()
+    # And fetch_cells must NOT be called — short-circuit (DATA-05 echo).
     mock_fetch_cells.assert_not_called()
 
 
@@ -97,7 +103,7 @@ def test_build_view_model_partial_empty_still_short_circuits(mocker):
     """Test 6: platforms=[] but params=['a · b'] → still empty (BOTH must be present)."""
     db = object()
     mocker.patch.object(browse_service, "list_platforms", return_value=[])
-    mocker.patch.object(browse_service, "list_parameters", return_value=[])
+    mocker.patch.object(browse_service, "list_parameters_for_platforms", return_value=[])
     mock_fetch_cells = mocker.patch.object(browse_service, "fetch_cells")
 
     vm = build_view_model(
@@ -122,7 +128,7 @@ def test_build_view_model_fetch_cells_args(mocker):
     mocker.patch.object(browse_service, "list_platforms", return_value=["P1", "P2"])
     mocker.patch.object(
         browse_service,
-        "list_parameters",
+        "list_parameters_for_platforms",
         return_value=[
             {"InfoCategory": "attribute", "Item": "vendor_id"},
             {"InfoCategory": "flags", "Item": "f1"},
@@ -177,7 +183,7 @@ def test_build_view_model_row_capped_signal(mocker):
     mocker.patch.object(browse_service, "list_platforms", return_value=["P1", "P2"])
     mocker.patch.object(
         browse_service,
-        "list_parameters",
+        "list_parameters_for_platforms",
         return_value=[
             {"InfoCategory": "attribute", "Item": "vendor_id"},
             {"InfoCategory": "flags", "Item": "f1"},
@@ -201,10 +207,20 @@ def test_build_view_model_row_capped_signal(mocker):
 
 def test_build_view_model_col_capped_signal(mocker):
     """Test 9: pivot_to_wide returns col_capped=True → vm.col_capped=True
-    AND n_value_cols_total equals the number of selected param labels."""
+    AND n_value_cols_total equals the number of selected param labels.
+
+    260429-qyv update: list_parameters_for_platforms must include all 35
+    param labels so the intersection passes them through to fetch_cells.
+    """
     db = object()
     mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
-    mocker.patch.object(browse_service, "list_parameters", return_value=[])
+    mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[
+            {"InfoCategory": "flags", "Item": f"f{i}"} for i in range(35)
+        ],
+    )
     mocker.patch.object(
         browse_service, "fetch_cells", return_value=(_make_long_df(), False)
     )
@@ -230,10 +246,18 @@ def test_build_view_model_col_capped_signal(mocker):
 
 
 def test_build_view_model_index_col_swap(mocker):
-    """Test 10: swap_axes flips index_col_name between PLATFORM_ID and Item."""
+    """Test 10: swap_axes flips index_col_name between PLATFORM_ID and Item.
+
+    260429-qyv update: list_parameters_for_platforms must include the
+    selected vendor_id label so the intersection passes it to fetch_cells.
+    """
     db = object()
     mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
-    mocker.patch.object(browse_service, "list_parameters", return_value=[])
+    mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+    )
     mocker.patch.object(
         browse_service, "fetch_cells", return_value=(_make_long_df(), False)
     )
@@ -264,12 +288,17 @@ def test_build_view_model_index_col_swap(mocker):
 # ---------------------------------------------------------------------------
 
 def test_all_param_labels_sorted_by_combined_label(mocker):
-    """Test 11: 'attribute · zzz' sorts BEFORE 'flags · aaa' (combined-label sort)."""
+    """Test 11: 'attribute · zzz' sorts BEFORE 'flags · aaa' (combined-label sort).
+
+    260429-qyv: now sourced from list_parameters_for_platforms — the test
+    must pass a non-empty selected_platforms so the catalog is queried at
+    all (zero platforms -> params_disabled, all_param_labels=[]).
+    """
     db = object()
-    mocker.patch.object(browse_service, "list_platforms", return_value=[])
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
     mocker.patch.object(
         browse_service,
-        "list_parameters",
+        "list_parameters_for_platforms",
         return_value=[
             {"InfoCategory": "flags", "Item": "aaa"},
             {"InfoCategory": "attribute", "Item": "zzz"},
@@ -280,7 +309,7 @@ def test_all_param_labels_sorted_by_combined_label(mocker):
     vm = build_view_model(
         db,
         db_name="x",
-        selected_platforms=[],
+        selected_platforms=["P1"],
         selected_param_labels=[],
         swap_axes=False,
     )
@@ -297,10 +326,22 @@ def test_build_view_model_garbage_labels_filtered(mocker):
 
     Defense for T-04-02-02: a URL with `?params=garbage` must produce
     infocategories=() / items=() — never inject empty strings into SQL.
+
+    260429-qyv update: list_parameters_for_platforms is the catalog source.
+    The mock returns the two well-formed labels; the garbage label is
+    dropped by the catalog intersection (it's not in any catalog) BEFORE
+    _parse_param_label even gets a chance to filter it. Same end state.
     """
     db = object()
     mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
-    mocker.patch.object(browse_service, "list_parameters", return_value=[])
+    mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[
+            {"InfoCategory": "attribute", "Item": "vendor_id"},
+            {"InfoCategory": "flags", "Item": "f1"},
+        ],
+    )
     mock_fetch_cells = mocker.patch.object(
         browse_service, "fetch_cells", return_value=(pd.DataFrame(), False)
     )
@@ -373,6 +414,193 @@ def test_module_constants_present():
         "df_wide", "row_capped", "col_capped", "n_value_cols_total",
         "n_rows", "n_cols", "swap_axes", "selected_platforms",
         "selected_params", "all_platforms", "all_param_labels",
-        "is_empty_selection", "index_col_name",
+        "is_empty_selection", "params_disabled", "index_col_name",
     }
     assert expected.issubset(fields), f"Missing fields: {expected - fields}"
+
+
+# ---------------------------------------------------------------------------
+# 260429-qyv: filtered parameters catalog + intersection + disabled state
+# ---------------------------------------------------------------------------
+
+
+def test_build_view_model_zero_platforms_disables_params(mocker):
+    """Zero platforms → params_disabled=True, no list_parameters_for_platforms call.
+
+    The picker is wholly disabled in the UI; the data layer is not touched
+    for params. all_param_labels is empty, selected_params is empty.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1", "P2"])
+    mock_lpfp = mocker.patch.object(browse_service, "list_parameters_for_platforms")
+    mock_fetch_cells = mocker.patch.object(browse_service, "fetch_cells")
+
+    vm = build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=[],
+        selected_param_labels=[],
+        swap_axes=False,
+    )
+
+    assert vm.params_disabled is True
+    assert vm.all_param_labels == []
+    assert vm.selected_params == []
+    mock_lpfp.assert_not_called()  # short-circuit at the orchestrator level
+    mock_fetch_cells.assert_not_called()
+
+
+def test_build_view_model_filtered_param_catalog(mocker):
+    """selected_platforms=['P1'] → all_param_labels sourced from
+    list_parameters_for_platforms(db, ('P1',), db_name='x').
+
+    The platforms tuple passed to the data layer is sorted (stable cache key).
+    params_disabled=False because at least one platform is selected.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1", "P2"])
+    mock_lpfp = mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+    )
+    mocker.patch.object(browse_service, "fetch_cells")
+
+    vm = build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=["P1"],
+        selected_param_labels=[],
+        swap_axes=False,
+    )
+
+    assert vm.params_disabled is False
+    assert vm.all_param_labels == ["attribute · vendor_id"]
+    # The platforms-filtered catalog is queried with a sorted tuple for
+    # stable cache keying.
+    mock_lpfp.assert_called_once_with(db, ("P1",), db_name="x")
+
+
+def test_build_view_model_drops_stale_param_labels(mocker):
+    """The headline 260429-qyv contract:
+
+    user has previously checked 'flags · stale_label' while a now-unselected
+    platform was active. After the unselect, list_parameters_for_platforms
+    no longer returns 'flags · stale_label', so the intersection drops it
+    BEFORE fetch_cells is called. Result: vm.selected_params keeps only the
+    still-valid label, AND fetch_cells's items tuple does NOT contain
+    'stale_label'.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
+    mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+    )
+    df_long = pd.DataFrame({
+        "PLATFORM_ID": ["P1"],
+        "InfoCategory": ["attribute"],
+        "Item": ["vendor_id"],
+        "Result": ["0xA1"],
+    })
+    mock_fetch_cells = mocker.patch.object(
+        browse_service, "fetch_cells", return_value=(df_long, False)
+    )
+
+    vm = build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=["P1"],
+        selected_param_labels=[
+            "attribute · vendor_id",
+            "flags · stale_label",   # was checked under a now-unselected platform
+        ],
+        swap_axes=False,
+    )
+
+    # The stale label is GONE from the checked-set after intersection.
+    assert vm.selected_params == ["attribute · vendor_id"]
+    # And — critically — fetch_cells receives ONLY the surviving label.
+    args, _ = mock_fetch_cells.call_args
+    _, _, infocats, items = args
+    assert infocats == ("attribute",)
+    assert items == ("vendor_id",)
+    assert "stale_label" not in items
+
+
+def test_build_view_model_multi_platform_widens_catalog(mocker):
+    """selected_platforms=['P2','P1'] → list_parameters_for_platforms is
+    called with the SORTED tuple ('P1','P2') for stable cache keying.
+
+    The catalog returned represents the union of params for both platforms;
+    that union becomes vm.all_param_labels.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1", "P2"])
+    mock_lpfp = mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[
+            {"InfoCategory": "attribute", "Item": "vendor_id"},
+            {"InfoCategory": "flags", "Item": "f1"},
+        ],
+    )
+    mocker.patch.object(browse_service, "fetch_cells")
+
+    build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=["P2", "P1"],  # input order intentionally reversed
+        selected_param_labels=[],
+        swap_axes=False,
+    )
+
+    # platforms tuple is SORTED so order-variants share a cache slot.
+    mock_lpfp.assert_called_once_with(db, ("P1", "P2"), db_name="x")
+
+
+def test_build_view_model_full_catalog_ignored_when_no_platforms(mocker):
+    """Zero platforms must NOT fall through to the unfiltered list_parameters
+    catalog (the v1 mistake this task corrects).
+
+    list_parameters_for_platforms is not called either — so the test asserts
+    all_param_labels is empty even though list_parameters (the unfiltered
+    cache wrapper) would, if accidentally referenced, return data.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
+    # If browse_service accidentally referenced the unfiltered catalog wrapper,
+    # this patch would be invoked and the assertion would fail. Asserting
+    # `not hasattr` is too strict (the symbol exists in cache.py); instead
+    # we patch the legacy attribute IF it ever leaked back into browse_service
+    # and assert the patched function is never called.
+    if hasattr(browse_service, "list_parameters"):
+        mock_legacy = mocker.patch.object(
+            browse_service,
+            "list_parameters",
+            return_value=[{"InfoCategory": "should_not", "Item": "appear"}],
+        )
+    else:
+        mock_legacy = None
+    mock_lpfp = mocker.patch.object(
+        browse_service, "list_parameters_for_platforms"
+    )
+    mocker.patch.object(browse_service, "fetch_cells")
+
+    vm = build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=[],
+        selected_param_labels=[],
+        swap_axes=False,
+    )
+
+    assert vm.all_param_labels == []
+    assert vm.params_disabled is True
+    mock_lpfp.assert_not_called()
+    if mock_legacy is not None:
+        mock_legacy.assert_not_called(), (
+            "browse_service should NOT reference the unfiltered list_parameters "
+            "anymore; it must use list_parameters_for_platforms exclusively."
+        )

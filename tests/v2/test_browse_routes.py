@@ -61,8 +61,11 @@ def _patch_cache(monkeypatch, *, platforms=None, params=None, fetch=None):
     """Patch cache layer at browse_service call-site (the import binding).
 
     platforms: list[str] — return value of list_platforms
-    params: list[dict]   — return value of list_parameters; each dict has
-                           'InfoCategory' and 'Item' keys
+    params: list[dict]   — return value of list_parameters_for_platforms;
+                           each dict has 'InfoCategory' and 'Item' keys.
+                           Under 260429-qyv, browse_service uses the
+                           platforms-filtered catalog wrapper, NOT the
+                           unfiltered list_parameters wrapper.
     fetch: callable      — replaces fetch_cells; signature
                            (db, platforms_tuple, infocategories_tuple, items_tuple, row_cap=200, db_name="")
                            returns (DataFrame, bool)
@@ -73,9 +76,15 @@ def _patch_cache(monkeypatch, *, platforms=None, params=None, fetch=None):
             lambda db, db_name="": list(platforms),
         )
     if params is not None:
+        # 260429-qyv: browse_service.build_view_model now uses the
+        # platforms-filtered catalog wrapper. The lambda accepts the
+        # platforms tuple (passed positional by build_view_model) — we
+        # ignore it here and return the static fixture, which is the
+        # closest in-test equivalent of "the DB has these (cat, item)
+        # pairs available for the selected platforms".
         monkeypatch.setattr(
-            "app_v2.services.browse_service.list_parameters",
-            lambda db, db_name="": list(params),
+            "app_v2.services.browse_service.list_parameters_for_platforms",
+            lambda db, platforms_tuple, db_name="": list(params),
         )
     if fetch is not None:
         monkeypatch.setattr(
@@ -284,7 +293,10 @@ def test_post_browse_grid_xss_escape_in_param_label(client, monkeypatch):
     _patch_cache(monkeypatch, platforms=["P1"], params=[
         {"InfoCategory": "<script>", "Item": "alert(1)</script>"},
     ])
-    r = client.get("/browse")
+    # 260429-qyv: the params catalog only renders when at least one platform
+    # is selected. Pass platforms=P1 in the URL so the parameters picker
+    # actually emits its checkbox list (and thus echoes the catalog labels).
+    r = client.get("/browse?platforms=P1")
     assert r.status_code == 200
     # The literal payload MUST NOT appear unescaped
     assert "<script>alert(1)</script>" not in r.text, "XSS via parameter label leaked into HTML"
@@ -377,14 +389,17 @@ def test_post_browse_grid_swap_axes_changes_index_col(client, monkeypatch):
 def test_get_browse_with_garbage_params_returns_empty_grid(client, monkeypatch):
     """T-04-02-02: garbage param values must produce empty SQL filters, not crash or echo unsanitized.
 
-    The previous version of this test had a tautological final assertion
-    that compared a constant escaped string to a constant raw string —
-    always True regardless of route behavior. This version captures
-    fetch_cells's args and asserts the malformed label was DROPPED BEFORE
-    the SQL layer — proving _parse_param_label returns None for labels
-    without ' · ' and the comprehension filters them out.
+    260429-qyv update: the platforms-filtered catalog intersection drops
+    stale labels (including garbage) BEFORE the empty-selection check.
+    Result: a request like ?params=garbage&platforms=NONEXISTENT lands in
+    the empty-selection branch, fetch_cells is NEVER called, and the
+    empty-state alert renders. This is STRICTLY STRONGER than the old
+    behavior (the old behavior reached fetch_cells with empty items) — the
+    garbage label cannot leak under any code path, including a future
+    refactor that removes _parse_param_label entirely.
     """
-    # Use a recording mock so we can introspect the items/infocategories tuples.
+    # Use a recording mock so we can introspect whether fetch_cells was called
+    # and (if it was) the items/infocategories tuples.
     mock_fetch_cells = MagicMock(
         return_value=(pd.DataFrame(columns=["PLATFORM_ID", "InfoCategory", "Item", "Result"]), False)
     )
@@ -396,46 +411,40 @@ def test_get_browse_with_garbage_params_returns_empty_grid(client, monkeypatch):
     )
     r = client.get("/browse?params=garbage_no_separator&platforms=NONEXISTENT")
     assert r.status_code == 200
-    # Empty-state OR a 0-row table — both are acceptable end-user surfaces.
-    # Note: with platforms=NONEXISTENT and params=garbage, selected_platforms is
-    # non-empty but selected_param_labels round-trips to an empty parsed list AT
-    # THE SQL LAYER. The empty-selection short-circuit checks the RAW labels list
-    # (which has one entry), so we land in the SQL branch with an empty items
-    # tuple and 0-row DataFrame — _grid.html renders an empty table.
+    # Empty-state alert renders (the catalog intersection wiped the garbage
+    # label, so selected_param_labels effectively becomes empty).
     assert (
         "Select platforms and parameters above" in r.text
         or "<tbody></tbody>" in r.text
         or "<tbody>\n            </tbody>" in r.text
         or "<tbody>" in r.text  # whitespace-only tbody from Jinja whitespace control
     )
-    # Critical: verify garbage label did NOT reach the DB as a filter literal.
-    # browse_service drops labels that don't contain the ' · ' separator BEFORE
-    # constructing the items tuple. Per Plan 04-02 line 297-304, fetch_cells is
-    # called as: fetch_cells(db, platforms_tuple, infocategories_tuple, items_tuple, row_cap=, db_name=)
-    # Items is the 4th positional arg (index 3).
-    assert mock_fetch_cells.called, "fetch_cells should be called once selection has both platforms and params (even garbage)"
-    call_args = mock_fetch_cells.call_args.args or ()
-    call_kwargs = mock_fetch_cells.call_args.kwargs or {}
-    # items is positional arg index 3 (db, platforms, infocategories, items, ...)
-    if "items" in call_kwargs:
-        items_passed = call_kwargs["items"]
-    elif len(call_args) > 3:
-        items_passed = call_args[3]
-    else:
-        items_passed = None
-    assert items_passed in (None, (), [], frozenset()), (
-        f"garbage label leaked into items: {items_passed!r}"
-    )
-    # Also verify infocategories (positional arg 2) is empty for the same reason
-    if "infocategories" in call_kwargs:
-        ic_passed = call_kwargs["infocategories"]
-    elif len(call_args) > 2:
-        ic_passed = call_args[2]
-    else:
-        ic_passed = None
-    assert ic_passed in (None, (), [], frozenset()), (
-        f"garbage label leaked into infocategories: {ic_passed!r}"
-    )
+    # Under the new contract the garbage label is dropped before any DB call.
+    # Either fetch_cells is NOT called at all, OR it is called with empty
+    # filter tuples — both outcomes prove the garbage label never leaked.
+    if mock_fetch_cells.called:
+        call_args = mock_fetch_cells.call_args.args or ()
+        call_kwargs = mock_fetch_cells.call_args.kwargs or {}
+        if "items" in call_kwargs:
+            items_passed = call_kwargs["items"]
+        elif len(call_args) > 3:
+            items_passed = call_args[3]
+        else:
+            items_passed = None
+        if "infocategories" in call_kwargs:
+            ic_passed = call_kwargs["infocategories"]
+        elif len(call_args) > 2:
+            ic_passed = call_args[2]
+        else:
+            ic_passed = None
+        assert items_passed in (None, (), [], frozenset()), (
+            f"garbage label leaked into items: {items_passed!r}"
+        )
+        assert ic_passed in (None, (), [], frozenset()), (
+            f"garbage label leaked into infocategories: {ic_passed!r}"
+        )
+    # Otherwise fetch_cells was not called — the intersection short-circuited
+    # the empty-selection branch. Either way the garbage never reached SQL.
 
 
 # -----------------------------------------------------------------------
@@ -458,7 +467,11 @@ def test_picker_checklist_carries_d15b_hx_attributes(client, monkeypatch):
     _patch_cache(monkeypatch, platforms=["P1"], params=[
         {"InfoCategory": "attribute", "Item": "vendor_id"},
     ])
-    r = client.get("/browse")
+    # 260429-qyv: the Parameters picker only renders its dropdown body when
+    # at least one platform is selected (otherwise the macro emits the
+    # disabled trigger with NO popover-search-list). Pass platforms=P1 in
+    # the URL so BOTH pickers render their hx-wired <ul>.
+    r = client.get("/browse?platforms=P1")
     assert r.status_code == 200
     # Apply button MUST be gone (D-15b: there is no commit gesture).
     assert "popover-apply-btn" not in r.text, (
@@ -750,5 +763,209 @@ def test_post_browse_grid_picker_badge_zero_count_renders_hidden(client, monkeyp
             f"gap-3: {badge_id} for empty selection MUST carry d-none "
             f"(D-08: no visible badge when count is 0). Got: {tag!r}"
         )
+
+
+# -----------------------------------------------------------------------
+# 260429-qyv: /browse/params-fragment + grid OOB params re-render
+# -----------------------------------------------------------------------
+
+
+def test_params_fragment_disabled_when_no_platforms(client, monkeypatch):
+    """POST /browse/params-fragment with empty platforms -> disabled trigger.
+
+    The macro emits the disabled-state Parameters trigger (button with
+    `disabled` and `aria-disabled="true"` attributes). The dropdown body
+    (with class popover-search-list) is OMITTED from the DOM so no
+    checkboxes can be ticked.
+    """
+    _patch_cache(monkeypatch, platforms=["P1", "P2"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ])
+    r = _post_form_pairs(client, "/browse/params-fragment", [])
+    assert r.status_code == 200
+    body = r.text
+
+    # Trigger button has disabled / aria-disabled attributes.
+    assert "disabled" in body, "params trigger should carry the disabled attr"
+    assert 'aria-disabled="true"' in body, (
+        "params trigger should carry aria-disabled='true'"
+    )
+    # Dropdown body is OMITTED — no popover-search-list, no checkbox UL.
+    assert "popover-search-list" not in body, (
+        "260429-qyv: when disabled, the dropdown body must be omitted "
+        "entirely (no checkboxes in DOM)."
+    )
+    # Sanity: the fragment is the params slot, not the full page.
+    assert "params-picker-slot" in body
+    assert "<html" not in body.lower()
+
+
+def test_params_fragment_populated_with_intersection(client, monkeypatch):
+    """POST /browse/params-fragment with platforms=P1 + a stale param ->
+    response shows ONLY the still-valid param (intersection drops stale
+    labels).
+
+    Note: build_view_model still runs through fetch_cells when selection is
+    non-empty (the route consumes the same view-model the grid does, and
+    only renders the params_picker block from it). We mock fetch_cells with
+    a benign no-op so the real cache layer's MockDB._get_engine() detour is
+    avoided.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False,
+    ))
+    r = _post_form_pairs(client, "/browse/params-fragment", [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+        ("params", "flags · stale_label"),  # stale — not in filtered catalog
+    ])
+    assert r.status_code == 200
+    body = r.text
+
+    # The valid label appears (rendered into a checkbox value attribute).
+    assert "attribute · vendor_id" in body or "attribute &middot; vendor_id" in body or "attribute %C2%B7 vendor_id" in body or "attribute · vendor_id" in body
+    # The stale label is GONE — neither in a checkbox value, data-label,
+    # title, nor span.
+    assert "stale_label" not in body, (
+        "260429-qyv: the stale param label was not in the platforms-filtered "
+        "catalog and must be DROPPED from the rendered picker (and from the "
+        "checked-set on the next /browse/grid POST)."
+    )
+    # Trigger is NOT disabled (we have a platform selected).
+    assert 'aria-disabled="true"' not in body
+    # Dropdown body IS rendered.
+    assert "popover-search-list" in body
+
+
+def test_params_fragment_only_returns_picker_block(client, monkeypatch):
+    """The fragment response must NOT include the grid block, count caption,
+    or platforms badge OOB — only the params_picker block.
+
+    Note: the rendered Parameters picker macro DOES emit its own
+    `picker-params-badge` span inside the trigger button (that's the
+    in-trigger count). What this test guards against is leakage of the
+    cross-block OOBs from /browse/grid (count_oob, picker_badges_oob with
+    hx-swap-oob attrs, params_picker_oob) which would conflict with HTMX's
+    target replacement on `params-picker-slot`.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ])
+    r = _post_form_pairs(client, "/browse/params-fragment", [
+        ("platforms", "P1"),
+    ])
+    assert r.status_code == 200
+    body = r.text
+    # No <html> wrapper.
+    assert "<html" not in body.lower()
+    # No grid block (the table) — the route returns only the picker block.
+    assert "pivot-table" not in body
+    # No count caption (count_oob block must NOT be in the fragment).
+    assert 'id="grid-count"' not in body
+    # No platforms badge (the params-fragment is for the params picker only;
+    # the platforms badge OOB belongs to /browse/grid responses).
+    assert 'id="picker-platforms-badge"' not in body
+    # No hx-swap-oob attribute on the params-picker-slot (this fragment is
+    # the PRIMARY swap target via hx-target, NOT an OOB swap).
+    assert "hx-swap-oob" not in body, (
+        "260429-qyv: /browse/params-fragment is the primary hx-target swap; "
+        "it must NOT emit hx-swap-oob (that belongs only to the cross-block "
+        "OOBs from /browse/grid)."
+    )
+
+
+def test_grid_post_emits_params_picker_oob(client, monkeypatch):
+    """POST /browse/grid response must include the OOB Parameters picker
+    fragment so the picker re-renders alongside the grid swap."""
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ], fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False,
+    ))
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+    ])
+    assert r.status_code == 200
+    # The OOB params picker slot must appear with hx-swap-oob="true".
+    # Locate the params-picker-slot div and confirm the OOB attribute is on
+    # the same tag.
+    assert 'id="params-picker-slot"' in r.text
+    i = r.text.index('id="params-picker-slot"')
+    tag_start = r.text.rfind("<div", 0, i)
+    tag_end = r.text.find(">", i)
+    tag = r.text[tag_start : tag_end + 1]
+    assert 'hx-swap-oob="true"' in tag, (
+        f"260429-qyv: params-picker-slot OOB swap missing hx-swap-oob attr. "
+        f"Tag: {tag!r}"
+    )
+
+
+def test_grid_post_filters_stale_param_labels(client, monkeypatch):
+    """Defense-in-depth: a hand-crafted POST with a stale param label must
+    be filtered out by build_view_model BEFORE fetch_cells is called.
+
+    Even if the client somehow constructs a POST body with a param that is
+    not available for the selected platforms (e.g. a stale tab, a saved URL,
+    a malicious form), the server's intersection step drops it. fetch_cells
+    receives only the labels that round-trip cleanly through the
+    platforms-filtered catalog.
+    """
+    captured = {}
+
+    def _capture(db, p, ic, i, row_cap=200, db_name=""):
+        captured["platforms"] = p
+        captured["infocategories"] = ic
+        captured["items"] = i
+        return (pd.DataFrame({
+            "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+            "Item": ["vendor_id"], "Result": ["0xA1"],
+        }), False)
+
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1"],
+        # Filtered catalog returns ONLY vendor_id — stale_label is "not
+        # available" for P1.
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=_capture,
+    )
+
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "P1"),
+        ("params", "attribute · vendor_id"),
+        ("params", "flags · stale_label"),  # client-side stale value
+    ])
+    assert r.status_code == 200
+
+    # fetch_cells was called with only the surviving label.
+    assert captured.get("items") == ("vendor_id",), (
+        f"260429-qyv defense-in-depth: stale label leaked into fetch_cells "
+        f"items tuple: {captured.get('items')!r}"
+    )
+    assert "stale_label" not in (captured.get("items") or ()), (
+        "stale label leaked despite intersection"
+    )
+    # And the params badge OOB reflects the FILTERED count (1, not 2).
+    assert 'id="picker-params-badge"' in r.text
+    j = r.text.index('id="picker-params-badge"')
+    span_start = r.text.rfind("<span", 0, j)
+    span_end = r.text.find("</span>", j)
+    badge_tag = r.text[span_start : span_end + len("</span>")]
+    inner_start = badge_tag.index(">", badge_tag.index("<span")) + 1
+    inner_end = badge_tag.index("</span>")
+    badge_count = badge_tag[inner_start:inner_end].strip()
+    assert badge_count == "1", (
+        f"params badge count should be 1 after intersection drops stale "
+        f"label, got {badge_count!r}"
+    )
 
 

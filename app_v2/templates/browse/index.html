@@ -90,9 +90,39 @@
    to match D-08 (no visible badge when count is 0) — text content is the
    integer count even when hidden, so HTMX's text replacement on the
    existing span is always correct. Stable target: precedent Pattern 6 /
-   count_oob (lines 73-77 above). #}
+   count_oob (lines 73-77 above).
+
+   260429-qyv: when vm.params_disabled is True (no platforms selected), the
+   Parameters badge is forced hidden via d-none regardless of selected_params
+   length — the picker is disabled so its badge must be hidden too.
+#}
 {% block picker_badges_oob %}
   <span id="picker-platforms-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_platforms %} d-none{% endif %}" aria-live="polite">{{ vm.selected_platforms | length }}</span>
-  <span id="picker-params-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_params %} d-none{% endif %}" aria-live="polite">{{ vm.selected_params | length }}</span>
+  <span id="picker-params-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_params or vm.params_disabled %} d-none{% endif %}" aria-live="polite">{{ vm.selected_params | length }}</span>
 {% endblock picker_badges_oob %}
+
+{# OOB Parameters picker — emitted by POST /browse/grid alongside the grid
+   swap so the Parameters picker re-renders whenever Platforms changes. The
+   inner #params-picker-slot is the stable target; HTMX merges by id.
+   Defense-in-depth: even if the platforms picker badge OOB above lands but
+   this OOB is dropped, the next Apply still passes through build_view_model
+   which intersects selected_params against the filtered catalog — no stale
+   label can reach fetch_cells. (260429-qyv) #}
+{% block params_picker_oob %}
+  <div id="params-picker-slot" hx-swap-oob="true">
+    {% from 'browse/_picker_popover.html' import picker_popover %}
+    {{ picker_popover("params", "Parameters", vm.all_param_labels, vm.selected_params, disabled=vm.params_disabled) }}
+  </div>
+{% endblock params_picker_oob %}
+
+{# Standalone Parameters picker block — used by POST /browse/params-fragment
+   for direct refresh paths (test fixture + future graceful-degradation hook).
+   Renders the picker WITHOUT hx-swap-oob — the route's hx-target replaces
+   the wrapper div in-place. (260429-qyv) #}
+{% block params_picker %}
+  {% from 'browse/_picker_popover.html' import picker_popover %}
+  <div id="params-picker-slot">
+    {{ picker_popover("params", "Parameters", vm.all_param_labels, vm.selected_params, disabled=vm.params_disabled) }}
+  </div>
+{% endblock params_picker %}
 {% endblock %}
