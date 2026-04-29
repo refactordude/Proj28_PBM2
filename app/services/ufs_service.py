@@ -21,7 +21,10 @@ Cache TTL contract:
   - fetch_cells: ttl=60 (cell data is less stable than catalog; shorter eviction window)
 
 Security notes (T-03-01, T-03-02):
-  - _TABLE is a module constant — never interpolated from user data.
+  - _TABLE is sourced from settings.app.agent.allowed_tables[0] at module
+    load — it is a configured constant, never interpolated from user data
+    or HTTP input. _safe_table() validates against the same configured
+    allowlist before any sa.text() interpolation.
   - User-supplied filter values (platforms, infocategories, items) go through
     sa.bindparam(..., expanding=True) — SQLAlchemy 2.x canonical parameterized IN clause.
   - No f-string interpolation of user-controlled values into SQL strings.
@@ -42,24 +45,47 @@ import sqlalchemy as sa
 import streamlit as st
 
 from app.adapters.db.base import DBAdapter
+from app.core.config import load_settings
 from app.services.result_normalizer import normalize
 
 logger = logging.getLogger(__name__)
 
-_TABLE = "ufs_data"  # SAFE-01: single allowed table name — module constant, not user input
 
-# Security (T-03-01): allowlist guard so _TABLE can never be an arbitrary string
-# even if the constant were changed to read from settings or env in future.
-_ALLOWED_TABLES: frozenset[str] = frozenset({"ufs_data"})
+def _load_table_config() -> tuple[str, frozenset[str]]:
+    """Read primary table + allowlist from settings.yaml app.agent.allowed_tables.
+
+    Returns (primary_table, allowed_tables_frozenset). Raises RuntimeError if
+    the configured list is empty — no fallback, settings.yaml is the single
+    source of truth for table names. Both the agent (cfg.allowed_tables) and
+    Browse/Overview queries (this module's _TABLE) read from the same key.
+
+    The first entry in app.agent.allowed_tables is treated as the primary
+    table that Browse and Overview SELECT against. The full list (frozenset)
+    is the SAFE-01 allowlist guard against SQL injection — _safe_table()
+    rejects anything not in the list, so a future code path that interpolates
+    a different name into an sa.text() string cannot leak.
+    """
+    settings = load_settings()
+    allowed = settings.app.agent.allowed_tables
+    if not allowed:
+        raise RuntimeError(
+            "settings.app.agent.allowed_tables is empty — define at least one "
+            "table in config/settings.yaml under app.agent.allowed_tables.",
+        )
+    return allowed[0], frozenset(allowed)
+
+
+_TABLE, _ALLOWED_TABLES = _load_table_config()
 
 
 def _safe_table(name: str) -> str:
     """Return name unchanged if it is in the allowlist; raise ValueError otherwise.
 
-    This guard prevents SQL injection if _TABLE were ever sourced from settings,
-    user input, or an environment variable.  Because the table name is not a SQL
-    bind-parameter placeholder, it must be validated at the application level
-    before being interpolated into an sa.text() string.
+    This guard prevents SQL injection — the table name is interpolated into
+    sa.text() strings (not a bind parameter), so application-level validation
+    is the only defense. The allowlist is sourced from settings.yaml at import
+    time (see _load_table_config), so any string that is not in the configured
+    app.agent.allowed_tables list is rejected.
     """
     if name not in _ALLOWED_TABLES:
         raise ValueError(f"Table '{name}' is not in the allowed table list")
