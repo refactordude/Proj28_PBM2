@@ -65,7 +65,12 @@
              `.disabled` anchor with no href and a tooltip explaining why.
              The .md file is NOT reachable from this button anymore — the
              title cell is the canonical handle for the platform's content
-             page (see <td> at the top of this row). #}
+             page (see <td> at the top of this row).
+             Visual treatment matches the AI button to its right: outlined
+             ghost shape (.btn-outline-secondary). Active state uses the
+             chain icon (bi-link-45deg) with .text-dark for near-black tint
+             so it reads clearly as clickable; disabled state keeps the
+             same shape but lighter via .text-muted. #}
           {% if row.link %}
             <a href="{{ row.link | e }}"
                class="btn btn-sm btn-outline-secondary me-1"
@@ -73,8 +78,8 @@
                rel="noopener noreferrer"
                title="Open {{ row.link | e }}"
                aria-label="Open external link for {{ row.title | e }}">
-              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-              Link
+              <i class="bi bi-link-45deg text-dark" aria-hidden="true"></i>
+              <span class="text-dark">Link</span>
             </a>
           {% else %}
             <a class="btn btn-sm btn-outline-secondary disabled me-1"
