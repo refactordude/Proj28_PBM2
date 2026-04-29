@@ -4,7 +4,7 @@ milestone: (none — v2.0 shipped 2026-04-29)
 milestone_name: Awaiting next milestone
 status: shipped
 stopped_at: v2.0 Bootstrap Shell complete
-last_updated: "2026-04-29T11:00:00.000Z"
+last_updated: "2026-04-29T11:30:00.000Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 0
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-04-29 — Completed quick task 260429-kn7: Remove v1.0 Streamlit shell (507 tests green)
+Last activity: 2026-04-29 — Completed quick task 260429-qyv: Browse Parameters filter depends on selected Platforms (526 tests green)
 
 Progress: [——————————] no active milestone
 
@@ -56,6 +56,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260429-ek7 | Restyle Link button to match AI button visual treatment (chain icon + `text-dark`) | 2026-04-29 | 4fed64d | [260429-ek7-restyle-active-state-link-button-in-over](./quick/260429-ek7-restyle-active-state-link-button-in-over/) |
 | 260429-kc1 | Source `ufs_service._TABLE` from `settings.app.agent.allowed_tables` (no hardcoded "ufs_data") | 2026-04-29 | 747a610 | [260429-kc1-source-ufs-service-table-and-allowed-tab](./quick/260429-kc1-source-ufs-service-table-and-allowed-tab/) |
 | 260429-kn7 | Remove v1.0 Streamlit shell — app_v2 becomes single source of truth (5 tasks, 507 tests green) | 2026-04-29 | 7266e00 | [260429-kn7-remove-v1-0-streamlit-shell-app-v2-fasta](./quick/260429-kn7-remove-v1-0-streamlit-shell-app-v2-fasta/) |
+| 260429-qyv | Browse: Parameters filter depends on selected Platforms (server-side intersection, disabled when none, OOB picker refresh) | 2026-04-29 | f1e002b | [260429-qyv-browse-parameters-filter-depends-on-sele](./quick/260429-qyv-browse-parameters-filter-depends-on-sele/) |
 
 ## Blockers/Concerns
 
