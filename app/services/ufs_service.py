@@ -8,6 +8,7 @@ FastAPI dependencies.
 Public API:
   list_platforms(db, db_name="") -> list[str]
   list_parameters(db, db_name="") -> list[dict]
+  list_parameters_for_platforms(db, platforms, db_name="") -> list[dict]
   fetch_cells(db, platforms, infocategories, items, row_cap=200, db_name="") -> tuple[pd.DataFrame, bool]
   pivot_to_wide(df_long, swap_axes=False, col_cap=30) -> tuple[pd.DataFrame, bool]
 
@@ -101,6 +102,39 @@ def list_parameters(db: DBAdapter, db_name: str = "") -> list[dict]:
             ),
             conn,
         )
+    return df.to_dict("records")
+
+
+def list_parameters_for_platforms(
+    db: DBAdapter,
+    platforms: tuple[str, ...],
+    db_name: str = "",
+) -> list[dict]:
+    """Return sorted distinct (InfoCategory, Item) rows that exist for ANY of
+    the given PLATFORM_IDs.
+
+    DATA-05 guard: empty platforms tuple returns [] without issuing SQL —
+    mirrors fetch_cells behavior. The Browse Parameters picker depends on this
+    so a "zero platforms selected" state never reaches the DB.
+
+    Security (T-03-01, T-03-02): same allowlist + parameterized-IN pattern as
+    fetch_cells. _safe_table() validates the table name; sa.bindparam(...,
+    expanding=True) binds the platforms list — no f-string interpolation of
+    user-controlled values.
+
+    The caller is responsible for passing platforms as a tuple (not a list) so
+    cachetools' hashkey can use it directly — same contract as fetch_cells.
+    """
+    if not platforms:
+        return []
+    tbl = _safe_table(_TABLE)
+    sql = sa.text(
+        f"SELECT DISTINCT InfoCategory, Item FROM {tbl} "
+        "WHERE PLATFORM_ID IN :platforms "
+        "ORDER BY InfoCategory, Item"
+    ).bindparams(sa.bindparam("platforms", expanding=True))
+    with db._get_engine().connect() as conn:
+        df = pd.read_sql_query(sql, conn, params={"platforms": list(platforms)})
     return df.to_dict("records")
 
 

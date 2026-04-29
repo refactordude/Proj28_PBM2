@@ -22,6 +22,7 @@ from app.core.config import DatabaseConfig
 from app.services.ufs_service import (
     fetch_cells,
     list_parameters,
+    list_parameters_for_platforms,
     list_platforms,
     pivot_to_wide,
 )
@@ -108,6 +109,123 @@ def test_list_parameters_returns_records(mock_db):
     assert len(result) == 2  # (catA, item1), (catA, item2)
     assert result[0] == {"InfoCategory": "catA", "Item": "item1"}
     assert result[1] == {"InfoCategory": "catA", "Item": "item2"}
+
+
+# ---------------------------------------------------------------------------
+# list_parameters_for_platforms (260429-qyv)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def mock_db_multi_platform():
+    """SQLite in-memory DB with 3 platforms; each contributes a distinct param.
+
+    Layout:
+      p1 -> (catA, item1), (catA, item_p1_only)
+      p2 -> (catA, item1), (catB, item_p2_only)
+      p3 -> (catC, item_p3_only)
+
+    Lets us assert that filtering by PLATFORM_ID narrows the (InfoCategory,
+    Item) result set.
+    """
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text(
+            "CREATE TABLE ufs_data "
+            "(PLATFORM_ID TEXT, InfoCategory TEXT, Item TEXT, Result TEXT)"
+        ))
+        conn.execute(sa.text(
+            "INSERT INTO ufs_data VALUES "
+            "('p1','catA','item1','0x1F'),"
+            "('p1','catA','item_p1_only','solo1'),"
+            "('p2','catA','item1','42'),"
+            "('p2','catB','item_p2_only','solo2'),"
+            "('p3','catC','item_p3_only','solo3')"
+        ))
+    yield _InMemoryAdapter(engine)
+    engine.dispose()
+
+
+def test_list_parameters_for_platforms_returns_records(mock_db_multi_platform):
+    """Filter by a single platform -> only that platform's (cat, item) rows.
+
+    p1 owns (catA, item1) and (catA, item_p1_only). Sorting is by combined
+    (InfoCategory, Item) ascending. The result is identical in shape to
+    list_parameters — list[dict] with InfoCategory/Item keys.
+    """
+    result = list_parameters_for_platforms(mock_db_multi_platform, ("p1",))
+    assert isinstance(result, list)
+    assert result == [
+        {"InfoCategory": "catA", "Item": "item1"},
+        {"InfoCategory": "catA", "Item": "item_p1_only"},
+    ]
+
+
+def test_list_parameters_for_platforms_widens_for_multiple_platforms(
+    mock_db_multi_platform,
+):
+    """Two platforms -> union of their (cat, item) pairs, sorted, distinct.
+
+    p1 + p2 share (catA, item1); the union is 3 rows. p3-only rows must NOT
+    appear.
+    """
+    result = list_parameters_for_platforms(mock_db_multi_platform, ("p1", "p2"))
+    assert result == [
+        {"InfoCategory": "catA", "Item": "item1"},
+        {"InfoCategory": "catA", "Item": "item_p1_only"},
+        {"InfoCategory": "catB", "Item": "item_p2_only"},
+    ]
+
+
+def test_list_parameters_for_platforms_empty_returns_empty_no_sql(mocker):
+    """DATA-05 guard: empty platforms tuple -> [] WITHOUT issuing SQL.
+
+    The function must short-circuit before _get_engine() is touched. We use a
+    MagicMock adapter and assert _get_engine was never called.
+    """
+    from unittest.mock import MagicMock
+
+    mock_db = MagicMock()
+    result = list_parameters_for_platforms(mock_db, ())
+    assert result == []
+    # Critical: no DB call. _get_engine() is the gate ufs_service uses.
+    mock_db._get_engine.assert_not_called()
+
+
+def test_list_parameters_for_platforms_with_db_name_arg(mock_db_multi_platform):
+    """db_name kwarg accepted without error (cache partition key)."""
+    result = list_parameters_for_platforms(
+        mock_db_multi_platform, ("p1",), db_name="test"
+    )
+    assert isinstance(result, list)
+    assert {"InfoCategory": "catA", "Item": "item1"} in result
+
+
+def test_list_parameters_for_platforms_uses_bindparam_no_interpolation(
+    mock_db_multi_platform,
+):
+    """SAFE-01 / T-03-01 echo: PLATFORM_ID values are bound, not interpolated.
+
+    A platform value containing a single-quote (a classic injection probe)
+    must be safely passed through sa.bindparam — no SQL syntax error, no
+    rows returned (since no such PLATFORM_ID exists in the test DB).
+    """
+    injection = "p1' OR 1=1 --"
+    result = list_parameters_for_platforms(mock_db_multi_platform, (injection,))
+    # The injection string is treated as a literal value, not SQL — no rows
+    # match because no PLATFORM_ID equals the literal string.
+    assert result == []
+
+
+def test_list_parameters_for_platforms_filtered_excludes_other_platforms(
+    mock_db_multi_platform,
+):
+    """p3 owns (catC, item_p3_only); when we ask for p1+p2 only, that pair
+    must NOT appear in the result. Defense against the bug that motivated
+    260429-qyv: stale params from unselected platforms must not leak.
+    """
+    result = list_parameters_for_platforms(mock_db_multi_platform, ("p1", "p2"))
+    assert {"InfoCategory": "catC", "Item": "item_p3_only"} not in result
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +355,7 @@ def test_ufs_service_importable_without_streamlit():
             (
                 "from app.services.ufs_service import ("
                 "list_platforms, list_parameters, "
+                "list_parameters_for_platforms, "
                 "fetch_cells, pivot_to_wide"
                 "); print('ok')"
             ),
