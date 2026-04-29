@@ -72,6 +72,15 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 - ✓ Wide-form pivot grid (platform × parameter) re-rendered in Bootstrap tables — v2.0 (Phase 4)
 - ✓ Same filter / swap-axes / row-cap / col-cap behavior as v1.0; HTMX in-place swap, sticky header, shareable URLs (HX-Push-Url round-trip); Apply form-association + picker badge OOB-swap restored after gap closure (Plans 04-05, 04-06) — v2.0 (Phase 4). Export remains on v1.0 Streamlit per D-19..D-22.
 
+#### Ask — v2.0
+- ✓ Ask tab at `/ask` ports the v1.0 PydanticAI NL agent under the FastAPI/HTMX shell with sync `def` routes (GET /ask, POST /ask/query, POST /ask/confirm); module-level `run_nl_query` import for pytest-mock; all 3 fragments (`_answer.html`, `_confirm_panel.html`, `_abort_banner.html`) carry `id="answer-zone"` for idempotent HTMX outerHTML swaps — v2.0 (Phase 6)
+- ✓ NL-05 two-turn confirmation flow reuses `_picker_popover.html` with `disable_auto_commit=True` so the Run Query button is the only commit trigger; second-turn `ClarificationNeeded` synthesizes a `loop-aborted` abort banner per D-10 — v2.0 (Phase 6)
+- ✓ Ask-page-only LLM dropdown (Bootstrap; "LLM: Ollama ▾" / "LLM: OpenAI ▾"); `pbm2_llm` plain unsigned cookie validated against `settings.llms[].name` (closed-set defense, no signing); 204 + `HX-Refresh: true` → window.reload; cookie threading through `llm_resolver` makes Ask + AI Summary share a single backend choice (D-12, D-14, D-15, D-16, D-17, D-18 — global navbar selector and OpenAI sensitivity banner explicitly dropped) — v2.0 (Phase 6)
+- ✓ 8 curated starter chips (4×2 `.ai-chip` grid); chips fill textarea via inline onclick without auto-submit; chips hide once an answer renders (D-02, D-03) — v2.0 (Phase 6)
+- ✓ Abort banner with five reason branches (step-cap, timeout, llm-error, unconfigured, loop-aborted); copy ported verbatim from v1.0 02-UI-SPEC.md — v2.0 (Phase 6)
+- ✓ All NL invocations route through `app/core/agent/nl_service.run_nl_query` (Phase 1 INFRA-07); SAFE-02..06 inherited; route-layer threat-model regression tests intentionally NOT added (D-20 — Phase 1's `tests/agent/test_nl_service.py` is the single locus) — v2.0 (Phase 6)
+- ✓ v1.0 Streamlit Ask page deleted per D-22: `app/pages/ask.py`, `tests/pages/test_ask_page.py`, `tests/pages/test_starter_prompts.py`, and the `st.Page("Ask",...)` nav entry removed; `nl_service.py` / `nl_agent.py` / `pydantic_model.py` / `starter_prompts.example.yaml` preserved as v2.0 consumers — v2.0 (Phase 6)
+
 #### Overview redesign — v2.0
 - ✓ Sortable Bootstrap pivot table mirroring Phase 4 Browse styling; per-platform PM metadata (Title, Status, Customer, Model Name, AP Company, AP Model, Device, Controller, Application, 담당자, Start, End) sourced from YAML frontmatter on `content/platforms/<PLATFORM_ID>.md` — em-dash sentinel for missing fields; Title falls back to PLATFORM_ID — v2.0 (Phase 5)
 - ✓ Six popover-checklist multi-filters (Status / Customer / AP Company / Device / Controller / Application) reusing Phase 4's `_picker_popover.html` macro with D-15b auto-commit + 250ms debounce; sort state survives URL round-trip — v2.0 (Phase 5)
@@ -109,10 +118,7 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 <!-- Overview redesign (v2.0) — moved to Validated under "Overview redesign — v2.0" after Phase 5 completion (2026-04-29 UAT approved). -->
 
 
-#### Ask carry-over (v2.0)
-- [ ] NL agent (PydanticAI + dual OpenAI/Ollama) reachable from the Ask tab
-- [ ] Same safety harness (sqlparse validator, LIMIT injector, scrub, step-cap, timeout, `<db_data>` wrapper)
-- [ ] NL-05 two-turn param confirmation flow under HTMX
+<!-- Ask carry-over (v2.0) — moved to Validated under "Ask — v2.0" after Phase 6 completion (2026-04-29). -->
 
 ### Out of Scope
 
@@ -200,4 +206,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-28 after Phase 04 (Browse Tab Port) complete — pivot grid + URL round-trip + sticky header validated; gap-2 (Apply form-association) and gap-3 (picker badge OOB swap) closed.*
+*Last updated: 2026-04-29 after Phase 6 (Ask Tab Port) plan-complete — NL agent ported under FastAPI/HTMX shell with two-turn confirmation, Ask-page-only LLM dropdown, `pbm2_llm` cookie threading through AI Summary, verbatim v1.0 abort-banner copy; v1.0 Streamlit Ask deleted per D-22. v2.0 milestone phases all complete (6/6); HUMAN-UAT pending for live-server validation.*
