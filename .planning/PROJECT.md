@@ -8,27 +8,21 @@ PBM2 is an internal Streamlit website where a team of non-SQL users (PMs, analys
 
 **Fast ad-hoc browsing of the parameter database.** Even if the NL layer fails, the UI must let a non-SQL user quickly find the platforms they care about, the parameters they care about, and see them in a wide-form grid they can read, compare, chart, and export. NL query rides on top of this and enhances it — it does not replace it.
 
-## Current Milestone: v2.0 Bootstrap Shell
+## Current Milestone: TBD
 
-**Goal:** Complete UX rewrite — move off Streamlit onto FastAPI + Bootstrap 5 + HTMX with a horizontal-tab shell, curated platform-entity overview, per-platform markdown content pages, and in-place AI Summary.
-
-**Target features:**
-- FastAPI + Bootstrap + HTMX stack (Jinja2 templates, markdown-it-py) — parallel to v1.0 Streamlit code which stays archived
-- Horizontal tab nav at top: Overview / Browse / Ask
-- Overview tab: curated platform list (user adds/removes from the full PLATFORM_ID set), each entity has title, link to content page, "AI Summary" button (HTMX in-place swap)
-- Interactive filters (Brand / SoC / Year + "has content page" toggle) driving HTMX-swapped overview list
-- Per-platform markdown content pages at `content/platforms/<PLATFORM_ID>.md` — addable / editable / deletable via HTMX forms; rendered with markdown-it-py
-- "AI Summary" calls the v1.0 LLM adapter (single-shot completion) on the content-page markdown, returns a short summary, swapped in-place
-- Browse tab: re-implements v1.0's wide-form pivot grid (platform × parameter) under Bootstrap — swap-axes, row/col caps (export remains on v1.0 Streamlit per D-19..D-22)
-- Ask tab: carries v1.0 NL agent forward (PydanticAI, dual OpenAI/Ollama, SAFE-02..06 harness intact) under the new UI shell
-
-**Key context:**
-- v1.0 Streamlit code stays archived and untouched (parallel rewrite). v2.0 lives in a new directory, likely `app_v2/` or `v2/` at repo root — roadmapper decides.
-- Framework-agnostic v1.0 modules (`result_normalizer`, `nl_agent`, safety primitives, LLM factory, config models) are REUSED by v2.0 — imports only, no copies.
-- `ufs_service.py` needs a small refactor to swap `@st.cache_data` → `cachetools.TTLCache` so it can serve both apps.
-- Auth still deferred (matches v1.0 pattern) — `config/auth.yaml` stays gitignored.
+No active milestone. Run `/gsd-new-milestone` to scope v2.1+ when ready.
 
 ## Previous State
+
+**v2.0 Bootstrap Shell shipped 2026-04-29** (tag `v2.0`). 6 phases, 30 plans, 65 tasks, 506 tests passing. Complete UX rewrite from Streamlit to FastAPI + Bootstrap 5 + HTMX with horizontal-tab shell:
+- **Phase 1 (Foundation):** FastAPI/Bootstrap/HTMX scaffolding; `nl_service` extraction (INFRA-07); `cache.py` TTLCache wrappers; vendored static assets
+- **Phase 2 (Overview + Filters):** Curated platform watchlist with HTMX-swapped Brand/SoC/Year filters
+- **Phase 3 (Content + AI Summary):** Per-platform markdown CRUD with path-traversal hardening + XSS defense; AI Summary feature with TTLCache + always-200 contract
+- **Phase 4 (Browse Tab Port):** Pivot grid ported to Bootstrap; popover-search.js; `HX-Push-Url` URL round-trip
+- **Phase 5 (Overview Redesign):** Sortable Bootstrap table + 6 popover-checklist multi-filters; AI Summary modal (D-OV-15); Link button (D-OV-16)
+- **Phase 6 (Ask Tab Port):** NL agent ported under FastAPI/HTMX; NL-05 two-turn confirmation; Ask-page-only LLM dropdown with `pbm2_llm` cookie threading; v1.0 Streamlit Ask deleted (D-22)
+
+Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md), [milestones/v2.0-REQUIREMENTS.md](milestones/v2.0-REQUIREMENTS.md), [milestones/v2.0-MILESTONE-AUDIT.md](milestones/v2.0-MILESTONE-AUDIT.md), [milestones/v2.0-DECISIONS-LOG.md](milestones/v2.0-DECISIONS-LOG.md).
 
 **v1.0 MVP shipped 2026-04-24.** Both planned phases delivered in a single autonomous run (`/gsd-autonomous`):
 
