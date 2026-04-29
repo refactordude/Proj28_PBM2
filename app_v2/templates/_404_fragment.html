@@ -1,0 +1,7 @@
+{# Not-found fragment — INFRA-02 (HTMX path). See _500_fragment.html for
+   why this exists separately from the full-page 404.html. #}
+<div class="alert alert-warning" role="alert">
+  <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> 404 — Page not found</h4>
+  <p class="mb-0">The page you requested does not exist.</p>
+  {% if detail %}<hr><p class="mb-0 text-muted">{{ detail }}</p>{% endif %}
+</div>
