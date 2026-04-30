@@ -45,10 +45,9 @@ Declared values (multiples of 4):
 | 2xl | 48px | Footer min-height (D-UI2-05) |
 | 3xl | 64px | Not used in this phase |
 
-Exceptions:
-- Nav vertical padding: 16px top + 16px bottom (not strictly 8-point but aligns to 16 = 2×8). Results in nav bar ~56px tall including logo line-height.
-- Panel header padding: 18px 26px (existing; preserved, not churned).
-- Shell outer padding: **removed** per D-UI2-03 (was `padding: 18px 24px 56px`; becomes `padding: 0`). Inner panels keep their own padding.
+No exceptions to the standard spacing scale in this phase. The existing `.panel-header` padding (`18px 26px`) is preserved unchanged from the v2.0 base; it is out-of-scope for this phase and not part of the spacing contract.
+
+Shell outer padding: **removed** per D-UI2-03 (was `padding: 18px 24px 56px`; becomes `padding: 0`). Inner panels keep their own padding.
 
 Source: app.css inspection + D-UI2-02, D-UI2-03, D-UI2-05 (researcher values for unlocked px).
 
@@ -61,17 +60,18 @@ Existing `font-size: 15px` and `line-height: 1.5` on `html, body` are preserved 
 
 | Role | Token | Size | Weight | Line Height | Letter Spacing | Usage |
 |------|-------|------|--------|-------------|----------------|-------|
-| Logo | `--font-size-logo` | 20px | 800 | 1.2 | -0.03em | `.navbar-brand` — "PBM2" wordmark |
-| Section heading h1 | `--font-size-h1` | 28px | 800 | 1.1 | -0.035em | `.page-title` inside panel header (Browse h1, JV h1) |
-| Nav tab | `--font-size-nav` | 14px | 600 | 1.4 | -0.01em | `.nav-tabs .nav-link` |
-| Table header | `--font-size-th` | 12px | 600 | 1.3 | 0 | `.pivot-table thead th`, `.overview-table thead th` (existing, confirmed) |
-| Body | `--font-size-body` | 15px | 400 | 1.5 | -0.005em | `html, body` (existing, confirmed) |
+| Logo | `--font-size-logo` | 20px | 700 | 1.2 | -0.03em | `.navbar-brand` — "PBM2" wordmark |
+| Section heading h1 | `--font-size-h1` | 28px | 700 | 1.1 | -0.035em | detail page titles only |
+| Body + Nav tab | `--font-size-body` | 15px | 400 (body) / 700 (nav) | 1.5 | -0.005em | `html, body` (existing) + `.nav-tabs .nav-link` (same size, weight differentiates) |
+| Table header | `--font-size-th` | 12px | 700 | 1.3 | 0 | `.pivot-table thead th`, `.overview-table thead th` (existing, confirmed) |
 
-Weight vocabulary (exactly 2 weights in use for hierarchy; AI/button elements may use 600 as-is):
-- **Regular (400):** body text, table cell content
-- **Semibold / Bold (600–800):** headings (800), nav tabs (600), table headers (600), logo (800)
+Weights (exactly 2):
+- **400 (Regular):** body text, table cell content
+- **700 (Bold):** ALL of — nav tabs, table headers, `.panel-title`, `.panel-header b`, logo, section heading h1
 
-Note: `--font-size-h1: 28px` matches existing `.page-title { font-size: 28px }` — the token formalizes what's already in app.css. No visual change to Browse's "Browse" h1; the same class is used for JV's "Joint Validation" h1 (D-UI2-12).
+The `--font-size-nav` token is removed. Nav tabs and body text share `--font-size-body` at 15px; the nav tab's 700 weight distinguishes it from body copy at 400.
+
+Note: `--font-size-h1: 28px` serves detail page titles only (e.g. JV detail page, future detail headers). The JV listing page panel-header uses `.panel-title` at 18px/700 (see Panel Header Layout section below). Browse's `<b>Browse</b>` uses `.panel-header b` at 18px/700.
 
 Source: app.css `.page-title`, `.pivot-table thead th`, tokens.css `font-size: 15px` + D-UI2-04 researcher values.
 
@@ -221,7 +221,6 @@ New structure (one panel, Browse-mirror):
     .overview-grid-body   ← scroll container (existing class, preserved)
       #overview-grid      ← HTMX swap target (preserved id)
   .site-footer (from base.html)
-    #overview-count       ← count caption OOB target (moved here from panel-body)
     #overview-pagination  ← pagination control OOB target (new)
 ```
 
@@ -229,18 +228,18 @@ The `.panel.overview-filter-bar` self-match selector in app.css remains as a har
 
 ### Panel Header Layout (D-UI2-11, D-UI2-12)
 
+Primary visual anchor on the JV listing page: `<h1 class="panel-title">Joint Validation</h1>` in the panel-header top-left zone — draws the eye first via 18px/700 weight against the surrounding muted filter bar and 12px table headers.
+
 ```html
 <div class="panel-header" id="overview-panel-header">
-  <h1 class="page-title">Joint Validation</h1>
+  <h1 class="panel-title">Joint Validation</h1>
   <span id="overview-count" class="ms-auto text-muted small" aria-live="polite">
     {{ vm.total_count }} {{ "entry" if vm.total_count == 1 else "entries" }}
   </span>
 </div>
 ```
 
-- Left zone: `<h1 class="page-title">Joint Validation</h1>` — uses existing `.page-title` selector (28px, weight 800, letter-spacing -0.035em). Same class as Browse's `<b>Browse</b>`... actually Browse uses `<b>` not `<h1>`. **Resolution:** JV uses `<h1 class="page-title">` inside `.panel-header`; Browse keeps `<b>Browse</b>` for its panel-header (Browse is byte-stable per constraints). The `.page-title` class renders 28px/800 matching Browse's `<b>` at 18px/700 via `.panel-header b`? **Correction needed:** Browse's "Browse" text uses `.panel-header b { font-size: 18px; font-weight: 700 }` — not the 28px `.page-title` class. D-UI2-12 says "same size, same weight as Browse's 'Browse' h1". The reference is the `<b>Browse</b>` element at 18px/700.
-
-**Resolved:** JV panel-header h1 uses a new utility class `.panel-title` (or inline override) sized to match `.panel-header b`:
+- Left zone: `<h1 class="panel-title">Joint Validation</h1>` — uses `.panel-title` selector (18px, weight 700). Matches Browse's `<b>Browse</b>` via `.panel-header b { font-size: 18px; font-weight: 700 }`. The `.page-title` class (28px) serves detail page titles only — not used here.
 
 ```css
 /* New rule in app.css §3 Panel — panel-title alias */
@@ -258,7 +257,7 @@ Template usage:
 <h1 class="panel-title">Joint Validation</h1>
 ```
 
-This makes JV's h1 visually identical to Browse's `<b>Browse</b>` (18px, weight 700) while using semantically correct `<h1>` markup. The `.page-title` class (28px) continues to serve detail page headers only.
+This makes JV's h1 visually identical to Browse's `<b>Browse</b>` (18px, weight 700) while using semantically correct `<h1>` markup.
 
 **OOB target migration:** `#overview-count` moves from inside `.panel-body` (current `<div id="overview-count" class="px-3 pt-2 ...">`) to inside `.panel-header` as a `<span>`. The `{% block count_oob %}` OOB fragment in `overview/index.html` emits a `<span id="overview-count" hx-swap-oob="true">` — same mechanics, same id, new receiving location.
 
@@ -276,7 +275,7 @@ Old rule:
 New rule:
 ```css
 .overview-filter-bar {
-  padding: 12px 26px 0;
+  padding: 16px 24px 0;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
@@ -285,10 +284,11 @@ New rule:
 }
 ```
 
+Notes on values:
+- `padding: 16px 24px 0` — all values are on the standard spacing scale {4, 8, 16, 24, 32, 48, 64}. 26px-equivalent alignment intentionally relaxed to 24px — matches standard scale and the 2px shift is imperceptible.
 - `display: flex` makes the six `<div class="dropdown">` elements (each currently block) line up horizontally.
 - `gap: 8px` — matches Browse's `gap-2` (8px) between pickers.
 - `flex-wrap: wrap` — allows graceful overflow on narrow viewports rather than horizontal scroll.
-- `padding: 12px 26px 0` — matches Browse's `.browse-filter-bar { padding: 12px 26px 0 }`.
 - `border-bottom: 1px solid var(--line)` — matches Browse's filter bar bottom separator.
 
 **The form tag** (`<form id="overview-filter-form">`) must be placed BEFORE the filter bar include (Pitfall 4), as a `visually-hidden` / `aria-hidden` ghost form or embedded as the flex container. **Resolution:** The form becomes the flex container itself (wraps the six pickers + "Clear all"). This avoids a separate ghost form. The `<form>` gets the same `display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%;` so it stretches:
@@ -481,10 +481,10 @@ The following table maps each affected file to the exact change category. Files 
 
 | File | Change Type | Change Description |
 |------|-------------|-------------------|
-| `app_v2/static/css/tokens.css` | New rules | Add 5 type-scale tokens: `--font-size-logo: 20px`, `--font-size-h1: 28px`, `--font-size-nav: 14px`, `--font-size-th: 12px`, `--font-size-body: 15px` |
+| `app_v2/static/css/tokens.css` | New rules | Add 4 type-scale tokens: `--font-size-logo: 20px`, `--font-size-h1: 28px`, `--font-size-th: 12px`, `--font-size-body: 15px` (nav tabs share `--font-size-body`; `--font-size-nav` removed) |
 | `app_v2/static/css/app.css` | Extended rules | `.shell`: remove `max-width`, `margin`, outer `padding`; add `padding: 0` |
 | `app_v2/static/css/app.css` | New rules | `body` flex column + `min-height: 100vh`; `main.container-fluid { flex: 1 0 auto }`; `.site-footer` (new); `.navbar { padding-top: 16px; padding-bottom: 16px }`; `.panel-header .panel-title` (18px/700) |
-| `app_v2/static/css/app.css` | Extended rules | `.overview-filter-bar`: add `display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 12px 26px 0` |
+| `app_v2/static/css/app.css` | Extended rules | `.overview-filter-bar`: add `display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 16px 24px 0` |
 | `app_v2/static/css/app.css` | Byte-stable (kept) | `.panel.overview-filter-bar { overflow: visible }` self-match selector — harmless safety net per user decision |
 | `app_v2/templates/base.html` | Structural | Add `<footer class="site-footer" id="site-footer">{% block footer %}{% endblock %}</footer>` before `</body>` |
 | `app_v2/templates/browse/index.html` | Relocated element | Move `<span id="grid-count">` from `.panel-header` into `{% block footer %}`; remove `.ms-auto d-flex` wrapper in panel-header |
