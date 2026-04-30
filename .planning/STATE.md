@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: shipped
-last_updated: "2026-04-30T07:06:11.525Z"
-last_activity: "2026-04-29 — Completed quick task 260429-qyv: Browse Parameters filter depends on selected Platforms (526 tests green)"
+status: Ready to execute
+last_updated: "2026-04-30T08:47:01.737Z"
+last_activity: 2026-04-30
 progress:
   total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 6
+  completed_plans: 1
+  percent: 17
 ---
 
 # Project State
@@ -19,12 +20,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-29)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Awaiting next milestone (run `/gsd-new-milestone` to define v2.1+)
+**Current focus:** Phase 01 — overview-tab-auto-discover-platforms-from-html-files
 
 ## Current Position
 
+Phase: 01 (overview-tab-auto-discover-platforms-from-html-files) — EXECUTING
+Plan: 2 of 6
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-04-29 — Completed quick task 260429-qyv: Browse Parameters filter depends on selected Platforms (526 tests green)
+Last activity: 2026-04-30
 
 Progress: [——————————] no active milestone
 
@@ -62,7 +65,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T07:06:11.509Z
+Last session: 2026-04-30T08:47:01.721Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 
 ## Accumulated Context
@@ -70,3 +73,15 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 ### Roadmap Evolution
 
 - Phase 1 added: Overview Tab: Auto-discover Platforms from HTML Files (2026-04-30)
+
+### Decisions
+
+- **2026-04-30 (01-01):** Pin BS4+lxml at lower-bound + major-cap (no exact pins; matches existing project pin style — `>=4.12,<5.0` and `>=5.0,<7.0`)
+- **2026-04-30 (01-01):** Generic AI Summary partial pattern — `summary/_success.html` and `_error.html` rebound from hardcoded `platform_id` to `entity_id` + `summary_url` so the JV summary route in Plan 04 reuses the same partials with no fork
+- **2026-04-30 (01-01):** Keep `platform_id` key in TemplateResponse alongside `entity_id` for backward-compat (no other consumer reads it today, but cost-free safety net)
+
+### Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 01    | 01   | 5min     | 2     | 5     |

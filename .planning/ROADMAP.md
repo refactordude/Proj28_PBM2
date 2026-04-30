@@ -59,7 +59,7 @@ Run `/gsd-new-milestone` to plan the next iteration:
 **Plans:** 6 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Add beautifulsoup4+lxml deps; parameterize summary partials with entity_id+summary_url
+- [x] 01-01-PLAN.md — Add beautifulsoup4+lxml deps; parameterize summary partials with entity_id+summary_url
 - [ ] 01-02-PLAN.md — BS4 parser + discovery store + grid_service view-model + tests + fixtures
 - [ ] 01-03-PLAN.md — JV summary shim (D-JV-16 _strip_to_text + JV prompt + cache discriminator); refactor summary_service helper
 - [ ] 01-04-PLAN.md — Rewrite routers/overview.py for JV listing; add routers/joint_validation.py (detail + summary); StaticFiles mount in main.py
