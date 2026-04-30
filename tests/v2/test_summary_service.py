@@ -421,3 +421,55 @@ def test_clear_summary_cache_invalidates(mocker, cfg_ollama, content_dir):
     summary_service.clear_summary_cache()
     summary_service.get_or_generate_summary("PID1", cfg_ollama, content_dir)
     assert mock_client.chat.completions.create.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# _call_llm_with_text shared helper (Plan 01-03 Task 1 refactor)
+# ---------------------------------------------------------------------------
+
+
+def test_call_llm_with_text_helper_exists_and_callable():
+    """Plan 01-03 Task 1: backend-agnostic helper extracted from _call_llm_single_shot."""
+    assert hasattr(summary_service, "_call_llm_with_text")
+    assert callable(summary_service._call_llm_with_text)
+
+
+def test_call_llm_with_text_uses_provided_prompts(mocker, cfg_ollama):
+    """Helper must call client.chat.completions.create with the supplied
+    system_prompt + user_prompt_template (NOT the platform-notes module-level
+    prompts). The user_prompt_template is .format(markdown_content=content)-ed."""
+    mock_client = _make_mock_client(mocker, text="hello")
+    mocker.patch.object(summary_service, "_build_client", return_value=mock_client)
+
+    result = summary_service._call_llm_with_text(
+        "BODY",
+        cfg_ollama,
+        "SYS-X",
+        "<wrap>{markdown_content}</wrap>",
+    )
+
+    assert result == "hello"
+    args, kwargs = mock_client.chat.completions.create.call_args
+    messages = kwargs["messages"]
+    assert messages[0]["role"] == "system"
+    assert messages[0]["content"] == "SYS-X"
+    assert messages[1]["role"] == "user"
+    assert messages[1]["content"] == "<wrap>BODY</wrap>"
+
+
+def test_call_llm_single_shot_delegates_to_helper(mocker, cfg_ollama):
+    """Existing entry preserved: _call_llm_single_shot calls _call_llm_with_text
+    with the platform-notes (SYSTEM_PROMPT, USER_PROMPT_TEMPLATE) pair."""
+    from app_v2.data.summary_prompt import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
+
+    spy = mocker.patch.object(
+        summary_service, "_call_llm_with_text", return_value="spied"
+    )
+    out = summary_service._call_llm_single_shot("BODY", cfg_ollama)
+    assert out == "spied"
+    args, kwargs = spy.call_args
+    # Accept positional or keyword.
+    sys_prompt = args[2] if len(args) >= 3 else kwargs.get("system_prompt")
+    usr_template = args[3] if len(args) >= 4 else kwargs.get("user_prompt_template")
+    assert sys_prompt == SYSTEM_PROMPT
+    assert usr_template == USER_PROMPT_TEMPLATE
