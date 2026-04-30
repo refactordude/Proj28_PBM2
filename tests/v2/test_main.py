@@ -34,7 +34,10 @@ def test_get_root_contains_bootstrap_nav_tabs(client):
 
 def test_get_root_contains_three_tab_labels(client):
     r = client.get("/")
-    assert "Overview" in r.text
+    # Phase 1 Plan 05 (D-JV-01): top-nav label "Overview" was renamed to
+    # "Joint Validation"; URL "/" stayed the same. The Browse and Ask labels
+    # are unchanged.
+    assert "Joint Validation" in r.text
     assert "Browse" in r.text
     assert "Ask" in r.text
 
@@ -42,19 +45,20 @@ def test_get_root_contains_three_tab_labels(client):
 def test_get_root_marks_overview_active(client):
     r = client.get("/")
     body = r.text
-    # The active class is applied to the Overview nav-link specifically.
-    # Strategy: find the nav nav-tabs section, then locate the Overview anchor within
-    # it, then check that "active" appears between the <a and the "Overview" text.
-    # This avoids the false match on "Overview" in the <title> tag.
+    # The active class is applied to the JV (overview-tab) nav-link specifically.
+    # Strategy: find the nav nav-tabs section, then locate the "Joint Validation"
+    # anchor within it, then check that "active" appears between the <a and the
+    # "Joint Validation" text. (D-JV-01 renamed the label but kept active_tab
+    # comparison value "overview" and href "/" — see app_v2/templates/base.html.)
     nav_start = body.find("nav nav-tabs")
     assert nav_start >= 0, "nav nav-tabs not found in body"
     nav_section = body[nav_start:nav_start + 1000]
-    overview_idx = nav_section.find("Overview")
-    assert overview_idx >= 0, "Overview not found in nav section"
-    # Look backwards from Overview for the active class in the enclosing <a>
-    window_start = max(0, overview_idx - 200)
-    window = nav_section[window_start:overview_idx]
-    assert "active" in window, f"Expected 'active' class near Overview nav-link; window: {window!r}"
+    label_idx = nav_section.find("Joint Validation")
+    assert label_idx >= 0, "'Joint Validation' not found in nav section"
+    # Look backwards from the label for the active class in the enclosing <a>
+    window_start = max(0, label_idx - 200)
+    window = nav_section[window_start:label_idx]
+    assert "active" in window, f"Expected 'active' class near Joint Validation nav-link; window: {window!r}"
 
 
 def test_get_root_references_vendored_bootstrap_css(client):
