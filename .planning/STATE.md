@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-last_updated: "2026-04-30T11:59:16.471Z"
+last_updated: "2026-04-30T12:11:08.566Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
-  percent: 67
+  completed_plans: 5
+  percent: 83
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 01 (overview-tab-auto-discover-platforms-from-html-files) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-04-30
 
@@ -65,7 +65,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T11:59:16.455Z
+Last session: 2026-04-30T12:11:08.546Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 
 ## Accumulated Context
@@ -91,6 +91,9 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 - [Phase 01]: Plan 01-04: Pass active_filter_counts + all_platform_ids=[] as transitional context aliases on the JV listing context so the still-Phase-5-shaped overview templates render to 200 in the wave-3 interim state — Plan 05 deletes the bridge
 - [Phase 01]: Plan 01-04: Three legacy test_content_routes.py tests (test_overview_row_ai_button_*, test_overview_has_global_summary_modal) marked skipped — they assert against the deleted POST /overview/add affordance and curated-Platform row markup; Plan 06 ships JV-shaped equivalents
 - [Phase 01]: Plan 01-04: StaticFiles mount registration order matters — child mount /static/joint_validation registered BEFORE parent /static so longest-prefix wins (Pitfall 10 — Starlette dispatches by registration order)
+- [Phase 01]: Plan 01-05: Iframe sandbox literal locked at 'allow-same-origin allow-popups allow-popups-to-escape-sandbox' — NO script-execution flag, NO allow-top-navigation, NO allow-forms (T-05-03 mitigation byte-pinned in app_v2/templates/joint_validation/detail.html for Plan 06 invariant grep)
+- [Phase 01]: Plan 01-05: Pitfall 8 honored — sortable_th macro defined INSIDE {% block grid %} body so jinja2-fragments block_names=['grid', 'count_oob', 'filter_badges_oob'] rendering retains macro visibility for POST /overview/grid OOB swaps
+- [Phase 01]: Plan 01-05: Auto-fixed 2 tests in tests/v2/test_main.py that asserted on the literal 'Overview' nav label — direct consequence of D-JV-01 nav-label rename in this plan; updated to 'Joint Validation' while preserving structural intent (3 tab labels + active class on the JV nav-link)
 
 ### Performance Metrics
 
@@ -100,3 +103,4 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 | Phase 01 P02 | 6min | 3 tasks | 8 files |
 | Phase 01 P03 | 8min | 2 tasks | 5 files |
 | Phase 01 P04 | 19min | 3 tasks | 7 files |
+| Phase 01 P05 | 7min | 3 tasks | 6 files |
