@@ -1,7 +1,9 @@
 """Unit tests for atomic_write_bytes shared helper (D-30, CONTENT-06).
 
-Single source of truth for atomic file writes. Used by overview_store (Phase 02
-YAML curated list) AND content_store (Phase 03 markdown content pages).
+Single source of truth for atomic file writes. Used by content_store
+(Phase 03 markdown content pages). The historical overview_store consumer
+was deleted by Phase 1 Plan 06 (Joint Validation cleanup) along with the
+``test_overview_store_still_works_after_refactor`` regression guard.
 
 Coverage:
     - basic write creates file with payload + parent dirs
@@ -130,30 +132,9 @@ def test_atomic_write_large_payload(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# overview_store regression guard (refactor invisibility)
+# overview_store regression guard removed (Phase 1 Plan 06).
+# overview_store.py was deleted along with the rest of the curated-Platform
+# Overview machinery; the Joint Validation listing has no YAML store. The
+# atomic_write_bytes contract is still fully exercised by the 5 generic tests
+# above plus content_store's own integration tests.
 # --------------------------------------------------------------------------- #
-
-def test_overview_store_still_works_after_refactor(tmp_path, monkeypatch) -> None:
-    """overview_store.add_overview / load_overview behave identically after the refactor."""
-    from app_v2.services import overview_store
-    from app_v2.services.overview_store import add_overview, load_overview
-
-    monkeypatch.setattr(overview_store, "OVERVIEW_YAML", tmp_path / "overview.yaml")
-
-    entity = add_overview("Samsung_S22Ultra_SM8450")
-    assert entity.platform_id == "Samsung_S22Ultra_SM8450"
-
-    loaded = load_overview()
-    assert len(loaded) == 1
-    assert loaded[0].platform_id == "Samsung_S22Ultra_SM8450"
-
-    # YAML file should exist with the correct mode (umask-applied 0o644 typically).
-    yaml_path = overview_store.OVERVIEW_YAML
-    assert yaml_path.exists()
-    mode = stat.S_IMODE(yaml_path.stat().st_mode)
-    # With default umask 0o022, mode should be 0o644 (0o666 & ~0o022).
-    # We don't pin umask here — we just assert it's not the tempfile-default 0o600.
-    assert mode != 0o600, (
-        f"After refactor, overview.yaml mode should be umask-applied (not the "
-        f"tempfile default 0o600). Got {oct(mode)} — refactor regressed mode preservation."
-    )

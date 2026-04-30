@@ -46,14 +46,14 @@ def isolated_content(tmp_path, monkeypatch):
     cd.mkdir(parents=True)
 
     import app_v2.routers.platforms as platforms_mod
-    import app_v2.services.overview_store as overview_store_mod
 
     monkeypatch.setattr(platforms_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(overview_store_mod, "OVERVIEW_YAML", tmp_path / "overview.yaml")
     # Phase 1 Plan 04: routers/overview.py rewritten for the Joint Validation
     # listing — CONTENT_DIR + list_platforms aliases removed along with the
     # curated-Platform helpers. The platforms detail tests under here read
     # platforms_mod.CONTENT_DIR (above), not the legacy overview-side aliases.
+    # Phase 1 Plan 06: overview_store.py + OVERVIEW_YAML constant deleted
+    # along with config/overview.yaml — the curated-Platform list is gone.
 
     from app_v2.services.cache import clear_all_caches
     clear_all_caches()
