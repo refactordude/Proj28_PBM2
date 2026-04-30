@@ -1,19 +1,17 @@
 ---
-status: awaiting_human_verify
+status: resolved
 trigger: "260430-browse-pivot-empty-row-labels: Browse pivot table renders `-` in the row-label column (PLATFORM_ID or Item) instead of values; only the leftmost index column is broken; surfaces against external DB (not in-repo demo)."
 created: 2026-04-30T00:00:00Z
 updated: 2026-04-30T00:00:00Z
+resolved: 2026-04-30T00:00:00Z
 ---
 
 ## Current Focus
 
-hypothesis: The `<td>` for the row label is rendering empty (then CSS `td:empty::after` injects `\2014` — em-dash). Empty `<td>` happens when the Jinja expression `row[vm.index_col_name] | string | e if row[vm.index_col_name] is not none else ""` produces an empty string. **The latent bug:** when `row[vm.index_col_name]` raises KeyError on a pandas Series (because the column is missing), Jinja2 silently swallows it and returns Undefined. `Undefined is not none` evaluates to **True** in Jinja2 (Undefined != None). So the `| string | e` branch runs, producing `""`. The template's defensive check is wrong — it tests `is not none` but the failure mode is a missing column (Undefined), not None.
-
-Why the column would be missing under "external DB" remains the open question — but the template should fail closed regardless of upstream shape. Defensive fix: also handle the missing-column case. Reproduce-then-fix path: write a test where df_wide is missing the index column and assert no empty `<td>` is produced; then change the template so the index column always exists in df_wide AND the template degrades gracefully.
-
-test: Verified by Jinja2 simulation that a Series without the index column key produces Undefined → renders as empty `<td>`. Also verified that the visible-fix path (always including the index column in df_wide) works for the normal data shape. The actual cause of the missing column on external DB is hard to reach without DB access, but the symptom is preventable in the template.
-expecting: Either find where df_wide loses its index column (upstream cause), OR harden the template so the symptom can never occur. Lean toward both — fix root cause in pivot_to_wide if findable, and harden template as defense.
-next_action: Search for upstream code paths that could produce df_wide WITHOUT the index column. If none found, harden template + add explicit regression test.
+hypothesis: RESOLVED — root cause confirmed and fix verified by user in browser against external MySQL DB.
+test: User confirmed (2026-04-30) that the row-label column now shows real PLATFORM_ID values instead of `-` after commit a1ee518.
+expecting: n/a
+next_action: session archived
 
 ## Symptoms
 
@@ -72,3 +70,4 @@ verification:
 - Standalone end-to-end repro: rendered the actual `_grid.html` template against a DataFrame with mixed empty/valid PLATFORM_IDs — before fix produced `<td></td>` (CSS-rendered as `-`); after fix produces `<td>P1</td>` with empty rows dropped.
 - Symmetric verification for swap_axes=True (Item as index): empty Item values are also dropped.
 - All-missing case: returns empty DataFrame with canonical column shape; template renders empty `<tbody>` (no `-` artifacts).
+- HUMAN VERIFIED (2026-04-30): User confirmed in browser against external MySQL DB that the row-label column now shows real PLATFORM_ID values instead of `-`. No further fixes needed. Fix shipped in commit a1ee518.
