@@ -109,10 +109,20 @@
    .panel { overflow: hidden } clipping when the panel is short.
    Scoped via :has() so only panels containing a known filter bar or the
    ask-confirm-form are affected — Phase 03 panels (which carry none of these)
-   keep their rounded-corner clipping unchanged. */
+   keep their rounded-corner clipping unchanged.
+
+   The trailing two selectors (.panel.browse-filter-bar, .panel.overview-filter-bar)
+   handle the SELF-MATCH case where .panel and the filter-bar class live on the
+   same element (Joint Validation filter bar — `<div class="overview-filter-bar panel">`).
+   :has() only matches descendants, so the descendant-match selectors above never
+   fire when the filter-bar IS the panel. Both forms coexist because Browse wraps
+   its filter-bar inside a separate .panel; that path keeps using the :has() selector.
+*/
 .panel:has(.browse-filter-bar),
 .panel:has(.overview-filter-bar),
-.panel:has(#ask-confirm-form) { overflow: visible; }
+.panel:has(#ask-confirm-form),
+.panel.browse-filter-bar,
+.panel.overview-filter-bar { overflow: visible; }
 
 /* Browse grid scroll container — vertical scroll for sticky-thead to work (Pitfall 1).
    The Browse panel applies BOTH .panel-body and .browse-grid-body to the same element;
