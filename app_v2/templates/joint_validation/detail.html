@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="shell">
+  <div class="page-head mb-3">
+    <h1 class="page-title">{{ jv.title | e }}</h1>
+    <small class="text-muted">Confluence Page ID: <code>{{ jv.confluence_page_id | e }}</code></small>
+  </div>
+
+  {# Properties table (D-JV-12) — same Obsidian-style row shape as
+     templates/platforms/detail.html. Missing fields render blank per D-JV-05. #}
+  <div class="panel mb-3">
+    <div class="panel-body">
+      <table class="table table-sm jv-properties">
+        <tbody>
+          <tr><th style="width: 16ch;">Status</th><td>{{ jv.status | e }}</td></tr>
+          <tr><th>Customer</th><td>{{ jv.customer | e }}</td></tr>
+          <tr><th>Model Name</th><td>{{ jv.model_name | e }}</td></tr>
+          <tr><th>AP Company</th><td>{{ jv.ap_company | e }}</td></tr>
+          <tr><th>AP Model</th><td>{{ jv.ap_model | e }}</td></tr>
+          <tr><th>Device</th><td>{{ jv.device | e }}</td></tr>
+          <tr><th>Controller</th><td>{{ jv.controller | e }}</td></tr>
+          <tr><th>Application</th><td>{{ jv.application | e }}</td></tr>
+          <tr><th>담당자</th><td>{{ jv.assignee | e }}</td></tr>
+          <tr><th>Start</th><td>{{ jv.start | e }}</td></tr>
+          <tr><th>End</th><td>{{ jv.end | e }}</td></tr>
+          <tr>
+            <th>Report Link</th>
+            <td>
+              {% if jv.link %}
+                <a href="{{ jv.link | e }}"
+                   target="_blank" rel="noopener noreferrer"
+                   class="text-decoration-none">
+                  <i class="bi bi-link-45deg"></i> {{ jv.link | e }}
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# Iframe sandbox (D-JV-12 + D-JV-13).
+     sandbox attribute set per RESEARCH.md "iframe Sandbox" section:
+       - allow-same-origin: lets parent + iframe share origin (CSS renders;
+         in-iframe scripts still BLOCKED because the script-execution flag
+         is intentionally absent)
+       - allow-popups + allow-popups-to-escape-sandbox: external links
+         (target="_blank") in the Confluence body open in a non-sandboxed tab
+     CRITICAL: do NOT enable the script-execution flag — combining it with
+     allow-same-origin lets the framed document remove the sandbox attr
+     (MDN warns explicitly against this).
+     The iframe src points at the static mount (D-JV-13). #}
+  <div class="panel">
+    <div class="panel-body p-0">
+      <iframe
+        src="/static/joint_validation/{{ jv.confluence_page_id | e }}/index.html"
+        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        style="width: 100%; height: 80vh; border: 0;"
+        loading="lazy"
+        title="Confluence export — {{ jv.title | e }}"></iframe>
+    </div>
+  </div>
+</div>
+{% endblock %}
