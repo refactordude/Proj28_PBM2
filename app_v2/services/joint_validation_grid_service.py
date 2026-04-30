@@ -209,10 +209,10 @@ def _sort_rows(
 ) -> list[JointValidationRow]:
     """Sort rows so empties always go to END regardless of asc/desc.
 
-    Verbatim port of ``app_v2/services/overview_grid_service.py:213-276``
-    (D-JV-10 / D-OV-07 + D-OV-08). Type annotation changed from
-    ``OverviewRow`` to ``JointValidationRow``; tiebreaker key changed from
-    ``r.platform_id`` to ``r.confluence_page_id``.
+    Verbatim port of the deleted Phase 5 ``overview_grid_service`` sort
+    routine (D-JV-10 / D-OV-07 + D-OV-08). Type annotation changed from
+    the legacy Phase 5 row type to ``JointValidationRow``; tiebreaker key
+    changed from ``r.platform_id`` to ``r.confluence_page_id``.
 
     Algorithm (two-pass stable sort):
 
@@ -277,7 +277,8 @@ def build_joint_validation_grid_view_model(
 ) -> JointValidationGridViewModel:
     """Pure orchestrator: discover + parse → build rows → filter → sort.
 
-    Replaces ``app_v2/services/overview_grid_service.build_overview_grid_view_model``:
+    Replaces the deleted Phase 5 view-model builder
+    (``app_v2/services/overview_grid_service`` was removed in Phase 1 Plan 06):
     - Source loop changes: per-pid frontmatter loop becomes per-discovered-jv
       parsed-metadata loop (joint_validation_store.discover_joint_validations
       + get_parsed_jv).

@@ -24,7 +24,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app_v2.routers.platforms as platforms_mod
-import app_v2.services.overview_store as overview_store_mod
 import app_v2.services.summary_service as summary_service_mod
 from app.core.config import AppConfig, LLMConfig, Settings
 
@@ -52,14 +51,12 @@ def integrated_app(tmp_path, monkeypatch, mocker):
     cd.mkdir(parents=True)
 
     monkeypatch.setattr(platforms_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(
-        overview_store_mod, "OVERVIEW_YAML", tmp_path / "overview.yaml"
-    )
     # Phase 1 Plan 04: routers/overview.py rewritten for Joint Validation;
     # CONTENT_DIR + list_platforms aliases removed along with the curated-
     # Platform helpers. The summary route under test reads
-    # platforms_mod.CONTENT_DIR (above), not the legacy overview-side aliases,
-    # so this fixture no longer needs them.
+    # platforms_mod.CONTENT_DIR (above), not the legacy overview-side aliases.
+    # Phase 1 Plan 06: overview_store.py + OVERVIEW_YAML constant deleted
+    # along with config/overview.yaml — the curated-Platform list is gone.
 
     # Reset summary cache between tests.
     summary_service_mod.clear_summary_cache()
