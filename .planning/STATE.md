@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-last_updated: "2026-04-30T08:58:18.009Z"
+last_updated: "2026-04-30T09:10:36.323Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
-  percent: 33
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 01 (overview-tab-auto-discover-platforms-from-html-files) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-04-30
 
@@ -65,7 +65,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T08:58:17.992Z
+Last session: 2026-04-30T09:10:36.307Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 
 ## Accumulated Context
@@ -84,6 +84,9 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 - [Phase 01]: Discovery glob NOT memoized; only parsed-metadata dict memoized — preserves D-JV-09 drop-folder UX (newly-dropped folders appear immediately)
 - [Phase 01]: JointValidationRow.link is None (not '') — None signals 'no usable link' so template renders Report Link button in disabled state (D-JV-15)
 - [Phase 01]: _sanitize_link verbatim port of D-OV-16 — Plan 06 invariant grep will confirm 5-scheme tuple (javascript:/data:/vbscript:/file:/about:) is byte-equal
+- [Phase 01]: Plan 01-03: extract _call_llm_with_text(content, cfg, system_prompt, user_prompt_template) backend-agnostic helper from _call_llm_single_shot — both platform and JV summary paths share one chat.completions.create call site; canonical {markdown_content} placeholder shared by both prompt modules
+- [Phase 01]: Plan 01-03: JV cache key shape hashkey('jv', confluence_page_id, mtime_ns, cfg.name, cfg.model) — literal 'jv' string discriminator AND 5-tuple length both prevent collision with platform's 4-tuple key on the same numeric id (Pitfall 3, T-03-02)
+- [Phase 01]: Plan 01-03: JV summary service returns BARE SummaryResult (text/llm_name/llm_model/generated_at) — router (Plan 04 Task 3) renders markdown + computes age, mirroring routers/summary.py:156-180 verbatim
 
 ### Performance Metrics
 
@@ -91,3 +94,4 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 |-------|------|----------|-------|-------|
 | 01    | 01   | 5min     | 2     | 5     |
 | Phase 01 P02 | 6min | 3 tasks | 8 files |
+| Phase 01 P03 | 8min | 2 tasks | 5 files |
