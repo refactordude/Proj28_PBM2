@@ -80,18 +80,16 @@ def isolated_summary(tmp_path, monkeypatch, mocker):
     cd.mkdir(parents=True)
 
     import app_v2.routers.platforms as platforms_mod
-    import app_v2.routers.overview as overview_mod
     import app_v2.services.overview_store as overview_store_mod
     from app_v2.services import summary_service
 
     monkeypatch.setattr(platforms_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(overview_mod, "CONTENT_DIR", cd)
     monkeypatch.setattr(overview_store_mod, "OVERVIEW_YAML", tmp_path / "overview.yaml")
-    monkeypatch.setattr(
-        overview_mod,
-        "list_platforms",
-        lambda db, db_name="": list(_FAKE_CATALOG),
-    )
+    # Phase 1 Plan 04: routers/overview.py was rewritten for the Joint
+    # Validation listing — CONTENT_DIR + list_platforms references were
+    # deleted along with the curated-Platform helpers. The summary route
+    # under test reads platforms_mod.CONTENT_DIR (above), not the legacy
+    # overview-side aliases, so the fixture no longer needs them.
 
     # Patch the LLM client builder — no real OpenAI() instantiation.
     mock_client = _make_mock_client(mocker)
