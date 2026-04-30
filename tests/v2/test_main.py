@@ -151,14 +151,25 @@ def test_htmx_request_404_returns_fragment_not_full_page(client):
 def crashing_client(monkeypatch):
     """TestClient with `raise_server_exceptions=False` so the registered
     `unhandled_exception_handler` is exercised instead of the test re-raising.
-    Patches `_build_overview_context` to throw — any HTTP method on `/` then
-    triggers the catch-all 500."""
+    Patches the JV grid view-model builder used by GET / and GET /overview to
+    throw — any HTTP method on `/` then triggers the catch-all 500.
+
+    Phase 1 Plan 04: previously patched `_build_overview_context`, which was
+    deleted along with the curated-Platform helpers when GET /overview was
+    rewritten to render the Joint Validation listing (D-JV-01). The new
+    overview router calls `build_joint_validation_grid_view_model` instead;
+    monkey-patching that attribute on the router module re-creates the same
+    "any GET /overview triggers the 500 handler" behavior that the two
+    fragment / full-page assertions below depend on.
+    """
     from app_v2.routers import overview as overview_router
 
     def _explode(*_args, **_kwargs):
         raise RuntimeError("simulated upstream failure")
 
-    monkeypatch.setattr(overview_router, "_build_overview_context", _explode)
+    monkeypatch.setattr(
+        overview_router, "build_joint_validation_grid_view_model", _explode
+    )
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
 
