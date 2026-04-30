@@ -1,130 +1,92 @@
-{# app_v2/templates/overview/_grid.html
-   <tbody> partial — rendered inside the {% block grid %} of index.html.
-   D-OV-05: "_grid.html is the fragment partial; just the <tbody> + empty-state <tr>"
-   D-OV-08: dates rendered as raw strings (em-dash for empty/None).
-   D-OV-09: em-dash sentinel for missing values; title NOT routed through
-            this — service layer falls back to platform_id.
-   D-OV-10: AI Summary cell preserves Phase 3 SUMMARY-02 contract:
-            hx-post=/platforms/{pid}/summary, hx-target=#summary-{pid},
-            hx-disabled-elt=this, disabled when not row.has_content.
-   Defense-in-depth XSS: every dynamic output uses the explicit-escape
-   filter; the autoescape-bypass filter and inline scripts are banned by
-   acceptance grep (audit-grep-friendly comment hygiene per Plan 05-02). #}
+{# Joint Validation grid — Phase 1 Plan 05.
+   D-JV-05: missing fields render as blank "" (NOT em-dash sentinel).
+   D-JV-15: two row buttons (Report Link + AI Summary).
+   Title cell IS the link to /joint_validation/<id> (no separate View button).
 
-{# Em-dash sentinel for missing values — D-OV-09. Title is NOT routed
-   through this; title falls back to platform_id at the service layer.
-   Defined inline in this partial (NOT in index.html) to avoid Jinja2
-   macro-scope ambiguity across {% include %} boundaries. #}
-{% macro maybe(value) %}{{ value | e if value else "—" }}{% endmacro %}
-
-<tbody>
-  {% if vm.rows %}
-    {% for row in vm.rows %}
+   12 sortable column headers via sortable_th macro defined in index.html grid
+   block. Action column is the 13th column and is NOT sortable. #}
+<table class="table table-sm overview-grid sticky-top-table" id="overview-grid-table">
+  <thead>
+    <tr>
+      {{ sortable_th("title", "Title") }}
+      {{ sortable_th("status", "Status") }}
+      {{ sortable_th("customer", "Customer") }}
+      {{ sortable_th("model_name", "Model Name") }}
+      {{ sortable_th("ap_company", "AP Company") }}
+      {{ sortable_th("ap_model", "AP Model") }}
+      {{ sortable_th("device", "Device") }}
+      {{ sortable_th("controller", "Controller") }}
+      {{ sortable_th("application", "Application") }}
+      {{ sortable_th("assignee", "담당자") }}
+      {{ sortable_th("start", "Start") }}
+      {{ sortable_th("end", "End") }}
+      <th class="text-end">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if vm.rows | length == 0 %}
       <tr>
-        {# Title — never None (service falls back to platform_id, D-OV-09).
-           Cell is a link to the platform's content page (Phase 3 view).
-           T-05-05-05: row.platform_id is regex-validated upstream
-           (^[A-Za-z0-9_\-]{1,128}$ — Phase 3 CONTENT-02), so the path
-           component cannot host a protocol prefix or external host. #}
-        <td>
-          <a href="/platforms/{{ row.platform_id | e }}" class="text-decoration-none">
-            {{ row.title | e }}
-          </a>
-        </td>
-        {# Optional fields — em-dash via maybe() macro defined above. #}
-        <td>{{ maybe(row.status) }}</td>
-        <td>{{ maybe(row.customer) }}</td>
-        <td>{{ maybe(row.model_name) }}</td>
-        <td>{{ maybe(row.ap_company) }}</td>
-        <td>{{ maybe(row.ap_model) }}</td>
-        <td>{{ maybe(row.device) }}</td>
-        <td>{{ maybe(row.controller) }}</td>
-        <td>{{ maybe(row.application) }}</td>
-        <td>{{ maybe(row.assignee) }}</td>
-        {# Date columns — D-OV-08: raw string verbatim (no transform); em-dash for empty. #}
-        <td>{{ maybe(row.start) }}</td>
-        <td>{{ maybe(row.end) }}</td>
-        {# Actions cell (D-OV-15.1 — refines D-OV-15): View + AI buttons
-           share a single cell with identical Bootstrap shape so the table
-           gets one fewer column.
-             - View   → static link to /platforms/{pid} (Phase 3 detail page)
-             - AI ✨  → opens #summary-modal popup; Phase 3 SUMMARY-02 wiring
-                       (hx-post, hx-disabled-elt, has_content disabled state)
-                       preserved verbatim. The per-row <div id="summary-{pid}">
-                       slot stays removed; modal owns the result surface.
-           Both buttons use `btn btn-sm btn-outline-secondary` so visual
-           weight is identical. The AI button keeps a `data-bs-toggle="modal"`
-           attribute pair so Bootstrap opens the modal alongside HTMX firing
-           the request. The summary route reads HX-Target and threads it
-           through to inner Retry/Regen buttons (modal-body for Overview,
-           summary-{pid} for the detail page caller). #}
-        <td class="text-end text-nowrap">
-          {# Link button — D-OV-16. Opens row.link (sanitized service-side
-             to http(s) only; bare domains promoted to https://). When
-             frontmatter has no `link` key, renders as a Bootstrap
-             `.disabled` anchor with no href and a tooltip explaining why.
-             The .md file is NOT reachable from this button anymore — the
-             title cell is the canonical handle for the platform's content
-             page (see <td> at the top of this row).
-             Visual treatment matches the AI button to its right: outlined
-             ghost shape (.btn-outline-secondary). Active state uses the
-             chain icon (bi-link-45deg) with .text-dark for near-black tint
-             so it reads clearly as clickable; disabled state keeps the
-             same shape but lighter via .text-muted. #}
-          {% if row.link %}
-            <a href="{{ row.link | e }}"
-               class="btn btn-sm btn-outline-secondary me-1"
-               target="_blank"
-               rel="noopener noreferrer"
-               title="Open {{ row.link | e }}"
-               aria-label="Open external link for {{ row.title | e }}">
-              <i class="bi bi-link-45deg text-dark" aria-hidden="true"></i>
-              <span class="text-dark">Link</span>
-            </a>
-          {% else %}
-            <a class="btn btn-sm btn-outline-secondary disabled me-1"
-               role="button"
-               tabindex="-1"
-               aria-disabled="true"
-               title="No link configured in frontmatter">
-              <i class="bi bi-link-45deg text-muted" aria-hidden="true"></i>
-              <span class="text-muted">Link</span>
-            </a>
-          {% endif %}
-          <button type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  hx-post="/platforms/{{ row.platform_id | e }}/summary"
-                  hx-target="#summary-modal-body"
-                  hx-swap="innerHTML"
-                  hx-disabled-elt="this"
-                  data-bs-toggle="modal"
-                  data-bs-target="#summary-modal"
-                  data-platform-title="{{ row.title | e }}"
-                  {% if not row.has_content %}disabled title="No content page to summarize yet"{% endif %}
-                  aria-label="Generate AI summary for {{ row.title | e }}">
-            <span aria-hidden="true">✨</span>
-            AI
-          </button>
+        <td colspan="13" class="text-center text-muted py-4">
+          <strong>No Joint Validations yet.</strong>
+          Drop a Confluence export at <code>content/joint_validation/&lt;page_id&gt;/index.html</code>.
         </td>
       </tr>
-    {% endfor %}
-  {% else %}
-    {# Empty state — distinguish "no curated platforms" vs "filters
-       narrowed to zero". The active_filter_counts dict tells us which:
-       if all 6 counts are 0, the curated list itself is empty (or
-       genuinely no rows). If any count > 0, filters narrowed to nothing. #}
-    {% set total_filters = active_filter_counts.values() | sum %}
-    <tr>
-      <td colspan="13" class="text-center py-4">
-        {% if total_filters == 0 %}
-          <div class="alert alert-info mb-0" role="alert">
-            <i class="bi bi-arrow-up-circle me-1" aria-hidden="true"></i>
-            No platforms in your overview yet. Use the search above to add your first one.
-          </div>
-        {% else %}
-          <span class="text-muted">No platforms match the current filters.</span>
-        {% endif %}
-      </td>
-    </tr>
-  {% endif %}
-</tbody>
+    {% else %}
+      {% for row in vm.rows %}
+        <tr>
+          <td>
+            <a href="/joint_validation/{{ row.confluence_page_id | e }}"
+               class="text-decoration-none">
+              {{ row.title | e }}
+            </a>
+          </td>
+          <td>{{ row.status | e }}</td>
+          <td>{{ row.customer | e }}</td>
+          <td>{{ row.model_name | e }}</td>
+          <td>{{ row.ap_company | e }}</td>
+          <td>{{ row.ap_model | e }}</td>
+          <td>{{ row.device | e }}</td>
+          <td>{{ row.controller | e }}</td>
+          <td>{{ row.application | e }}</td>
+          <td>{{ row.assignee | e }}</td>
+          <td>{{ row.start | e }}</td>
+          <td>{{ row.end | e }}</td>
+          <td class="text-end">
+            {# Report Link button (D-JV-15) — disabled when row.link is None
+               (sanitizer rejected scheme OR raw value was empty). #}
+            {% if row.link %}
+              <a href="{{ row.link | e }}"
+                 class="btn btn-sm btn-outline-secondary"
+                 target="_blank" rel="noopener noreferrer"
+                 aria-label="Open report link for {{ row.title | e }}">
+                <i class="bi bi-link-45deg"></i> Link
+              </a>
+            {% else %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      disabled
+                      aria-label="No report link available">
+                <i class="bi bi-link-45deg"></i> Link
+              </button>
+            {% endif %}
+
+            {# AI Summary button (D-JV-15) — opens modal; HTMX-fetches summary
+               into #summary-modal-body. Reuses Phase 3's _success.html /
+               _error.html partials (parameterized in Plan 01 Task 2). #}
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary ms-1"
+                    data-bs-toggle="modal"
+                    data-bs-target="#summary-modal"
+                    hx-post="/joint_validation/{{ row.confluence_page_id | e }}/summary"
+                    hx-target="#summary-modal-body"
+                    hx-swap="innerHTML"
+                    hx-headers='{"HX-Target": "summary-modal-body"}'
+                    aria-label="Generate AI summary for {{ row.title | e }}">
+              <i class="bi bi-magic"></i> AI
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+    {% endif %}
+  </tbody>
+</table>
