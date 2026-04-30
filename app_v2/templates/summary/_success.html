@@ -1,11 +1,18 @@
-{# app_v2/templates/summary/_success.html — UI-SPEC §8b. innerHTML of #summary-{pid}.
+{# app_v2/templates/summary/_success.html — UI-SPEC §8b. innerHTML of #summary-{entity_id}.
 
-   Rendered after a successful POST /platforms/{pid}/summary call. Shows the
+   Rendered after a successful POST {summary_url} call. Shows the
    LLM's markdown-rendered summary inside a .panel mini-card with a metadata
    footer (backend name + model + cache age) and a Regenerate button.
 
    The Regenerate button sends X-Regenerate: true so the route bypasses the
-   cache lookup but writes the new result back (D-18). #}
+   cache lookup but writes the new result back (D-18).
+
+   Phase 01 generic parameterization (Plan 01-01): the partial is rebound from
+   platform_id to entity_id + summary_url so it can be reused by the
+   /joint_validation/{cid}/summary route in Plan 04 with no template fork.
+   The platform route passes entity_id=platform_id and
+   summary_url=f"/platforms/{platform_id}/summary"; the JV route will pass
+   entity_id=confluence_page_id and summary_url=f"/joint_validation/{cid}/summary". #}
 <div class="panel mt-2">
   <div class="panel-body" style="padding: 18px 22px;">
     <article class="markdown-content" style="max-width: 720px; line-height: 1.55;">
@@ -22,14 +29,14 @@
         {% endif %}
       </small>
       <button class="ai-btn regen"
-              hx-post="/platforms/{{ platform_id }}/summary"
-              hx-target="#{{ target_id or 'summary-' ~ platform_id }}"
+              hx-post="{{ summary_url | e }}"
+              hx-target="#{{ target_id or ('summary-' ~ entity_id) | e }}"
               hx-swap="innerHTML"
-              hx-indicator="#summary-{{ platform_id }}-spinner"
+              hx-indicator="#summary-{{ entity_id | e }}-spinner"
               hx-headers='{"X-Regenerate": "true"}'
               hx-disabled-elt="this"
               title="Regenerate ignoring cache"
-              aria-label="Regenerate AI summary for {{ platform_id }} ignoring cache">
+              aria-label="Regenerate AI summary for {{ entity_id | e }} ignoring cache">
         <i class="bi bi-arrow-clockwise"></i> Regenerate
       </button>
     </div>
