@@ -1,17 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: (none — v2.0 shipped 2026-04-29)
-milestone_name: Awaiting next milestone
+milestone: v1.0
+milestone_name: milestone
 status: shipped
-stopped_at: v2.0 Bootstrap Shell complete
-last_updated: "2026-04-29T11:30:00.000Z"
-last_activity: 2026-04-29
+last_updated: "2026-04-30T07:06:11.525Z"
+last_activity: "2026-04-29 — Completed quick task 260429-qyv: Browse Parameters filter depends on selected Platforms (526 tests green)"
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # Project State
@@ -64,5 +62,11 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-29 (v2.0 milestone close + 2 polish quick tasks + cleanup)
+Last session: 2026-04-30T07:06:11.509Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 1 added: Overview Tab: Auto-discover Platforms from HTML Files (2026-04-30)
