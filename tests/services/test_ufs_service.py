@@ -342,6 +342,87 @@ def test_pivot_to_wide_warns_on_duplicates(caplog):
 
 
 # ---------------------------------------------------------------------------
+# 260430-browse-pivot-empty-row-labels regression
+# ---------------------------------------------------------------------------
+
+
+def test_pivot_to_wide_drops_rows_with_empty_string_index(caplog):
+    """260430: external DBs that contain empty-string PLATFORM_ID values
+    must NOT propagate those rows into the wide pivot.
+
+    Browse renders the row-label column as `<td>{{ row[index_col] | string | e
+    if ... is not none else "" }}</td>`. An empty-string value passes the
+    `is not none` check, then `"" | string | e` produces `""`, leaving an
+    empty `<td>`. CSS rule `.pivot-table td:empty::after { content: "\\2014" }`
+    then injects an em-dash, making the user think every row label is "-".
+
+    pivot_to_wide must filter such rows before pivoting and emit a WARNING
+    so operators can see the data-quality issue.
+    """
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["", "p1", "p2"],   # one empty platform — must be dropped
+        "InfoCategory": ["catA", "catA", "catA"],
+        "Item": ["item1", "item1", "item1"],
+        "Result": ["junk", "v1", "v2"],
+    })
+    with caplog.at_level(logging.WARNING, logger="app.services.ufs_service"):
+        wide, capped = pivot_to_wide(df)
+    assert "PLATFORM_ID" in wide.columns
+    # The empty-string row was dropped; only p1 and p2 survive.
+    assert sorted(wide["PLATFORM_ID"].tolist()) == ["p1", "p2"]
+    assert capped is False
+    assert any(
+        "missing PLATFORM_ID" in r.message and "drop" in r.message.lower()
+        for r in caplog.records
+    ), "expected a drop-warning naming PLATFORM_ID"
+
+
+def test_pivot_to_wide_drops_whitespace_and_sentinel_index_values():
+    """260430: full is_missing() set (None, '', whitespace, MISSING_SENTINELS
+    like 'NULL', 'None', 'N/A') must all be dropped from the index column,
+    matching the same contract `result_normalizer` applies to the Result column.
+    """
+    df = pd.DataFrame({
+        "PLATFORM_ID": [None, "", "   ", "NULL", "N/A", "P1"],
+        "InfoCategory": ["catA"] * 6,
+        "Item": ["item1"] * 6,
+        "Result": ["a", "b", "c", "d", "e", "ok"],
+    })
+    wide, _ = pivot_to_wide(df)
+    assert wide["PLATFORM_ID"].tolist() == ["P1"]
+
+
+def test_pivot_to_wide_all_index_missing_returns_empty_frame():
+    """260430: when EVERY row has a missing index value, return an empty
+    DataFrame with the canonical [index_col] column shape so the template
+    renders an empty <tbody> instead of a sea of em-dashes.
+    """
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["", "", ""],
+        "InfoCategory": ["catA"] * 3,
+        "Item": ["item1", "item2", "item3"],
+        "Result": ["v1", "v2", "v3"],
+    })
+    wide, capped = pivot_to_wide(df)
+    assert wide.empty
+    assert list(wide.columns) == ["PLATFORM_ID"]
+    assert capped is False
+
+
+def test_pivot_to_wide_swap_axes_drops_missing_item_values():
+    """260430: same fix must apply when swap_axes=True (Item is the index)."""
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P1", "P1"],
+        "InfoCategory": ["catA"] * 3,
+        "Item": ["", "item1", "  "],   # Item is the index when swap_axes=True
+        "Result": ["junk", "v1", "junk"],
+    })
+    wide, _ = pivot_to_wide(df, swap_axes=True)
+    assert "Item" in wide.columns
+    assert wide["Item"].tolist() == ["item1"]
+
+
+# ---------------------------------------------------------------------------
 # Import isolation — no Streamlit session required
 # ---------------------------------------------------------------------------
 

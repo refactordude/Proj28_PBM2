@@ -29,7 +29,7 @@ import sqlalchemy as sa
 
 from app.adapters.db.base import DBAdapter
 from app.core.config import load_settings
-from app.services.result_normalizer import normalize
+from app.services.result_normalizer import is_missing, normalize
 
 logger = logging.getLogger(__name__)
 
@@ -258,6 +258,34 @@ def pivot_to_wide(
         index_col, columns_col = "Item", "PLATFORM_ID"
     else:
         index_col, columns_col = "PLATFORM_ID", "Item"
+
+    # 260430-browse-pivot-empty-row-labels: drop rows whose index_col value is
+    # "missing" (None, empty string, whitespace-only, or one of the documented
+    # MISSING_SENTINELS). These rows would otherwise survive the pivot and
+    # render as empty <td> in the row-label column — and CSS rule
+    # `.pivot-table td:empty::after { content: "\2014" }` would inject an
+    # em-dash, making the user think every row label is "-". Demo SQLite data
+    # is clean so the bug only surfaces on external DBs that contain rows with
+    # empty-string or whitespace PLATFORM_ID values. Filtering matches
+    # `list_platforms` (line 91 — `.dropna()`) and the `is_missing` contract
+    # used for the Result column. Logs a warning so operators can see the data
+    # quality issue.
+    missing_index_mask = df_long[index_col].apply(is_missing)
+    n_missing = int(missing_index_mask.sum())
+    if n_missing > 0:
+        logger.warning(
+            "pivot_to_wide: dropping %d row(s) with missing %s value "
+            "(empty/None/whitespace/sentinel) before pivoting",
+            n_missing,
+            index_col,
+        )
+        df_long = df_long[~missing_index_mask]
+        if df_long.empty:
+            # Every row had a missing index value — return an empty wide frame
+            # with the canonical column shape so downstream code (template,
+            # n_value_cols_shown, n_rows) handles it gracefully.
+            empty_cols = [index_col]
+            return pd.DataFrame(columns=empty_cols), False
 
     wide = df_long.pivot_table(
         index=index_col,
