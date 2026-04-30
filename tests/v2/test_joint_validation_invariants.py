@@ -309,3 +309,35 @@ def test_jv_filter_bar_uses_picker_popover_macro_unmodified() -> None:
     assert macro_src.strip(), (
         "browse/_picker_popover.html must remain present (reused AS-IS)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Quick task 260430-wzg — popover overflow-visible self-match selector
+# ---------------------------------------------------------------------------
+
+
+def test_jv_filter_popover_overflow_visible_self_match() -> None:
+    """260430-wzg: app.css must expose BOTH selector forms so JV popovers
+    (Status / Customer / AP Company / Device / Controller / Application)
+    escape `.panel { overflow: hidden }` clipping.
+
+    The JV filter bar is `<div class="overview-filter-bar panel">` —
+    :has() only matches descendants, so the descendant selector cannot
+    match when .panel and .overview-filter-bar are co-classes on the
+    same element. Both forms must coexist:
+
+      * `.panel:has(.overview-filter-bar)` — Browse-shaped wrapping (.panel
+        contains a separate filter-bar child).
+      * `.panel.overview-filter-bar` — JV-shaped self-match (.panel and
+        the filter-bar are the SAME element).
+    """
+    css = _read(APP / "static" / "css" / "app.css")
+    assert ".panel:has(.overview-filter-bar)" in css, (
+        "app.css must keep the descendant-match selector "
+        "`.panel:has(.overview-filter-bar)` (Phase 5 fix preserved)"
+    )
+    assert ".panel.overview-filter-bar" in css, (
+        "app.css must contain the self-match selector "
+        "`.panel.overview-filter-bar` so JV popovers escape "
+        "`.panel { overflow: hidden }` clipping (260430-wzg)"
+    )
