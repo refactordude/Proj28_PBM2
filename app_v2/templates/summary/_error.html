@@ -1,11 +1,15 @@
-{# app_v2/templates/summary/_error.html — UI-SPEC §8c. innerHTML of #summary-{pid}.
+{# app_v2/templates/summary/_error.html — UI-SPEC §8c. innerHTML of #summary-{entity_id}.
 
    Rendered with HTTP 200 (NOT 5xx) on every kind of LLM failure so the swap
    lands inline in the per-row summary slot — never escalating to the global
    #htmx-error-container. The {{ reason }} value comes from the route's
    call to summary_service._classify_error which maps every openai 2.x /
    httpx exception to the fixed 7-string vocabulary (UI-SPEC §8c). Raw
-   exception text NEVER reaches this template. #}
+   exception text NEVER reaches this template.
+
+   Phase 01 generic parameterization (Plan 01-01): the partial is rebound from
+   platform_id to entity_id + summary_url so it can be reused by the
+   /joint_validation/{cid}/summary route in Plan 04 with no template fork. #}
 <div class="alert alert-warning d-flex justify-content-between align-items-center mt-2"
      role="alert">
   <div>
@@ -13,10 +17,10 @@
     Summary unavailable: {{ reason }}. Try again or switch LLM backend in Settings.
   </div>
   <button class="btn btn-sm btn-outline-warning"
-          hx-post="/platforms/{{ platform_id }}/summary"
-          hx-target="#{{ target_id or 'summary-' ~ platform_id }}"
+          hx-post="{{ summary_url | e }}"
+          hx-target="#{{ target_id or ('summary-' ~ entity_id) | e }}"
           hx-swap="innerHTML"
-          hx-indicator="#summary-{{ platform_id }}-spinner"
+          hx-indicator="#summary-{{ entity_id | e }}-spinner"
           hx-disabled-elt="this">
     <i class="bi bi-arrow-clockwise"></i> Retry
   </button>
