@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-last_updated: "2026-04-30T12:11:08.566Z"
+status: Phase complete — ready for verification
+last_updated: "2026-04-30T12:28:43.094Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
@@ -65,7 +65,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T12:11:08.546Z
+Last session: 2026-04-30T12:28:30.318Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 
 ## Accumulated Context
@@ -94,6 +94,9 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 - [Phase 01]: Plan 01-05: Iframe sandbox literal locked at 'allow-same-origin allow-popups allow-popups-to-escape-sandbox' — NO script-execution flag, NO allow-top-navigation, NO allow-forms (T-05-03 mitigation byte-pinned in app_v2/templates/joint_validation/detail.html for Plan 06 invariant grep)
 - [Phase 01]: Plan 01-05: Pitfall 8 honored — sortable_th macro defined INSIDE {% block grid %} body so jinja2-fragments block_names=['grid', 'count_oob', 'filter_badges_oob'] rendering retains macro visibility for POST /overview/grid OOB swaps
 - [Phase 01]: Plan 01-05: Auto-fixed 2 tests in tests/v2/test_main.py that asserted on the literal 'Overview' nav label — direct consequence of D-JV-01 nav-label rename in this plan; updated to 'Joint Validation' while preserving structural intent (3 tab labels + active class on the JV nav-link)
+- [Phase 01-overview-tab-auto-discover-platforms-from-html-files]: Plan 01-06: Rule 3 batch-fix sibling test files BEFORE deletion (test_atomic_write.py, test_summary_routes.py, test_summary_integration.py, test_content_routes.py, test_phase03_invariants.py) so the v2 suite stays green between commits — alternative (delete first, fix breakage) would have left 23+ tests red mid-plan and broken git bisectability
+- [Phase 01-overview-tab-auto-discover-platforms-from-html-files]: Plan 01-06: Test 5 invariant matches inner 5-string substring of the dangerous-link tuple, not the parens — actual source-code tuple in joint_validation_grid_service.py spans 3 lines for readability; substantive byte-equal contract preserved
+- [Phase 01-overview-tab-auto-discover-platforms-from-html-files]: Plan 01-06: Test 11 invariant scans BOTH joint_validation_summary.py AND joint_validation_parser.py for the decompose 3-tag list — Plan 02 implementation puts the BeautifulSoup pre-processor in the parser module, so scanning the union honors the contract regardless of which module owns the implementation
 
 ### Performance Metrics
 
@@ -104,3 +107,4 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 | Phase 01 P03 | 8min | 2 tasks | 5 files |
 | Phase 01 P04 | 19min | 3 tasks | 7 files |
 | Phase 01 P05 | 7min | 3 tasks | 6 files |
+| Phase 01-overview-tab-auto-discover-platforms-from-html-files P06 | 11min | 3 tasks | 17 files |
