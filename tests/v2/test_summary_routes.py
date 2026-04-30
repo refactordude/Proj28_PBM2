@@ -326,6 +326,46 @@ def test_post_summary_uses_active_backend_name_in_metadata(isolated_summary):
 
 
 # ---------------------------------------------------------------------------
+# Generic-partial parameterization (Phase 01 Plan 01 — entity_id + summary_url)
+#
+# These assert the regression-safe rebinding from `platform_id` to the generic
+# `entity_id` + `summary_url` variables. Plans 04+05 will reuse the same
+# partials with `entity_id=confluence_page_id` and
+# `summary_url=/joint_validation/{cid}/summary`. The platform route MUST
+# still render the same on-the-wire output.
+# ---------------------------------------------------------------------------
+
+def test_post_summary_success_renders_summary_url_in_hx_post(isolated_summary):
+    """Regenerate button hx-post points at /platforms/{pid}/summary via summary_url."""
+    client, cd, mock_client = isolated_summary
+    (cd / f"{_PID}.md").write_text("notes", encoding="utf-8")
+    r = client.post(f"/platforms/{_PID}/summary")
+    assert r.status_code == 200
+    assert f'hx-post="/platforms/{_PID}/summary"' in r.text
+
+
+def test_post_summary_success_renders_entity_id_in_hx_indicator(isolated_summary):
+    """Spinner hx-indicator references summary-{entity_id}-spinner."""
+    client, cd, mock_client = isolated_summary
+    (cd / f"{_PID}.md").write_text("notes", encoding="utf-8")
+    r = client.post(f"/platforms/{_PID}/summary")
+    assert r.status_code == 200
+    # Phase 3 contract: hx-indicator id derived from entity_id (was platform_id).
+    assert f'hx-indicator="#summary-{_PID}-spinner"' in r.text
+
+
+def test_post_summary_error_retry_uses_summary_url(isolated_summary):
+    """Retry button on error fragment hx-posts to /platforms/{pid}/summary."""
+    client, cd, mock_client = isolated_summary
+    # No content file → triggers FileNotFoundError → error fragment.
+    r = client.post(f"/platforms/{_PID}/summary")
+    assert r.status_code == 200
+    assert "Retry" in r.text
+    assert f'hx-post="/platforms/{_PID}/summary"' in r.text
+    assert f'hx-indicator="#summary-{_PID}-spinner"' in r.text
+
+
+# ---------------------------------------------------------------------------
 # Always-200 invariant — meta-test
 # ---------------------------------------------------------------------------
 
