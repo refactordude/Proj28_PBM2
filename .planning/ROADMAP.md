@@ -62,6 +62,6 @@ Plans:
 - [x] 01-01-PLAN.md — Add beautifulsoup4+lxml deps; parameterize summary partials with entity_id+summary_url
 - [x] 01-02-PLAN.md — BS4 parser + discovery store + grid_service view-model + tests + fixtures
 - [x] 01-03-PLAN.md — JV summary shim (D-JV-16 _strip_to_text + JV prompt + cache discriminator); refactor summary_service helper
-- [ ] 01-04-PLAN.md — Rewrite routers/overview.py for JV listing; add routers/joint_validation.py (detail + summary); StaticFiles mount in main.py
+- [x] 01-04-PLAN.md — Rewrite routers/overview.py for JV listing; add routers/joint_validation.py (detail + summary); StaticFiles mount in main.py
 - [ ] 01-05-PLAN.md — Rewrite templates/overview/{index,_grid,_filter_bar}.html; add templates/joint_validation/detail.html; flip nav label
 - [ ] 01-06-PLAN.md — Delete obsolete Phase 5 Platform-curated files (config/overview.yaml, overview_store.py, overview_filter.py, overview_grid_service.py + their tests + test_phase05_invariants.py + test_overview_routes.py); add test_joint_validation_routes.py + test_joint_validation_invariants.py

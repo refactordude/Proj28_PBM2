@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-last_updated: "2026-04-30T09:10:36.323Z"
+last_updated: "2026-04-30T11:59:16.471Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 3
-  percent: 50
+  completed_plans: 4
+  percent: 67
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 01 (overview-tab-auto-discover-platforms-from-html-files) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-04-30
 
@@ -65,7 +65,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T09:10:36.307Z
+Last session: 2026-04-30T11:59:16.455Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 
 ## Accumulated Context
@@ -87,6 +87,10 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 - [Phase 01]: Plan 01-03: extract _call_llm_with_text(content, cfg, system_prompt, user_prompt_template) backend-agnostic helper from _call_llm_single_shot — both platform and JV summary paths share one chat.completions.create call site; canonical {markdown_content} placeholder shared by both prompt modules
 - [Phase 01]: Plan 01-03: JV cache key shape hashkey('jv', confluence_page_id, mtime_ns, cfg.name, cfg.model) — literal 'jv' string discriminator AND 5-tuple length both prevent collision with platform's 4-tuple key on the same numeric id (Pitfall 3, T-03-02)
 - [Phase 01]: Plan 01-03: JV summary service returns BARE SummaryResult (text/llm_name/llm_model/generated_at) — router (Plan 04 Task 3) renders markdown + computes age, mirroring routers/summary.py:156-180 verbatim
+- [Phase 01]: Plan 01-04: HX-Push-Url must be set on the constructed TemplateResponse, NOT via an injected Response parameter — FastAPI's parameter-Response merge does not apply when the route returns its own Response object
+- [Phase 01]: Plan 01-04: Pass active_filter_counts + all_platform_ids=[] as transitional context aliases on the JV listing context so the still-Phase-5-shaped overview templates render to 200 in the wave-3 interim state — Plan 05 deletes the bridge
+- [Phase 01]: Plan 01-04: Three legacy test_content_routes.py tests (test_overview_row_ai_button_*, test_overview_has_global_summary_modal) marked skipped — they assert against the deleted POST /overview/add affordance and curated-Platform row markup; Plan 06 ships JV-shaped equivalents
+- [Phase 01]: Plan 01-04: StaticFiles mount registration order matters — child mount /static/joint_validation registered BEFORE parent /static so longest-prefix wins (Pitfall 10 — Starlette dispatches by registration order)
 
 ### Performance Metrics
 
@@ -95,3 +99,4 @@ Next action: `/gsd-new-milestone` to scope v2.1+ when ready
 | 01    | 01   | 5min     | 2     | 5     |
 | Phase 01 P02 | 6min | 3 tasks | 8 files |
 | Phase 01 P03 | 8min | 2 tasks | 5 files |
+| Phase 01 P04 | 19min | 3 tasks | 7 files |
