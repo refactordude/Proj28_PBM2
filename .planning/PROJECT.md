@@ -10,7 +10,7 @@ PBM2 is an internal FastAPI + Bootstrap 5 + HTMX website where a team of non-SQL
 
 ## Current Milestone: TBD
 
-No active milestone. Run `/gsd-new-milestone` to scope v2.1+ when ready.
+No formal milestone scoped yet. Phase 1 (Joint Validation auto-discovery, 2026-04-30) shipped as a post-v2.0 phase against the standalone D-JV-01..D-JV-17 requirement set locked in `phases/01-.../01-CONTEXT.md`. Run `/gsd-new-milestone` to formalize v2.1+ when more work is queued.
 
 ## Previous State
 
@@ -82,6 +82,15 @@ Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md), [milesto
 - ✓ External `link:` frontmatter key surfaces as a per-row Link button (target="_blank" rel="noopener noreferrer"); URL sanitizer drops dangerous schemes (javascript:/data:/vbscript:/file:/about:) and promotes bare domains to https://; disabled state when missing (D-OV-16) — v2.0 (Phase 5)
 - ✓ Detail page renders frontmatter as an Obsidian-style properties table above the markdown body (fix(05.1)) — v2.0 (Phase 5)
 
+#### Joint Validation auto-discovery — post-v2.0
+- ✓ Overview tab listing replaced: rows now auto-discovered from `content/joint_validation/<numeric_id>/index.html` (BeautifulSoup4 + lxml) with mtime-keyed cache and per-request glob — D-JV-01..D-JV-04, D-JV-08, D-JV-09 (Phase 1)
+- ✓ 13-field properties parser (selector-based, `<small>` fallback) drives both grid view-model and detail page; Korean `담당자` field preserved — D-JV-04, D-JV-10, D-JV-11 (Phase 1)
+- ✓ `/joint_validation/<confluence_page_id>` detail page (properties table + iframe sandbox of the original Confluence export served from `/static/joint_validation/...`); iframe sandbox attribute byte-pinned by invariant test — D-JV-05, D-JV-12, D-JV-13 (Phase 1)
+- ✓ AI Summary route reuses Phase 3 `summary_service` plumbing via shared `_call_llm_with_text` helper; cache key namespaced as `("jv", confluence_page_id, mtime_ns, …)` — D-JV-15, D-JV-16 (Phase 1)
+- ✓ Phase 5 Platform-curated machinery removed: `config/overview.yaml`, `overview_store.py`, `overview_filter.py`, `overview_grid_service.py`, `POST /overview/add` and tests — D-JV-06, D-JV-07 (Phase 1)
+- ✓ Top-nav label flipped from "Overview" to "Joint Validation" — D-JV-01 (Phase 1)
+- ✓ Final v2 suite: 360 passed / 5 skipped (30 net new tests, zero regressions)
+
 ### Active
 
 <!-- v2.0 Bootstrap Shell — rewrite UI onto FastAPI + Bootstrap + HTMX. -->
@@ -91,12 +100,7 @@ Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md), [milesto
 - [ ] Horizontal top-nav tabs: Overview / Browse / Ask
 - [ ] Intranet deployment target unchanged; auth still deferred (re-enable in a later milestone)
 
-#### Overview (v2.0)
-- [ ] User can add a platform to the curated overview (from PLATFORM_IDs in ufs_data)
-- [ ] User can remove a platform from the overview
-- [ ] Each entity shows: title, link to content page, "AI Summary" button
-- [ ] Interactive filters by Brand / SoC / Year parsed from PLATFORM_ID + "has content page" toggle
-- [ ] Filter changes and add/remove are HTMX-swapped (no full page reload)
+<!-- Overview (v2.0) curated-Platform watchlist superseded by Joint Validation auto-discovery (Phase 1, 2026-04-30). The "add/remove a platform" flow and Brand/SoC/Year filters are intentionally retired per D-JV-06 / D-JV-07 — see Validated → "Joint Validation auto-discovery — post-v2.0". -->
 
 #### Content pages (v2.0)
 - [ ] Per-platform markdown content pages at `content/platforms/<PLATFORM_ID>.md`
@@ -200,4 +204,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-29 after quick task 260429-kn7 (v1.0 Streamlit shell sunset). v2.0 milestone phases all complete (6/6); FastAPI/Bootstrap/HTMX is now the single UI; HUMAN-UAT pending for live-server validation.*
+*Last updated: 2026-04-30 after Phase 1 (Joint Validation auto-discovery) verified passed (17/17 must-haves). Curated-Platform Overview retired per D-JV-06/07; auto-discovery from `content/joint_validation/<id>/index.html` is now the single Overview source. v2 suite: 360 passed / 5 skipped.*
