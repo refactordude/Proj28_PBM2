@@ -65,3 +65,13 @@ Plans:
 - [x] 01-04-PLAN.md — Rewrite routers/overview.py for JV listing; add routers/joint_validation.py (detail + summary); StaticFiles mount in main.py
 - [x] 01-05-PLAN.md — Rewrite templates/overview/{index,_grid,_filter_bar}.html; add templates/joint_validation/detail.html; flip nav label
 - [x] 01-06-PLAN.md — Delete obsolete Phase 5 Platform-curated files (config/overview.yaml, overview_store.py, overview_filter.py, overview_grid_service.py + their tests + test_phase05_invariants.py + test_overview_routes.py); add test_joint_validation_routes.py + test_joint_validation_invariants.py
+
+### Phase 2: UI Shell Rewrite + Browse Footer + Joint Validation Layout Parity + Pagination
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 2 to break down)
