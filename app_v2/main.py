@@ -76,6 +76,17 @@ async def lifespan(app: FastAPI):
     except OSError as exc:  # noqa: BLE001 — startup resilience
         _log.warning("Failed to create content/platforms/: %s", exc)
 
+    # Joint Validation drop-folder root (D-JV-13). Phase 1 Plan 04.
+    # Mirrors content/platforms mkdir above so the StaticFiles mount below
+    # has a guaranteed directory at startup (StaticFiles check_dir=True default
+    # raises if missing) AND so the drop-folder workflow (D-JV-09) works on
+    # cold-start without manual mkdir.
+    jv_dir = Path("content/joint_validation")
+    try:
+        jv_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:  # noqa: BLE001 — startup resilience
+        _log.warning("Failed to create content/joint_validation/: %s", exc)
+
     # NOTE on Pitfall 18 (Ollama cold-start) — DEVIATION from RESEARCH.md Q3:
     # RESEARCH.md recommended a lifespan-time Ollama warmup ping. We deviate
     # and rely solely on the 60s read timeout configured in summary_service
@@ -102,6 +113,20 @@ app = FastAPI(
     # Hide /docs on intranet — enable explicitly when needed
     docs_url="/docs",
     redoc_url=None,
+)
+
+# Joint Validation static mount (D-JV-13). Registered BEFORE /static so that
+# requests to /static/joint_validation/... match this mount instead of the
+# parent /static mount. See RESEARCH.md Pitfall 10: Starlette dispatches mounts
+# by registration order (longest-prefix-first is NOT automatic).
+app.mount(
+    "/static/joint_validation",
+    StaticFiles(
+        directory="content/joint_validation",
+        html=False,            # Do NOT auto-serve index.html for bare folder URLs
+        follow_symlink=False,  # Default; explicit for documentation
+    ),
+    name="joint_validation_static",
 )
 
 # Static mount BEFORE router registration so url_for('static', path=...) resolves
@@ -168,6 +193,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 from app_v2.routers import overview  # noqa: E402
 from app_v2.routers import platforms  # noqa: E402
 from app_v2.routers import summary  # noqa: E402
+from app_v2.routers import joint_validation  # noqa: E402  Phase 1 Plan 04
 from app_v2.routers import browse  # noqa: E402
 from app_v2.routers import ask  # noqa: E402
 from app_v2.routers import settings as settings_router  # noqa: E402 — alias to avoid collision with the Settings model
@@ -176,6 +202,7 @@ from app_v2.routers import root  # noqa: E402
 app.include_router(overview.router)
 app.include_router(platforms.router)
 app.include_router(summary.router)
+app.include_router(joint_validation.router)
 app.include_router(browse.router)
 app.include_router(ask.router)
 app.include_router(settings_router.router)
