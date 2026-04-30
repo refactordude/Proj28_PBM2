@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Milestone complete
-last_updated: "2026-04-30T12:42:34.877Z"
+last_updated: "2026-04-30T14:50:11Z"
 last_activity: 2026-04-30
 progress:
   total_phases: 1
@@ -58,6 +58,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260429-kc1 | Source `ufs_service._TABLE` from `settings.app.agent.allowed_tables` (no hardcoded "ufs_data") | 2026-04-29 | 747a610 | [260429-kc1-source-ufs-service-table-and-allowed-tab](./quick/260429-kc1-source-ufs-service-table-and-allowed-tab/) |
 | 260429-kn7 | Remove v1.0 Streamlit shell — app_v2 becomes single source of truth (5 tasks, 507 tests green) | 2026-04-29 | 7266e00 | [260429-kn7-remove-v1-0-streamlit-shell-app-v2-fasta](./quick/260429-kn7-remove-v1-0-streamlit-shell-app-v2-fasta/) |
 | 260429-qyv | Browse: Parameters filter depends on selected Platforms (server-side intersection, disabled when none, OOB picker refresh) | 2026-04-29 | f1e002b | [260429-qyv-browse-parameters-filter-depends-on-sele](./quick/260429-qyv-browse-parameters-filter-depends-on-sele/) |
+| 260430-wzg | Fix Joint Validation filter popover clipping (extend `.panel { overflow: visible }` to cover `.panel.overview-filter-bar` self-match) | 2026-04-30 | 067fd37 | [260430-wzg-fix-joint-validation-filter-popover-clip](./quick/260430-wzg-fix-joint-validation-filter-popover-clip/) |
 
 ## Blockers/Concerns
 
@@ -65,8 +66,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T12:28:30.318Z
+Last session: 2026-04-30T14:50:11Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
+Stopped at: Quick task 260430-wzg complete — JV filter popover clip fix shipped (361 v2 tests green)
 
 ## Accumulated Context
 
