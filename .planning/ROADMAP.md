@@ -50,3 +50,18 @@ Run `/gsd-new-milestone` to plan the next iteration:
 - Research: explore relevant patterns + tech in scope
 - Requirements: fresh REQUIREMENTS.md scoped to milestone
 - Roadmap: fresh phase list under a new milestone heading
+
+### Phase 1: Overview Tab: Auto-discover Platforms from HTML Files
+
+**Goal:** Replace the Overview tab's curated-Platform listing with auto-discovered Joint Validation rows parsed from `content/joint_validation/<numeric_id>/index.html` (BeautifulSoup4); add `/joint_validation/<id>` detail page (properties table + iframe sandbox of the Confluence export); reuse the Phase 5 grid/filter/sort + AI Summary modal patterns; delete the Platform-curated yaml + supporting code paths (D-JV-01..D-JV-17 locked in 01-CONTEXT.md).
+**Requirements**: D-JV-01, D-JV-02, D-JV-03, D-JV-04, D-JV-05, D-JV-06, D-JV-07, D-JV-08, D-JV-09, D-JV-10, D-JV-11, D-JV-12, D-JV-13, D-JV-14, D-JV-15, D-JV-16, D-JV-17
+**Depends on:** v2.0 Phase 5 (Overview Redesign — patterns reused)
+**Plans:** 6 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Add beautifulsoup4+lxml deps; parameterize summary partials with entity_id+summary_url
+- [ ] 01-02-PLAN.md — BS4 parser + discovery store + grid_service view-model + tests + fixtures
+- [ ] 01-03-PLAN.md — JV summary shim (D-JV-16 _strip_to_text + JV prompt + cache discriminator); refactor summary_service helper
+- [ ] 01-04-PLAN.md — Rewrite routers/overview.py for JV listing; add routers/joint_validation.py (detail + summary); StaticFiles mount in main.py
+- [ ] 01-05-PLAN.md — Rewrite templates/overview/{index,_grid,_filter_bar}.html; add templates/joint_validation/detail.html; flip nav label
+- [ ] 01-06-PLAN.md — Delete obsolete Phase 5 Platform-curated files (config/overview.yaml, overview_store.py, overview_filter.py, overview_grid_service.py + their tests + test_phase05_invariants.py + test_overview_routes.py); add test_joint_validation_routes.py + test_joint_validation_invariants.py
