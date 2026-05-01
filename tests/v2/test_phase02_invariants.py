@@ -474,3 +474,84 @@ def test_overflow_safety_net_still_present() -> None:
     assert "overflow: visible" in block, (
         ".panel.overview-filter-bar must be in a rule with overflow: visible (260430-wzg)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Plan 02-03 Task 2 — Restructure overview/_filter_bar.html (D-UI2-07/08/09/10)
+# Tests 26-31
+# ---------------------------------------------------------------------------
+
+OVERVIEW_FILTER_BAR_HTML = TPL / "overview" / "_filter_bar.html"
+
+
+def test_overview_filter_bar_no_panel_class() -> None:
+    """Test 26: _filter_bar.html must NOT contain class="overview-filter-bar panel" (D-UI2-07)."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    assert 'class="overview-filter-bar panel"' not in src, (
+        'overview/_filter_bar.html must NOT contain class="overview-filter-bar panel" '
+        "(D-UI2-07 — .panel class removed from wrapper; nested inside outer .panel in index.html)"
+    )
+
+
+def test_overview_filter_bar_picker_macro_byte_stable() -> None:
+    """Test 27: _filter_bar.html must contain the browse picker_popover import exactly once (D-UI2-09)."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    import_line = '{% from "browse/_picker_popover.html" import picker_popover %}'
+    assert src.count(import_line) == 1, (
+        f"overview/_filter_bar.html must contain exactly 1 occurrence of {import_line!r} "
+        "(D-UI2-09 — no macro fork)"
+    )
+
+
+def test_overview_filter_form_flex() -> None:
+    """Test 28: <form id="overview-filter-form"> must have d-flex, align-items-center,
+    gap-2, flex-wrap, and w-100 classes (D-UI2-08 — form is the flex container)."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    assert "d-flex" in src, (
+        "overview/_filter_bar.html form must have class d-flex (D-UI2-08)"
+    )
+    assert "align-items-center" in src, (
+        "overview/_filter_bar.html form must have class align-items-center (D-UI2-08)"
+    )
+    assert "gap-2" in src, (
+        "overview/_filter_bar.html form must have class gap-2 (D-UI2-08)"
+    )
+    assert "flex-wrap" in src, (
+        "overview/_filter_bar.html form must have class flex-wrap (D-UI2-08)"
+    )
+    assert "w-100" in src, (
+        "overview/_filter_bar.html form must have class w-100 (D-UI2-08)"
+    )
+
+
+def test_overview_clear_all_ms_auto() -> None:
+    """Test 29: the Clear all link must have ms-auto class (right-aligned, D-UI2-10)."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    assert "ms-auto" in src, (
+        "overview/_filter_bar.html Clear all link must have ms-auto class (D-UI2-10)"
+    )
+    # Specifically the Clear all anchor must carry ms-auto (not just some other element)
+    assert "ms-auto btn btn-link btn-sm" in src, (
+        "overview/_filter_bar.html Clear all link class must contain 'ms-auto btn btn-link btn-sm' "
+        "(D-UI2-10 — ms-auto pushes it to far right of flex row)"
+    )
+
+
+def test_overview_filter_bar_six_picker_calls() -> None:
+    """Test 30: _filter_bar.html must contain exactly 6 occurrences of picker_popover( (byte-stable)."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    count = src.count("picker_popover(")
+    assert count == 6, (
+        f"overview/_filter_bar.html must contain exactly 6 picker_popover( calls, found {count} "
+        "(D-UI2-09 — 6 filters byte-stable; import line does not count as it lacks opening paren)"
+    )
+
+
+def test_overview_filter_bar_form_id_preserved() -> None:
+    """Test 31: <form id="overview-filter-form"> must appear exactly once (the form element tag itself)."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    # Use '<form id=' prefix to avoid matching picker_popover's form_id="overview-filter-form" params
+    assert src.count('<form id="overview-filter-form"') == 1, (
+        'overview/_filter_bar.html must contain exactly 1 <form id="overview-filter-form" element '
+        "(form-association anchor must be preserved; form_id= picker params are a different attribute)"
+    )
