@@ -400,24 +400,19 @@ Router injects into template context:
 {% endblock pagination_oob %}
 ```
 
-Footer block in `overview/index.html`:
+Footer block in `overview/index.html` (canonical — corrects W2):
+
+The footer carries the pagination control ONLY. The entry count `#overview-count` lives in the panel-header (D-UI2-11) and is updated via `block count_oob` — NOT via the footer.
+
 ```html
 {% block footer %}
 <div id="overview-pagination">
-  {# populated by pagination_oob on first render #}
-  {% if vm.page_count > 1 %}
-    {# same nav/ul markup as above, without hx-swap-oob — initial page render #}
-  {% endif %}
+  {% include "overview/_pagination.html" %}
 </div>
-<span id="overview-count" class="ms-auto text-muted small" aria-live="polite">
-  {{ vm.total_count }} {{ "entry" if vm.total_count == 1 else "entries" }}
-</span>
 {% endblock footer %}
 ```
 
-Wait — the count caption `#overview-count` is in the panel-header (D-UI2-11), not the footer. The footer carries the pagination control. The footer also carries the entry count on Browse. For JV, the panel-header already has the count (right side of panel-header). The footer carries pagination only.
-
-**Final JV footer layout:**
+Final JV footer layout:
 ```
 [← prev]  [1] [2] [3]  [next →]
 ← pagination only (count is in panel-header per D-UI2-11)

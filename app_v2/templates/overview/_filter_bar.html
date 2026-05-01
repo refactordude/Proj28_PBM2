@@ -21,6 +21,7 @@
         hx-include="this">
     <input type="hidden" name="sort" value="{{ vm.sort_col | e }}">
     <input type="hidden" name="order" value="{{ vm.sort_order | e }}">
+    <input type="hidden" name="page" value="1">  {# Phase 02 Plan 02-04: filter changes reset to page 1 (D-UI2-13). #}
 
     {{ picker_popover(
         name="status",
