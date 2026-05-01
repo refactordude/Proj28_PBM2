@@ -24,6 +24,12 @@ main.container-fluid {
   align-items: center;
   gap: 16px;
 }
+/* 260502-ui — hide the global sticky-in-flow footer when the per-page
+   `block footer` is empty. Browse and JV moved their footer content
+   into a `.panel-footer` inside the rounded panel, so the global band
+   is now usually empty. Whitespace-strip in base.html keeps the empty
+   render truly element-only so :empty matches. */
+.site-footer:empty { display: none; }
 .navbar {
   padding-top: 16px;
   padding-bottom: 16px;
@@ -50,6 +56,15 @@ main.container-fluid {
 }
 .panel-body { padding: 26px 32px; }
 .panel-header { padding: 18px 26px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+/* 260502-ui — panel-footer: closes the rounded card on its bottom edge.
+   Mirrors panel-header symmetry (border-{top,bottom}) so each panel reads
+   as a self-contained card. The panel's overflow:hidden + border-radius
+   handles bottom-corner rounding for free. Used by Browse (count caption)
+   and JV (pagination) instead of the global .site-footer band — the
+   formerly disconnected sticky-footer band looked square + far from the
+   panel; embedding the footer inside the panel restores the unified
+   rounded-card silhouette per user feedback. */
+.panel-footer { padding: 12px 26px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); }
 .panel-header b { font-size: 18px; font-weight: 700; letter-spacing: -.015em; }
 .panel-header .tag { font-size: 12px; color: var(--mute); background: #f4f6f8; padding: 3px 10px; border-radius: var(--radius-pill); font-weight: 500; }
 /* Phase 02 — JV h1 inside panel header (D-UI2-12). Visually mirrors

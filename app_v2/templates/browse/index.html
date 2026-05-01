@@ -57,6 +57,19 @@
       </div>
     </div>
 
+    {# 260502-ui — count caption embedded inside the panel as a `.panel-footer`
+       rather than the prior global `.site-footer` band. The same
+       `#grid-count` span id is preserved (HTMX merges by id on POST
+       /browse/grid via `block count_oob` above), so the OOB update
+       mechanism is byte-stable. The rounded card silhouette closes
+       cleanly at the panel's bottom edge instead of opening into a
+       disconnected square band below. #}
+    <div class="panel-footer">
+      <span id="grid-count" class="text-muted small" aria-live="polite">
+        {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
+      </span>
+    </div>
+
   </div>
 </div>
 {% endblock %}
@@ -110,22 +123,12 @@
   <span id="picker-platforms-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_platforms %} d-none{% endif %}" aria-live="polite">{{ vm.selected_platforms | length }}</span>
   <span id="picker-params-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_params or vm.params_disabled %} d-none{% endif %}" aria-live="polite">{{ vm.selected_params | length }}</span>
 {% endblock picker_badges_oob %}
-{% block footer %}
-{# Phase 02 D-UI2-06 — Count caption migrated from .panel-header into the
-   sticky footer (Plan 02-01 introduced the slot). Same #grid-count span id,
-   same conditional rendering, same OOB merge target — only DOM location
-   moves. The count_oob fragment above this still emits a <span> with the
-   same id, so HTMX merges it correctly into the footer span by id.
-
-   DEFINED OUTSIDE `{% block content %}` so jinja2-fragments rendering with
-   block_names=['grid', 'count_oob', 'warnings_oob', 'picker_badges_oob']
-   does NOT pull the footer into OOB responses. Only the initial full-page
-   render (GET /browse) outputs this block; HTMX updates the count via
-   count_oob OOB swap on every POST /browse/grid. #}
-<span id="grid-count" class="text-muted small" aria-live="polite">
-  {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
-</span>
-{% endblock footer %}
+{# 260502-ui — `block footer` is no longer overridden here. The grid-count
+   receiver moved into a `.panel-footer` inside the panel (above) so the
+   rounded card silhouette closes cleanly; the global `.site-footer` band
+   is hidden via `.site-footer:empty { display: none }` when no page
+   emits content. The `count_oob` block above still emits the OOB span
+   for HTMX merge-by-id on POST /browse/grid. #}
 {% block params_picker_oob %}
 {# OOB Parameters picker — emitted by POST /browse/grid alongside the grid
    swap so the Parameters picker re-renders whenever Platforms changes. The
