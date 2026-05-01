@@ -555,3 +555,158 @@ def test_overview_filter_bar_form_id_preserved() -> None:
         'overview/_filter_bar.html must contain exactly 1 <form id="overview-filter-form" element '
         "(form-association anchor must be preserved; form_id= picker params are a different attribute)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Plan 02-03 Task 3 — Restructure overview/index.html (D-UI2-07/11/12)
+# Tests 32-40 (and 35b)
+# ---------------------------------------------------------------------------
+
+OVERVIEW_INDEX_HTML = TPL / "overview" / "index.html"
+
+
+def test_overview_index_no_page_head() -> None:
+    """Test 32: overview/index.html must NOT contain <div class="page-head (D-UI2-12)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert '<div class="page-head' not in src, (
+        'overview/index.html must NOT contain <div class="page-head '
+        "(D-UI2-12 — standalone outside-panel h1 wrapper removed)"
+    )
+
+
+def test_overview_index_single_panel() -> None:
+    """Test 33: overview/index.html must contain exactly ONE <div class="panel"> (D-UI2-07)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert src.count('<div class="panel">') == 1, (
+        'overview/index.html must contain exactly 1 <div class="panel"> '
+        f"(found {src.count('<div class=\"panel\">')}; D-UI2-07 single-panel layout)"
+    )
+
+
+def test_overview_index_h1_inside_panel() -> None:
+    """Test 34: overview/index.html must contain <h1 class="panel-title">Joint Validation</h1>
+    positioned inside the outer .panel (D-UI2-12)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert '<h1 class="panel-title">Joint Validation</h1>' in src, (
+        'overview/index.html must contain <h1 class="panel-title">Joint Validation</h1> (D-UI2-12)'
+    )
+    panel_idx = src.find('<div class="panel">')
+    h1_idx = src.find('<h1 class="panel-title">Joint Validation</h1>')
+    assert panel_idx >= 0 and h1_idx > panel_idx, (
+        "<h1 class='panel-title'>Joint Validation</h1> must appear AFTER the outer "
+        '<div class="panel"> opener — i.e. inside the panel (D-UI2-12)'
+    )
+
+
+def test_overview_index_count_in_panel_header() -> None:
+    """Test 35: <span id="overview-count"> must be inside <div class="panel-header" (D-UI2-11)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert '<span id="overview-count"' in src, (
+        'overview/index.html must contain <span id="overview-count" (D-UI2-11)'
+    )
+    panel_header_idx = src.find('<div class="panel-header"')
+    count_idx = src.find('<span id="overview-count"')
+    # count span (receiver) in panel-header must appear after panel-header opens
+    assert panel_header_idx >= 0, (
+        'overview/index.html must contain <div class="panel-header" (D-UI2-11)'
+    )
+    assert count_idx > panel_header_idx, (
+        '<span id="overview-count" must appear after <div class="panel-header"> opener (D-UI2-11)'
+    )
+    # The receiver span must carry ms-auto for right-alignment
+    receiver_src = src[count_idx:src.find(">", count_idx)]
+    assert "ms-auto" in receiver_src, (
+        '<span id="overview-count" in panel-header must carry ms-auto class (D-UI2-11)'
+    )
+
+
+def test_overview_count_receiver_emitter_tags_aligned() -> None:
+    """Test 35b (W1): both overview-count occurrences must be <span> tags (not <div>).
+    HTMX outerHTML OOB replaces the whole element including its tag; receiver and
+    emitter must use the same element type to avoid tag mismatch in the DOM."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert src.count('<span id="overview-count"') == 2, (
+        'overview/index.html must contain exactly 2 occurrences of <span id="overview-count" '
+        f"(found {src.count('<span id=\"overview-count\"')}; "
+        "one in panel-header receiver + one in count_oob emitter; both must be <span> — W1)"
+    )
+
+
+def test_overview_index_count_oob_block_emits_span() -> None:
+    """Test 36: the {% block count_oob %} block must emit <span id="overview-count" hx-swap-oob="true"
+    (was <div>; now <span> to match the panel-header receiver shape)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    count_oob_start = src.find("{% block count_oob %}")
+    count_oob_end = src.find("{% endblock %}", count_oob_start)
+    if count_oob_end < 0:
+        count_oob_end = src.find("{% endblock count_oob %}", count_oob_start)
+    assert count_oob_start >= 0, "overview/index.html must contain {% block count_oob %}"
+    assert count_oob_end > count_oob_start, "{% block count_oob %} must have a closing endblock"
+    oob_region = src[count_oob_start:count_oob_end]
+    assert '<span id="overview-count" hx-swap-oob="true"' in oob_region, (
+        '{% block count_oob %} must emit <span id="overview-count" hx-swap-oob="true" '
+        "(changed from <div> to match panel-header receiver shape — Test 36)"
+    )
+
+
+def test_overview_index_filter_bar_inside_panel() -> None:
+    """Test 37: the {% include "overview/_filter_bar.html" %} must be positioned
+    after panel-header and before the overview-grid div (D-UI2-07)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    include_line = '{% include "overview/_filter_bar.html" %}'
+    assert include_line in src, (
+        'overview/index.html must contain {% include "overview/_filter_bar.html" %}'
+    )
+    panel_header_idx = src.find('<div class="panel-header"')
+    include_idx = src.find(include_line)
+    grid_idx = src.find('<div id="overview-grid"')
+    assert panel_header_idx < include_idx, (
+        "Filter bar include must appear AFTER panel-header (D-UI2-07)"
+    )
+    assert include_idx < grid_idx, (
+        "Filter bar include must appear BEFORE #overview-grid div (D-UI2-07)"
+    )
+
+
+def test_overview_index_grid_block_macro_inside_block() -> None:
+    """Test 38: sortable_th macro definition must be inside {% block grid %} (Pitfall 8)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    grid_block_idx = src.find("{% block grid %}")
+    macro_idx = src.find("{% macro sortable_th(col, label) %}")
+    assert grid_block_idx >= 0, "overview/index.html must contain {% block grid %}"
+    assert macro_idx >= 0, "overview/index.html must contain {% macro sortable_th(col, label) %}"
+    assert macro_idx > grid_block_idx, (
+        "{% macro sortable_th(col, label) %} must be INSIDE {% block grid %} (Pitfall 8 — "
+        "jinja2-fragments block_names=['grid', ...] loses macros defined outside the block)"
+    )
+
+
+def test_get_overview_renders_panel_header_with_h1() -> None:
+    """Test 39: GET /overview returns 200 with h1 panel-title and overview-count in body."""
+    client = TestClient(app)
+    r = client.get("/overview")
+    assert r.status_code == 200, f"GET /overview returned {r.status_code}"
+    assert '<h1 class="panel-title">Joint Validation</h1>' in r.text, (
+        'GET /overview response must contain <h1 class="panel-title">Joint Validation</h1> (D-UI2-12)'
+    )
+    assert 'id="overview-count"' in r.text, (
+        'GET /overview response must contain id="overview-count" (D-UI2-11)'
+    )
+
+
+def test_post_overview_grid_emits_count_oob_span() -> None:
+    """Test 40: POST /overview/grid returns 200 with overview-count and hx-swap-oob="true"."""
+    client = TestClient(app)
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    r = client.post(
+        "/overview/grid",
+        content="sort=status&order=asc",
+        headers=headers,
+    )
+    assert r.status_code == 200, f"POST /overview/grid returned {r.status_code}"
+    assert 'id="overview-count"' in r.text, (
+        'POST /overview/grid response must contain id="overview-count" (OOB count fragment)'
+    )
+    assert 'hx-swap-oob="true"' in r.text, (
+        'POST /overview/grid response must contain hx-swap-oob="true" (OOB swap mechanic)'
+    )
