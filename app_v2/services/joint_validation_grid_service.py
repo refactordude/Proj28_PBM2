@@ -65,6 +65,10 @@ DATE_COLUMNS: Final[tuple[str, ...]] = ("start", "end")
 DEFAULT_SORT_COL: Final[str] = "start"
 DEFAULT_SORT_ORDER: Final[Literal["asc", "desc"]] = "desc"
 
+# Phase 02 Plan 02-04 (D-UI2-14): default page size constant.
+# Declared here (service layer) so the router can import it and re-export it.
+JV_PAGE_SIZE: Final[int] = 15
+
 
 # ---------------------------------------------------------------------------
 # Pydantic v2 models.
@@ -99,6 +103,22 @@ class JointValidationRow(BaseModel):
     link: str | None = None
 
 
+class PageLink(BaseModel):
+    """B3 — Pydantic submodel for pagination links.
+
+    Avoids Pydantic v2's tuple↔list coercion: declaring ``list[tuple[str, int | None]]``
+    would let Pydantic silently convert tuples to lists at validation time,
+    breaking test equality assertions. Using a structured submodel makes
+    the type explicit and lets callers compare via attributes or
+    ``model_dump()`` without coercion surprises.
+
+    ``num=None`` marks an ellipsis ("…") sentinel.
+    """
+
+    label: str
+    num: int | None = None  # None marks ellipsis ("…")
+
+
 class JointValidationGridViewModel(BaseModel):
     """View model returned by ``build_joint_validation_grid_view_model``."""
 
@@ -108,6 +128,10 @@ class JointValidationGridViewModel(BaseModel):
     sort_col: str
     sort_order: Literal["asc", "desc"]
     total_count: int
+    # Phase 02 Plan 02-04 — pagination (D-UI2-13/14, B3).
+    page: int = 1
+    page_count: int = 1
+    page_links: list[PageLink] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +289,52 @@ def _sort_rows(
 
 
 # ---------------------------------------------------------------------------
+# Pagination helper — module-private.
+# ---------------------------------------------------------------------------
+
+
+def _build_page_links(
+    page: int,
+    page_count: int,
+) -> list[PageLink]:
+    """Compute pagination labels with ellipsis (D-UI2-13).
+
+    Returns a list of PageLink objects. PageLink.num=None marks an
+    ellipsis sentinel (PageLink.label="…"). Algorithm: always include 1,
+    page_count, current ± 1; insert ellipsis when the gap between
+    consecutive shown pages is > 1. Result has at most 7 entries on
+    typical inputs (1, …, p-1, p, p+1, …, N).
+
+    Examples (using model_dump() for clarity):
+      - 3 pages, current 1: [{label:"1",num:1},{label:"2",num:2},{label:"3",num:3}]
+      - 10 pages, current 5: [{label:"1",num:1},{label:"…",num:None},{label:"4",num:4},
+                               {label:"5",num:5},{label:"6",num:6},{label:"…",num:None},
+                               {label:"10",num:10}]
+      - 10 pages, current 1: [{label:"1",num:1},{label:"2",num:2},{label:"…",num:None},
+                               {label:"10",num:10}]
+    """
+    if page_count <= 0:
+        return []
+    if page_count == 1:
+        return [PageLink(label="1", num=1)]
+    # Build the set of page numbers to show.
+    shown: set[int] = {1, page_count, page}
+    if page - 1 >= 1:
+        shown.add(page - 1)
+    if page + 1 <= page_count:
+        shown.add(page + 1)
+    ordered = sorted(shown)
+    out: list[PageLink] = []
+    prev: int | None = None
+    for n in ordered:
+        if prev is not None and n - prev > 1:
+            out.append(PageLink(label="…", num=None))
+        out.append(PageLink(label=str(n), num=n))
+        prev = n
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Public orchestrator.
 # ---------------------------------------------------------------------------
 
@@ -274,6 +344,8 @@ def build_joint_validation_grid_view_model(
     filters: dict[str, list[str]] | None = None,
     sort_col: str | None = None,
     sort_order: Literal["asc", "desc"] | None = None,
+    page: int = 1,
+    page_size: int = JV_PAGE_SIZE,
 ) -> JointValidationGridViewModel:
     """Pure orchestrator: discover + parse → build rows → filter → sort.
 
@@ -363,16 +435,39 @@ def build_joint_validation_grid_view_model(
     # 4) Sort filtered rows (D-JV-10 — empties to END).
     sorted_rows = _sort_rows(filtered_rows, col, order)
 
+    # Phase 02 Plan 02-04 (D-UI2-13/14): paginate AFTER sort.
+    # total_count is the count of FILTERED rows (panel-header caption);
+    # rows is the current-page slice only.
+    total_count = len(sorted_rows)
+    # ceil(total / size); always at least 1 (empty results still render page 1 of 1).
+    page_count = max(1, (total_count + page_size - 1) // page_size)
+    # Clamp page to [1, page_count]. Service-side defense-in-depth — router also validates.
+    try:
+        page_int = int(page)
+    except (TypeError, ValueError):
+        page_int = 1
+    if page_int < 1:
+        page_int = 1
+    if page_int > page_count:
+        page_int = page_count
+    start = (page_int - 1) * page_size
+    end = start + page_size
+    paged_rows = sorted_rows[start:end]
+    page_links = _build_page_links(page_int, page_count)
+
     # 5) Active filter counts (always present for all 6 keys).
     active_filter_counts = {
         c: len(clean_filters.get(c, [])) for c in FILTERABLE_COLUMNS
     }
 
     return JointValidationGridViewModel(
-        rows=sorted_rows,
+        rows=paged_rows,
         filter_options=filter_options,
         active_filter_counts=active_filter_counts,
         sort_col=col,
         sort_order=order,
-        total_count=len(sorted_rows),
+        total_count=total_count,
+        page=page_int,
+        page_count=page_count,
+        page_links=page_links,
     )
