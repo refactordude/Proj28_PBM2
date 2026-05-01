@@ -128,10 +128,13 @@ def test_main_flex_grow() -> None:
 def test_site_footer_rule() -> None:
     """D-UI2-05: app.css must contain a .site-footer rule with required properties."""
     src = _read(APP_CSS)
-    assert ".site-footer" in src, (
-        "app.css must contain a .site-footer rule (D-UI2-05)"
+    # Search for the CSS selector form (with opening brace), not the comment mention
+    rule_pattern = re.compile(r"\.site-footer\s*\{", re.MULTILINE)
+    match = rule_pattern.search(src)
+    assert match, (
+        "app.css must contain a .site-footer { rule (D-UI2-05)"
     )
-    idx = src.find(".site-footer")
+    idx = match.start()
     block_end = src.find("}", idx)
     block = src[idx:block_end]
     assert "flex-shrink: 0" in block, (
