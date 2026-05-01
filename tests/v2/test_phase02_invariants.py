@@ -394,3 +394,83 @@ def test_browse_panel_header_byte_stable_otherwise() -> None:
         'browse/index.html panel-header must still contain <span class="tag">Pivot grid</span> '
         "(byte-stable)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Plan 02-03 Task 1 — Overview filter bar CSS flex layout (D-UI2-08)
+# Tests 22-25
+# ---------------------------------------------------------------------------
+
+
+def test_overview_filter_bar_flex_layout() -> None:
+    """Test 22: .overview-filter-bar rule must have display:flex, align-items:center,
+    gap:8px, flex-wrap:wrap, border-bottom:1px solid var(--line), padding:16px 24px 0."""
+    src = _read(APP_CSS)
+    # Find the .overview-filter-bar rule selector (not self-match .panel.overview-filter-bar)
+    pattern = re.compile(r"^\.overview-filter-bar\s*\{", re.MULTILINE)
+    match = pattern.search(src)
+    assert match, "app.css must contain a standalone .overview-filter-bar { rule (D-UI2-08)"
+    idx = match.start()
+    block_end = src.find("}", idx)
+    block = src[idx:block_end]
+    assert "display: flex" in block, (
+        ".overview-filter-bar must have display: flex (D-UI2-08)"
+    )
+    assert "align-items: center" in block, (
+        ".overview-filter-bar must have align-items: center (D-UI2-08)"
+    )
+    assert "gap: 8px" in block, (
+        ".overview-filter-bar must have gap: 8px (D-UI2-08)"
+    )
+    assert "flex-wrap: wrap" in block, (
+        ".overview-filter-bar must have flex-wrap: wrap (D-UI2-08)"
+    )
+    assert "border-bottom: 1px solid var(--line)" in block, (
+        ".overview-filter-bar must have border-bottom: 1px solid var(--line) (D-UI2-08)"
+    )
+    assert "padding: 16px 24px 0" in block, (
+        ".overview-filter-bar must have padding: 16px 24px 0 (D-UI2-08)"
+    )
+
+
+def test_overview_filter_bar_old_padding_gone() -> None:
+    """Test 23: app.css must NOT contain the old padding: 0 26px in the .overview-filter-bar rule."""
+    src = _read(APP_CSS)
+    assert "padding: 0 26px" not in src, (
+        "app.css must NOT contain 'padding: 0 26px' (old .overview-filter-bar rule body replaced)"
+    )
+
+
+def test_browse_filter_bar_byte_stable() -> None:
+    """Test 24: app.css .browse-filter-bar must still have padding:12px 26px 0 and border-bottom."""
+    src = _read(APP_CSS)
+    pattern = re.compile(r"^\.browse-filter-bar\s*\{", re.MULTILINE)
+    match = pattern.search(src)
+    assert match, "app.css must contain a .browse-filter-bar { rule (Browse is byte-stable)"
+    idx = match.start()
+    block_end = src.find("}", idx)
+    block = src[idx:block_end]
+    assert "padding: 12px 26px 0" in block, (
+        ".browse-filter-bar must still have padding: 12px 26px 0 (byte-stable)"
+    )
+    assert "border-bottom: 1px solid var(--line)" in block, (
+        ".browse-filter-bar must still have border-bottom: 1px solid var(--line) (byte-stable)"
+    )
+
+
+def test_overflow_safety_net_still_present() -> None:
+    """Test 25: app.css must still contain .panel.overview-filter-bar paired with overflow:visible."""
+    src = _read(APP_CSS)
+    assert ".panel.overview-filter-bar" in src, (
+        "app.css must preserve .panel.overview-filter-bar self-match selector "
+        "(260430-wzg safety net per CONTEXT.md canonical_refs)"
+    )
+    # Find the multi-selector block that contains .panel.overview-filter-bar and overflow: visible
+    ov_idx = src.find(".panel.overview-filter-bar")
+    assert ov_idx >= 0
+    # The overflow: visible must appear after this selector (within the same rule block)
+    block_end = src.find("}", ov_idx)
+    block = src[ov_idx:block_end]
+    assert "overflow: visible" in block, (
+        ".panel.overview-filter-bar must be in a rule with overflow: visible (260430-wzg)"
+    )
