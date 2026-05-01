@@ -74,12 +74,15 @@
     {% endblock %}
   </main>
   {# Phase 02 — Sticky-in-flow footer (D-UI2-05). Per-page content is
-     injected via the `footer` block. Browse and Joint Validation extend
-     it (Plans 02-02 / 02-03..04); detail pages and Ask leave it empty,
-     which renders as a 48px white stripe at page bottom giving the
-     rounded-card shell silhouette. #}
-  <footer class="site-footer" id="site-footer">
-    {% block footer %}{% endblock footer %}
-  </footer>
+     injected via the `footer` block.
+
+     260502-ui revision: Browse and Joint Validation now embed their
+     footer content (count caption / pagination) inside their own
+     `.panel-footer` so the rounded card silhouette closes cleanly. The
+     global `.site-footer` here is preserved as a still-available slot,
+     but it's hidden via `.site-footer:empty { display: none }` when no
+     page emits `block footer` content. Whitespace-strip (`{%- ... -%}`)
+     keeps the empty case truly element-only so :empty matches. #}
+  <footer class="site-footer" id="site-footer">{%- block footer %}{% endblock footer -%}</footer>
 </body>
 </html>

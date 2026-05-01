@@ -76,6 +76,21 @@
       {% endblock %}
     </div>
 
+    {# 260502-ui — pagination embedded inside the panel as a `.panel-footer`,
+       replacing the prior global `.site-footer` band that read as a square
+       block disconnected from the rounded panel above. The same
+       `#overview-pagination` wrapper id is preserved (HTMX merges by id on
+       POST /overview/grid via `block pagination_oob` above), so the OOB
+       update mechanism is byte-stable. The pagination partial conditionally
+       renders only when `vm.page_count > 1`, so for ≤15-entry datasets the
+       panel-footer collapses to an empty 48px strip with a thin top border —
+       still preferable to the disconnected global band. #}
+    <div class="panel-footer">
+      <div id="overview-pagination">
+        {% include "overview/_pagination.html" %}
+      </div>
+    </div>
+
   </div>{# /.panel #}
 
   {# AI Summary modal (D-OV-15 → D-JV-15). Byte-stable from Phase 01 Plan 05. #}
@@ -129,11 +144,9 @@
     {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
   </span>
 {% endblock count_oob %}
-{% block footer %}
-{# Phase 02 Plan 02-04 — Initial-render receiver for the #overview-pagination slot.
-   Same wrapper id as the OOB emitter above; HTMX merges by id on POST /overview/grid.
-   Footer wrapper omits hx-swap-oob (initial-render only). B5: partial is the markup. #}
-<div id="overview-pagination">
-  {% include "overview/_pagination.html" %}
-</div>
-{% endblock footer %}
+{# 260502-ui — `block footer` is no longer overridden here. The pagination
+   receiver moved into a `.panel-footer` inside the panel (above) so the
+   rounded card silhouette closes cleanly; the global `.site-footer` band
+   is hidden via `.site-footer:empty { display: none }` when no page
+   emits content. The `pagination_oob` block above still emits the OOB
+   wrapper for HTMX merge-by-id on POST /overview/grid. #}

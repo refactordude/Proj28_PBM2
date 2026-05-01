@@ -218,8 +218,12 @@ def test_base_html_has_footer_block() -> None:
     assert '<footer class="site-footer" id="site-footer">' in src, (
         'base.html must contain <footer class="site-footer" id="site-footer"> (D-UI2-05)'
     )
-    assert "{% block footer %}{% endblock footer %}" in src, (
-        "base.html must contain {% block footer %}{% endblock footer %} inside the site-footer (D-UI2-05)"
+    # 260502-ui: whitespace-strip markers `{%- ... -%}` keep the empty case
+    # element-only so `.site-footer:empty { display: none }` matches when
+    # no per-page extension overrides the block.
+    assert "{%- block footer %}{% endblock footer -%}" in src, (
+        "base.html must contain {%- block footer %}{% endblock footer -%} inside the site-footer "
+        "(D-UI2-05 + 260502-ui whitespace strip)"
     )
     # Footer must appear before </body>
     footer_idx = src.find('<footer class="site-footer"')
@@ -286,41 +290,44 @@ def test_browse_panel_header_no_count() -> None:
 
 
 def test_browse_footer_block_carries_count() -> None:
-    """Test 17: browse/index.html must have {% block footer %} containing grid-count, n_rows, n_cols, &times;."""
+    """Test 17 (260502-ui revision): browse/index.html must carry the grid-count
+    receiver in a `.panel-footer` div inside the panel — NOT in `block footer`.
+
+    Rationale: the prior global `.site-footer` band rendered as a square
+    block disconnected from the rounded panel above; user feedback asked
+    for a unified rounded-card silhouette. Moving the count receiver into
+    a `.panel-footer` lets the panel's `border-radius` + `overflow:hidden`
+    close the bottom corners cleanly. The OOB swap mechanism is preserved
+    because the same `#grid-count` id stays as the merge target.
+    """
     src = _read(BROWSE_HTML)
-    assert "{% block footer %}" in src, (
-        "browse/index.html must contain {% block footer %} (D-UI2-06 Edit B)"
+    # Locate the .panel-footer div and assert it carries the count.
+    panel_footer_idx = src.find('<div class="panel-footer">')
+    assert panel_footer_idx >= 0, (
+        'browse/index.html must contain <div class="panel-footer"> '
+        "(260502-ui — count receiver moved out of the global site-footer)"
     )
-    assert "{% endblock footer %}" in src, (
-        "browse/index.html must contain {% endblock footer %} (D-UI2-06 Edit B)"
+    # The .panel-footer must contain id="grid-count" + the required expressions.
+    panel_footer_end = src.find("</div>", panel_footer_idx)
+    pf_region = src[panel_footer_idx:panel_footer_end]
+    assert 'id="grid-count"' in pf_region, (
+        'browse/index.html .panel-footer must contain id="grid-count" '
+        "(260502-ui — receiver moved from block footer to panel-footer)"
     )
-    # Check that inside the footer block the count span and required expressions are present
-    footer_start = src.find("{% block footer %}")
-    footer_end = src.find("{% endblock footer %}")
-    assert footer_start < footer_end, "{% block footer %} must come before {% endblock footer %}"
-    footer_region = src[footer_start:footer_end]
-    assert 'id="grid-count"' in footer_region, (
-        'browse/index.html {% block footer %} must contain id="grid-count" (D-UI2-06)'
-    )
-    assert "vm.n_rows" in footer_region, (
-        "browse/index.html {% block footer %} must contain vm.n_rows (D-UI2-06)"
-    )
-    assert "vm.n_cols" in footer_region, (
-        "browse/index.html {% block footer %} must contain vm.n_cols (D-UI2-06)"
-    )
-    assert "&times;" in footer_region, (
-        "browse/index.html {% block footer %} must contain &times; (D-UI2-06)"
-    )
+    assert "vm.n_rows" in pf_region, "browse/index.html .panel-footer must contain vm.n_rows"
+    assert "vm.n_cols" in pf_region, "browse/index.html .panel-footer must contain vm.n_cols"
+    assert "&times;" in pf_region, "browse/index.html .panel-footer must contain &times;"
 
 
 def test_browse_grid_count_receiver_emitter_tag_alignment() -> None:
-    """Test 17b (W7): receiver and emitter span opening tags must be consistent."""
+    """Test 17b (W7): receiver and emitter span opening tags must be consistent.
+    260502-ui: receiver now lives inside `.panel-footer` instead of `block footer`."""
     src = _read(BROWSE_HTML)
     receiver_tag = '<span id="grid-count" class="text-muted small" aria-live="polite">'
     emitter_tag = '<span id="grid-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">'
     assert src.count(receiver_tag) == 1, (
         f"browse/index.html must contain exactly 1 occurrence of the receiver tag: {receiver_tag!r} "
-        "(inside {% block footer %}) — W7 tag alignment"
+        "(inside .panel-footer) — W7 tag alignment"
     )
     assert src.count(emitter_tag) == 1, (
         f"browse/index.html must contain exactly 1 occurrence of the OOB emitter tag: {emitter_tag!r} "
@@ -350,22 +357,30 @@ def test_browse_count_oob_unchanged() -> None:
     )
 
 
-def test_get_browse_renders_count_in_footer() -> None:
-    """Test 19: GET /browse — #grid-count must be inside the <footer class='site-footer'>."""
+def test_get_browse_renders_count_in_panel_footer() -> None:
+    """Test 19 (260502-ui revision): GET /browse — #grid-count must be inside
+    a `.panel-footer` div, not the global `<footer class='site-footer'>` band.
+
+    The panel-footer lives inside the rounded `.panel`, so the panel's
+    border-radius + overflow:hidden close the bottom corners cleanly.
+    The site-footer is hidden via CSS `:empty` rule when no page emits
+    block footer content. Mechanism: same #grid-count id, same OOB merge.
+    """
     client = TestClient(app)
     r = client.get("/browse")
     assert r.status_code == 200
-    assert '<footer class="site-footer"' in r.text, (
-        "GET /browse must render the site-footer element (D-UI2-05)"
+    # Locate the .panel-footer in rendered HTML
+    pf_start = r.text.find('<div class="panel-footer">')
+    assert pf_start >= 0, (
+        'GET /browse must render <div class="panel-footer"> (260502-ui — '
+        "count receiver moved out of the global site-footer band)"
     )
-    footer_start = r.text.find('<footer class="site-footer"')
-    assert footer_start >= 0
-    footer_end = r.text.find("</footer>", footer_start)
-    assert footer_end > footer_start, "site-footer must have a closing tag"
-    footer_region = r.text[footer_start:footer_end]
-    assert 'id="grid-count"' in footer_region, (
-        'GET /browse response: id="grid-count" must be inside the <footer class="site-footer"> '
-        "(D-UI2-06 — count migrated from panel-header to footer)"
+    pf_end = r.text.find("</div>", pf_start)
+    assert pf_end > pf_start, ".panel-footer must have a closing tag"
+    pf_region = r.text[pf_start:pf_end]
+    assert 'id="grid-count"' in pf_region, (
+        'GET /browse: id="grid-count" must be inside <div class="panel-footer"> '
+        "(260502-ui — receiver moved out of site-footer)"
     )
 
 
@@ -753,18 +768,23 @@ def test_overview_index_has_pagination_oob_block() -> None:
     )
 
 
-def test_overview_index_footer_carries_pagination() -> None:
-    """Test 43: overview/index.html {% block footer %} must contain id="overview-pagination"
-    (initial render path; same id as OOB target — no hx-swap-oob on initial render)."""
+def test_overview_index_panel_footer_carries_pagination() -> None:
+    """Test 43 (260502-ui revision): overview/index.html must carry the
+    pagination receiver in a `.panel-footer` div inside the panel — NOT in
+    `block footer`. Same #overview-pagination id is preserved as the OOB
+    merge target (block pagination_oob still emits the OOB wrapper)."""
     src = _read(OVERVIEW_INDEX_HTML)
-    footer_start = src.find("{% block footer %}")
-    footer_end = src.find("{% endblock footer %}")
-    assert footer_start >= 0, "overview/index.html must contain {% block footer %}"
-    assert footer_end > footer_start, "{% block footer %} must have matching {% endblock footer %}"
-    footer_region = src[footer_start:footer_end]
-    assert 'id="overview-pagination"' in footer_region, (
-        'overview/index.html {% block footer %} must contain id="overview-pagination" '
-        "(initial-render receiver for the pagination control)"
+    pf_idx = src.find('<div class="panel-footer">')
+    assert pf_idx >= 0, (
+        'overview/index.html must contain <div class="panel-footer"> '
+        "(260502-ui — pagination receiver moved out of the global site-footer)"
+    )
+    pf_end = src.find("</div>", pf_idx)
+    # The panel-footer block must contain a wrapper carrying the canonical id.
+    pf_region = src[pf_idx:pf_end + len("</div>")]
+    assert 'id="overview-pagination"' in pf_region, (
+        'overview/index.html .panel-footer must contain id="overview-pagination" '
+        "(initial-render receiver for the pagination control — 260502-ui)"
     )
 
 
@@ -799,12 +819,13 @@ def test_pagination_uses_page_links_loop() -> None:
 
 def test_pagination_partial_included_twice() -> None:
     """Test 45b (B5): overview/index.html must include _pagination.html exactly twice
-    (once in block footer, once in block pagination_oob — single source of truth)."""
+    (once in `.panel-footer` initial render, once in block pagination_oob OOB —
+    single source of truth, 260502-ui revision: panel-footer replaces block footer)."""
     src = _read(OVERVIEW_INDEX_HTML)
     include_count = src.count('{% include "overview/_pagination.html" %}')
     assert include_count == 2, (
         f'overview/index.html must include "overview/_pagination.html" exactly 2 times '
-        f"(footer + pagination_oob), found {include_count} (B5 — single source of truth)"
+        f"(panel-footer + pagination_oob), found {include_count} (B5 — single source of truth)"
     )
 
 
@@ -830,7 +851,8 @@ def test_overview_index_count_id_count() -> None:
 
 def test_pagination_oob_wrapper_carries_oob_attr() -> None:
     """Test 45e (B5): pagination_oob wrapper must carry hx-swap-oob="true";
-    footer wrapper must NOT carry hx-swap-oob="true"."""
+    panel-footer wrapper must NOT carry hx-swap-oob="true"
+    (260502-ui revision: panel-footer replaces block footer as initial receiver)."""
     src = _read(OVERVIEW_INDEX_HTML)
     # OOB block: wrapper must carry the attribute
     oob_start = src.find("{% block pagination_oob %}")
@@ -839,13 +861,13 @@ def test_pagination_oob_wrapper_carries_oob_attr() -> None:
     assert 'hx-swap-oob="true"' in oob_region, (
         'block pagination_oob wrapper must carry hx-swap-oob="true" (HTMX OOB merge)'
     )
-    # Footer block: must NOT carry hx-swap-oob="true" on the overview-pagination wrapper
-    footer_start = src.find("{% block footer %}")
-    footer_end = src.find("{% endblock footer %}")
-    footer_region = src[footer_start:footer_end]
-    # The footer wrapper div must NOT have hx-swap-oob
-    assert 'id="overview-pagination" hx-swap-oob="true"' not in footer_region, (
-        'block footer wrapper must NOT carry hx-swap-oob="true" (initial-render receiver, not OOB emitter)'
+    # Panel-footer wrapper: must NOT carry hx-swap-oob (initial-render receiver only)
+    pf_idx = src.find('<div class="panel-footer">')
+    pf_end = src.find("</div>", src.find('id="overview-pagination"', pf_idx))
+    pf_region = src[pf_idx:pf_end + len("</div>")]
+    assert 'id="overview-pagination" hx-swap-oob="true"' not in pf_region, (
+        'panel-footer wrapper must NOT carry hx-swap-oob="true" '
+        "(initial-render receiver, not OOB emitter)"
     )
 
 
