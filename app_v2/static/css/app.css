@@ -252,12 +252,14 @@ main.container-fluid {
   padding: 8px 16px;
 }
 .overview-table thead th:first-child { padding-left: 24px; }
+.overview-table thead th:last-child { padding-right: 24px; }
 .overview-table tbody td { padding: 8px 16px; vertical-align: middle; }
 .overview-table tbody td:first-child {
   padding-left: 24px;
   font-weight: 500;
   color: var(--ink);
 }
+.overview-table tbody td:last-child { padding-right: 24px; }
 .overview-table tbody td a { color: var(--accent); }
 
 /* Sortable column header buttons — flat, full-width clickable area */
