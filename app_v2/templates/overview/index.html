@@ -46,19 +46,6 @@
        pattern. The .panel-body class gives the panel-edge alignment and
        p-0 zeros padding so the table reaches the panel edges. #}
     <div class="panel-body overview-grid-body p-0" tabindex="0" aria-label="Joint Validation results">
-      {# OOB count caption — emitted by POST /overview/grid alongside the
-         primary grid swap. HTMX merges the #overview-count span by id
-         into the panel-header receiver above (mechanism unchanged from
-         Phase 01 Plan 05; only the receiver's DOM location moves to the
-         panel-header). The element shape changes from div to span to
-         match the panel-header receiver — both share the same id
-         so HTMX merge-by-id stays correct. #}
-      {% block count_oob %}
-        <span id="overview-count" hx-swap-oob="true" class="ms-auto text-muted small" aria-live="polite">
-          {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
-        </span>
-      {% endblock %}
-
       {# Main grid block — rendered both in full page and in HTMX fragment swaps.
          IMPORTANT (Pitfall 8): sortable_th macro MUST be defined INSIDE this
          block, not at the template top, otherwise jinja2-fragments
@@ -125,6 +112,23 @@
   {% include "overview/_pagination.html" %}
 </div>
 {% endblock pagination_oob %}
+{% block count_oob %}
+{# OOB count caption — emitted by POST /overview/grid alongside the primary
+   grid swap. HTMX merges the #overview-count span by id into the
+   panel-header receiver above (mechanism unchanged from Phase 01 Plan 05;
+   only the receiver's DOM location moves to the panel-header). The element
+   shape is <span> to match the panel-header receiver — both share the same
+   id so HTMX merge-by-id stays correct (W1, Test 35b).
+
+   DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this
+   block in isolation via `block_names=["count_oob"]` WITHOUT it leaking
+   into the full-page render of GET /overview (which would produce a
+   duplicate #overview-count span — once in panel-header, once orphaned in
+   the panel-body). Same hotfix pattern as `params_picker_oob` (260429-qyv). #}
+  <span id="overview-count" hx-swap-oob="true" class="ms-auto text-muted small" aria-live="polite">
+    {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
+  </span>
+{% endblock count_oob %}
 {% block footer %}
 {# Phase 02 Plan 02-04 — Initial-render receiver for the #overview-pagination slot.
    Same wrapper id as the OOB emitter above; HTMX merges by id on POST /overview/grid.

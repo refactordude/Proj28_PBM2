@@ -59,12 +59,19 @@
 
   </div>
 </div>
+{% endblock %}
 
 {# OOB count caption — emitted by POST /browse/grid alongside the primary
    grid swap. HTMX detaches this element from the response body and merges
    it into the existing #grid-count span in the sticky footer (Plan 02-02
    moved it from .panel-header). Uses &times; (HTML entity) for the
-   multiplication sign per UI-SPEC §9 — NOT the ASCII letter "x". #}
+   multiplication sign per UI-SPEC §9 — NOT the ASCII letter "x".
+
+   DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this
+   block in isolation via `block_names=["count_oob"]` WITHOUT it leaking
+   into the full-page render of GET /browse (which would produce an orphan
+   #grid-count span outside the panel and a duplicate id with the footer
+   receiver). Same hotfix pattern as `params_picker_oob` (260429-qyv). #}
 {% block count_oob %}
   <span id="grid-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">
     {% if not vm.is_empty_selection %}{{ vm.n_rows }} platforms &times; {{ vm.n_cols }} parameters{% endif %}
@@ -72,7 +79,8 @@
 {% endblock count_oob %}
 
 {# Reserved for future "above the panel" cap-warning OOBs; currently empty.
-   Cap-warning alerts render INSIDE #browse-grid via the grid block above. #}
+   Cap-warning alerts render INSIDE #browse-grid via the grid block above.
+   DEFINED OUTSIDE `{% block content %}` for the same reason as count_oob. #}
 {% block warnings_oob %}{% endblock warnings_oob %}
 
 {# OOB picker badges — emitted by POST /browse/grid alongside the grid swap
@@ -85,7 +93,14 @@
    to match D-08 (no visible badge when count is 0) — text content is the
    integer count even when hidden, so HTMX's text replacement on the
    existing span is always correct. Stable target: precedent Pattern 6 /
-   count_oob (lines 73-77 above).
+   count_oob.
+
+   DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this
+   block in isolation via `block_names=["picker_badges_oob"]` WITHOUT the
+   spans leaking into the full-page render of GET /browse (which would
+   collide with the badge IDs that the picker_popover macro already emits
+   inside the filter bar). Same hotfix pattern as `params_picker_oob`
+   (260429-qyv).
 
    260429-qyv: when vm.params_disabled is True (no platforms selected), the
    Parameters badge is forced hidden via d-none regardless of selected_params
@@ -95,7 +110,6 @@
   <span id="picker-platforms-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_platforms %} d-none{% endif %}" aria-live="polite">{{ vm.selected_platforms | length }}</span>
   <span id="picker-params-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not vm.selected_params or vm.params_disabled %} d-none{% endif %}" aria-live="polite">{{ vm.selected_params | length }}</span>
 {% endblock picker_badges_oob %}
-{% endblock %}
 {% block footer %}
 {# Phase 02 D-UI2-06 — Count caption migrated from .panel-header into the
    sticky footer (Plan 02-01 introduced the slot). Same #grid-count span id,

@@ -847,3 +847,102 @@ def test_pagination_oob_wrapper_carries_oob_attr() -> None:
     assert 'id="overview-pagination" hx-swap-oob="true"' not in footer_region, (
         'block footer wrapper must NOT carry hx-swap-oob="true" (initial-render receiver, not OOB emitter)'
     )
+
+
+# ---------------------------------------------------------------------------
+# Task 5 — OOB block leakage guards (260501-ui hotfix)
+#
+# Same shape as the 260429-qyv hotfix for params_picker_oob: OOB-only blocks
+# defined INSIDE {% block content %} render visibly on full-page GET, producing
+# orphan spans below the panel and duplicate ids with the in-panel/in-footer
+# receivers. These tests pin OOB blocks to "outside content" placement.
+# ---------------------------------------------------------------------------
+
+
+def test_get_browse_renders_exactly_one_grid_count() -> None:
+    """260501-ui: GET /browse must render exactly ONE id="grid-count" span —
+    the receiver inside the site-footer. Extra spans indicate the count_oob
+    block leaked into the full-page render."""
+    client = TestClient(app)
+    r = client.get("/browse")
+    assert r.status_code == 200
+    assert r.text.count('id="grid-count"') == 1, (
+        "260501-ui: GET /browse must render exactly ONE #grid-count "
+        "(footer receiver). Extra spans mean count_oob is leaking into "
+        "the full-page render — move it outside {% block content %}."
+    )
+
+
+def test_get_browse_renders_exactly_one_picker_badge_per_id() -> None:
+    """260501-ui: GET /browse must render exactly ONE picker-{platforms,params}-badge
+    each — both inside the picker_popover macro. Duplicates indicate the
+    picker_badges_oob block leaked into the full-page render."""
+    client = TestClient(app)
+    r = client.get("/browse")
+    assert r.status_code == 200
+    for badge_id in ("picker-platforms-badge", "picker-params-badge"):
+        assert r.text.count(f'id="{badge_id}"') == 1, (
+            f"260501-ui: GET /browse must render exactly ONE #{badge_id} "
+            "(inside picker_popover macro). Extra spans mean picker_badges_oob "
+            "is leaking into the full-page render — move it outside "
+            "{% block content %}."
+        )
+
+
+def test_get_overview_renders_exactly_one_overview_count() -> None:
+    """260501-ui: GET /overview must render exactly ONE id="overview-count" span —
+    the receiver inside .panel-header. Extra spans indicate the count_oob
+    block leaked into the full-page render."""
+    client = TestClient(app)
+    r = client.get("/overview")
+    assert r.status_code == 200
+    assert r.text.count('id="overview-count"') == 1, (
+        "260501-ui: GET /overview must render exactly ONE #overview-count "
+        "(panel-header receiver). Extra spans mean count_oob is leaking into "
+        "the full-page render — move it outside {% block content %}."
+    )
+
+
+def test_browse_oob_blocks_outside_content() -> None:
+    """260501-ui: count_oob, warnings_oob, picker_badges_oob blocks in
+    browse/index.html must be defined AFTER {% endblock %} closes block content
+    so they only render via jinja2-fragments POST responses, not on GET."""
+    src = _read(BROWSE_HTML)
+    content_end = src.find("{% endblock %}")
+    assert content_end > 0, "browse/index.html must close {% block content %}"
+    for block_name in ("count_oob", "warnings_oob", "picker_badges_oob"):
+        block_idx = src.find(f"{{% block {block_name} %}}")
+        assert block_idx > content_end, (
+            f"260501-ui: {{% block {block_name} %}} must be defined AFTER "
+            "{% endblock %} (outside block content) so it is fragment-only "
+            "and does not leak into GET /browse full-page render."
+        )
+
+
+def test_overview_count_oob_outside_content() -> None:
+    """260501-ui: count_oob block in overview/index.html must be defined AFTER
+    {% endblock %} closes block content so it only renders via jinja2-fragments
+    POST responses, not on GET /overview."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    content_end = src.find("{% endblock %}")
+    assert content_end > 0, "overview/index.html must close {% block content %}"
+    block_idx = src.find("{% block count_oob %}")
+    assert block_idx > content_end, (
+        "260501-ui: {% block count_oob %} must be defined AFTER {% endblock %} "
+        "(outside block content) so it is fragment-only and does not leak "
+        "into GET /overview full-page render."
+    )
+
+
+def test_overview_table_last_column_padding() -> None:
+    """260501-ui: .overview-table last-child cells must carry padding-right: 24px
+    so JV table text does not kiss the panel edge (mirrors first-child 24px)."""
+    src = _read(APP_CSS)
+    assert ".overview-table thead th:last-child { padding-right: 24px" in src, (
+        "260501-ui: .overview-table thead th:last-child must declare "
+        "padding-right: 24px to mirror the first-child padding-left."
+    )
+    assert ".overview-table tbody td:last-child { padding-right: 24px" in src, (
+        "260501-ui: .overview-table tbody td:last-child must declare "
+        "padding-right: 24px to mirror the first-child padding-left."
+    )
