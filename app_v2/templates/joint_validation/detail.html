@@ -1,14 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="shell">
-  <div class="page-head mb-3">
-    <h1 class="page-title">{{ jv.title | e }}</h1>
-    <small class="text-muted">Confluence Page ID: <code>{{ jv.confluence_page_id | e }}</code></small>
-  </div>
 
-  {# Properties table (D-JV-12) — same Obsidian-style row shape as
-     templates/platforms/detail.html. Missing fields render blank per D-JV-05. #}
+  {# 260502-ui — title + Confluence Page ID moved INSIDE the properties
+     panel's panel-header for visual consistency with the JV listing
+     (`<h1 class="panel-title">` inside `.panel-header`) and Browse
+     (`<b>Browse</b>` inside `.panel-header`). The prior `.page-head`
+     wrapper rendered the h1 OUTSIDE any panel — an isolated heading on
+     the grey page background — which broke the rounded-card pattern
+     used by every other page. #}
   <div class="panel mb-3">
+    <div class="panel-header">
+      <h1 class="panel-title">{{ jv.title | e }}</h1>
+      <small class="ms-auto text-muted">Confluence Page ID: <code>{{ jv.confluence_page_id | e }}</code></small>
+    </div>
+
+    {# Properties table (D-JV-12) — same Obsidian-style row shape as
+       templates/platforms/detail.html. Missing fields render blank per D-JV-05. #}
     <div class="panel-body">
       <table class="table table-sm jv-properties">
         <tbody>
