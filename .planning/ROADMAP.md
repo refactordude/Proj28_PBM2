@@ -68,10 +68,13 @@ Plans:
 
 ### Phase 2: UI Shell Rewrite + Browse Footer + Joint Validation Layout Parity + Pagination
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Rewrite the global UI shell so every page inherits a taller nav with left-aligned tabs, full-width content, type-scale tokens, and a full-width sticky-in-flow white footer; migrate Browse's "N platforms × M parameters" count caption into the new footer; restructure the Joint Validation listing to mirror Browse's single-panel design (one outer `.panel`, horizontal flex filter row, h1 + entry count inside `.panel-header`); add 15-per-page server-side pagination on the JV listing with prev/next + ellipsis controls in the footer, full URL round-trip via `HX-Push-Url`, and filter/sort reset to page 1 (D-UI2-01..D-UI2-14 locked in 02-CONTEXT.md; visual contract pinned in 02-UI-SPEC.md).
+**Requirements**: D-UI2-01, D-UI2-02, D-UI2-03, D-UI2-04, D-UI2-05, D-UI2-06, D-UI2-07, D-UI2-08, D-UI2-09, D-UI2-10, D-UI2-11, D-UI2-12, D-UI2-13, D-UI2-14
 **Depends on:** Phase 1
-**Plans:** 0 plans
+**Plans:** 1/4 plans executed
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 2 to break down)
+- [x] 02-01-PLAN.md — Shell rewrite: tokens.css type scale + app.css full-width .shell + body flex column + .site-footer + .navbar padding + .panel-title; base.html footer block (D-UI2-01..05)
+- [ ] 02-02-PLAN.md — Browse footer count migration: move `<span id="grid-count">` from panel-header into `{% block footer %}`; OOB count_oob byte-stable (D-UI2-06)
+- [ ] 02-03-PLAN.md — JV layout parity: single panel, horizontal flex filter form, h1 + count in panel-header, .overview-filter-bar without .panel class, picker macro byte-stable (D-UI2-07..12)
+- [ ] 02-04-PLAN.md — JV pagination: JV_PAGE_SIZE=15 constant, page query/form param with ge=1/le=10_000 validation, view-model rows slicing + page_links helper, footer pagination control with prev/next/ellipsis, hidden page input + sortable_th reset to page 1 (D-UI2-13, D-UI2-14)

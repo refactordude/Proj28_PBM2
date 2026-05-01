@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-last_updated: "2026-04-30T14:50:11Z"
-last_activity: 2026-04-30
+status: Ready to execute
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-05-01T11:52:06.863Z"
+last_activity: 2026-05-01
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_plans: 10
+  completed_plans: 7
+  percent: 70
 ---
 
 # Project State
@@ -20,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-29)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 01 — overview-tab-auto-discover-platforms-from-html-files
+**Current focus:** Phase 02 — ui-shell-rewrite-browse-footer-joint-validation-layout-parit
 
 ## Current Position
 
-Phase: 01
-Plan: Not started
+Phase: 02 (ui-shell-rewrite-browse-footer-joint-validation-layout-parit) — EXECUTING
+Plan: 2 of 4
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-04-30
+Last activity: 2026-05-01
 
 Progress: [——————————] no active milestone
 
@@ -66,9 +67,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-30T14:50:11Z
+Last session: 2026-05-01T11:51:56.752Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Quick task 260430-wzg complete — JV filter popover clip fix shipped (361 v2 tests green)
+Stopped at: Completed 02-01-PLAN.md
 
 ## Accumulated Context
 
@@ -99,6 +100,9 @@ Stopped at: Quick task 260430-wzg complete — JV filter popover clip fix shippe
 - [Phase 01-overview-tab-auto-discover-platforms-from-html-files]: Plan 01-06: Rule 3 batch-fix sibling test files BEFORE deletion (test_atomic_write.py, test_summary_routes.py, test_summary_integration.py, test_content_routes.py, test_phase03_invariants.py) so the v2 suite stays green between commits — alternative (delete first, fix breakage) would have left 23+ tests red mid-plan and broken git bisectability
 - [Phase 01-overview-tab-auto-discover-platforms-from-html-files]: Plan 01-06: Test 5 invariant matches inner 5-string substring of the dangerous-link tuple, not the parens — actual source-code tuple in joint_validation_grid_service.py spans 3 lines for readability; substantive byte-equal contract preserved
 - [Phase 01-overview-tab-auto-discover-platforms-from-html-files]: Plan 01-06: Test 11 invariant scans BOTH joint_validation_summary.py AND joint_validation_parser.py for the decompose 3-tag list — Plan 02 implementation puts the BeautifulSoup pre-processor in the parser module, so scanning the union honors the contract regardless of which module owns the implementation
+- [Phase 02]: D-UI2-04: 4 type-scale tokens in tokens.css (logo 20px, h1 28px, th 12px, body 15px); no --font-size-nav token
+- [Phase 02]: D-UI2-03: .shell reduced to padding:0; max-width:1280px and margin:0 auto removed for full-width content
+- [Phase 02]: D-UI2-05: body flex-column + main.container-fluid flex:1 0 auto + .site-footer flex-shrink:0 implements sticky-in-flow footer without position:fixed
 
 ### Performance Metrics
 
@@ -110,3 +114,4 @@ Stopped at: Quick task 260430-wzg complete — JV filter popover clip fix shippe
 | Phase 01 P04 | 19min | 3 tasks | 7 files |
 | Phase 01 P05 | 7min | 3 tasks | 6 files |
 | Phase 01-overview-tab-auto-discover-platforms-from-html-files P06 | 11min | 3 tasks | 17 files |
+| Phase 02 P01 | 8min | 3 tasks | 4 files |
