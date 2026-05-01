@@ -221,9 +221,21 @@ main.container-fluid {
 }
 .overview-grid-body .alert { margin: 16px; }
 
-/* Overview filter bar spacing above the table */
+/* Phase 02 — Overview filter bar layout (D-UI2-07/08/10).
+   Browse-parity: filter row is horizontal (display:flex), 6 picker
+   dropdowns + "Clear all" align-items center, gap 8px (matches Browse's
+   gap-2). flex-wrap allows graceful overflow on narrow viewports.
+   border-bottom mirrors Browse's filter-bar separator. The 26px
+   horizontal value is intentionally relaxed to 24px to align with the
+   standard spacing scale {4, 8, 16, 24, 32}; the 2px shift is
+   imperceptible (UI-SPEC §Spacing Scale). */
 .overview-filter-bar {
-  padding: 0 26px;
+  padding: 16px 24px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Overview table — mirrors .pivot-table (Phase 4 D-26..D-28) but allows
