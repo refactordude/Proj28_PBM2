@@ -91,6 +91,13 @@ Full archive: [milestones/v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md), [milesto
 - ✓ Top-nav label flipped from "Overview" to "Joint Validation" — D-JV-01 (Phase 1)
 - ✓ Final v2 suite: 360 passed / 5 skipped (30 net new tests, zero regressions)
 
+#### UI shell rewrite + JV layout parity + pagination — post-v2.0
+- ✓ Global UI shell rewritten — taller nav (16px padding, left-aligned tabs), full-width content (`.shell { padding: 0 }`), 4 type-scale tokens (`--font-size-logo/h1/th/body`), `body { display:flex; flex-direction:column; min-height:100vh }` sticky-in-flow layout, `.site-footer` block slot wired in `base.html` — D-UI2-01..D-UI2-05 (Phase 02)
+- ✓ Browse "N platforms × M parameters" count caption migrated from `.panel-header` into `{% block footer %}`; OOB swap byte-stable — D-UI2-06 (Phase 02)
+- ✓ Joint Validation listing restructured to single-panel Browse-mirror layout: one outer `.panel` carries `.panel-header` (h1 + count via `ms-auto`), inner horizontal flex filter row replaces the structurally-mistaken second panel; picker macro byte-stable — D-UI2-07..D-UI2-12 (Phase 02)
+- ✓ Joint Validation pagination — `JV_PAGE_SIZE=15`, server-side row slicing, `PageLink` Pydantic submodel + ellipsis algorithm, `_pagination.html` partial rendered in footer + `pagination_oob` block, two-layer page validation (`Query/Form(ge=1, le=10_000)` + service clamp), `HX-Push-Url` round-trip omitting default page=1, hidden `page` input + `sortable_th` reset to page 1 on filter/sort change — D-UI2-13, D-UI2-14 (Phase 02)
+- ✓ Final v2 suite: 442 passed / 5 skipped (39 net new tests, zero regressions from Phase 1's 360-test baseline)
+
 ### Active
 
 <!-- v2.0 Bootstrap Shell — rewrite UI onto FastAPI + Bootstrap + HTMX. -->
@@ -204,4 +211,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-30 after Phase 1 (Joint Validation auto-discovery) verified passed (17/17 must-haves). Curated-Platform Overview retired per D-JV-06/07; auto-discovery from `content/joint_validation/<id>/index.html` is now the single Overview source. v2 suite: 360 passed / 5 skipped.*
+*Last updated: 2026-05-01 after Phase 02 (UI shell rewrite + Browse footer + JV layout parity + pagination) verified passed (14/14 must-haves). Locked decisions D-UI2-01..D-UI2-14 honored; picker macro byte-stable per D-UI2-09. v2 suite: 442 passed / 5 skipped.*
