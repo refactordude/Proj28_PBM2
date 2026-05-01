@@ -266,3 +266,131 @@ def test_overview_page_inherits_footer() -> None:
     assert '<footer class="site-footer"' in r.text, (
         "GET / (overview) response must contain <footer class=\"site-footer\" (D-UI2-05)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Plan 02-02 — Browse count caption migration into footer (D-UI2-06)
+# Tests 16-21
+# ---------------------------------------------------------------------------
+
+BROWSE_HTML = TPL / "browse" / "index.html"
+
+
+def test_browse_panel_header_no_count() -> None:
+    """Test 16: panel-header must NOT contain the ms-auto d-flex wrapper (it was deleted in Edit A)."""
+    src = _read(BROWSE_HTML)
+    assert 'class="ms-auto d-flex align-items-center gap-3"' not in src, (
+        'browse/index.html must NOT contain class="ms-auto d-flex align-items-center gap-3" '
+        "(the count wrapper in panel-header was deleted — D-UI2-06 Edit A)"
+    )
+
+
+def test_browse_footer_block_carries_count() -> None:
+    """Test 17: browse/index.html must have {% block footer %} containing grid-count, n_rows, n_cols, &times;."""
+    src = _read(BROWSE_HTML)
+    assert "{% block footer %}" in src, (
+        "browse/index.html must contain {% block footer %} (D-UI2-06 Edit B)"
+    )
+    assert "{% endblock footer %}" in src, (
+        "browse/index.html must contain {% endblock footer %} (D-UI2-06 Edit B)"
+    )
+    # Check that inside the footer block the count span and required expressions are present
+    footer_start = src.find("{% block footer %}")
+    footer_end = src.find("{% endblock footer %}")
+    assert footer_start < footer_end, "{% block footer %} must come before {% endblock footer %}"
+    footer_region = src[footer_start:footer_end]
+    assert 'id="grid-count"' in footer_region, (
+        'browse/index.html {% block footer %} must contain id="grid-count" (D-UI2-06)'
+    )
+    assert "vm.n_rows" in footer_region, (
+        "browse/index.html {% block footer %} must contain vm.n_rows (D-UI2-06)"
+    )
+    assert "vm.n_cols" in footer_region, (
+        "browse/index.html {% block footer %} must contain vm.n_cols (D-UI2-06)"
+    )
+    assert "&times;" in footer_region, (
+        "browse/index.html {% block footer %} must contain &times; (D-UI2-06)"
+    )
+
+
+def test_browse_grid_count_receiver_emitter_tag_alignment() -> None:
+    """Test 17b (W7): receiver and emitter span opening tags must be consistent."""
+    src = _read(BROWSE_HTML)
+    receiver_tag = '<span id="grid-count" class="text-muted small" aria-live="polite">'
+    emitter_tag = '<span id="grid-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">'
+    assert src.count(receiver_tag) == 1, (
+        f"browse/index.html must contain exactly 1 occurrence of the receiver tag: {receiver_tag!r} "
+        "(inside {% block footer %}) — W7 tag alignment"
+    )
+    assert src.count(emitter_tag) == 1, (
+        f"browse/index.html must contain exactly 1 occurrence of the OOB emitter tag: {emitter_tag!r} "
+        "(inside {% block count_oob %}) — W7 tag alignment"
+    )
+
+
+def test_browse_count_oob_unchanged() -> None:
+    """Test 18: {% block count_oob %} must remain byte-stable with hx-swap-oob on #grid-count."""
+    src = _read(BROWSE_HTML)
+    assert 'id="grid-count" hx-swap-oob="true"' in src, (
+        'browse/index.html must contain id="grid-count" hx-swap-oob="true" in count_oob block (unchanged)'
+    )
+    # Verify there is exactly ONE occurrence of hx-swap-oob="true" paired with id="grid-count"
+    assert src.count('id="grid-count" hx-swap-oob="true"') == 1, (
+        'browse/index.html must have exactly 1 occurrence of id="grid-count" hx-swap-oob="true"'
+    )
+    # The count_oob block must still have the vm.is_empty_selection guard
+    count_oob_start = src.find("{% block count_oob %}")
+    count_oob_end = src.find("{% endblock count_oob %}")
+    assert count_oob_start >= 0 and count_oob_end > count_oob_start, (
+        "{% block count_oob %} must still exist in browse/index.html (byte-stable)"
+    )
+    count_oob_region = src[count_oob_start:count_oob_end]
+    assert "vm.is_empty_selection" in count_oob_region, (
+        "{% block count_oob %} must still contain vm.is_empty_selection guard (byte-stable)"
+    )
+
+
+def test_get_browse_renders_count_in_footer() -> None:
+    """Test 19: GET /browse — #grid-count must be inside the <footer class='site-footer'>."""
+    client = TestClient(app)
+    r = client.get("/browse")
+    assert r.status_code == 200
+    assert '<footer class="site-footer"' in r.text, (
+        "GET /browse must render the site-footer element (D-UI2-05)"
+    )
+    footer_start = r.text.find('<footer class="site-footer"')
+    assert footer_start >= 0
+    footer_end = r.text.find("</footer>", footer_start)
+    assert footer_end > footer_start, "site-footer must have a closing tag"
+    footer_region = r.text[footer_start:footer_end]
+    assert 'id="grid-count"' in footer_region, (
+        'GET /browse response: id="grid-count" must be inside the <footer class="site-footer"> '
+        "(D-UI2-06 — count migrated from panel-header to footer)"
+    )
+
+
+def test_post_browse_grid_emits_count_oob() -> None:
+    """Test 20: POST /browse/grid must emit id="grid-count" with hx-swap-oob="true" in OOB fragment."""
+    client = TestClient(app)
+    # POST with empty form — vm will be empty-selection, but count_oob block is always emitted
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    r = client.post("/browse/grid", content="platforms=&params=&swap=0", headers=headers)
+    assert r.status_code == 200, f"POST /browse/grid returned {r.status_code}"
+    assert 'id="grid-count"' in r.text, (
+        'POST /browse/grid response must contain id="grid-count" (OOB count fragment)'
+    )
+    assert 'hx-swap-oob="true"' in r.text, (
+        'POST /browse/grid response must contain hx-swap-oob="true" (OOB swap mechanic intact)'
+    )
+
+
+def test_browse_panel_header_byte_stable_otherwise() -> None:
+    """Test 21: panel-header must still contain <b>Browse</b> and Pivot grid tag."""
+    src = _read(BROWSE_HTML)
+    assert "<b>Browse</b>" in src, (
+        "browse/index.html panel-header must still contain <b>Browse</b> (byte-stable)"
+    )
+    assert '<span class="tag">Pivot grid</span>' in src, (
+        'browse/index.html panel-header must still contain <span class="tag">Pivot grid</span> '
+        "(byte-stable)"
+    )
