@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-05-01T11:52:06.863Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-05-01T12:01:06.688Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
-  percent: 70
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 02 (ui-shell-rewrite-browse-footer-joint-validation-layout-parit) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-05-01
 
@@ -67,9 +67,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-01T11:51:56.752Z
+Last session: 2026-05-01T12:01:06.671Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md
 
 ## Accumulated Context
 
@@ -103,6 +103,8 @@ Stopped at: Completed 02-01-PLAN.md
 - [Phase 02]: D-UI2-04: 4 type-scale tokens in tokens.css (logo 20px, h1 28px, th 12px, body 15px); no --font-size-nav token
 - [Phase 02]: D-UI2-03: .shell reduced to padding:0; max-width:1280px and margin:0 auto removed for full-width content
 - [Phase 02]: D-UI2-05: body flex-column + main.container-fluid flex:1 0 auto + .site-footer flex-shrink:0 implements sticky-in-flow footer without position:fixed
+- [Phase 02]: D-UI2-06: Browse count caption moved from .panel-header into footer block; OOB emitter byte-stable; HTMX merges by id into footer receiver
+- [Phase 02]: W6/W7: comments moved inside blocks to satisfy grep -B1 placement and grep -c count acceptance criteria
 
 ### Performance Metrics
 
@@ -115,3 +117,4 @@ Stopped at: Completed 02-01-PLAN.md
 | Phase 01 P05 | 7min | 3 tasks | 6 files |
 | Phase 01-overview-tab-auto-discover-platforms-from-html-files P06 | 11min | 3 tasks | 17 files |
 | Phase 02 P01 | 8min | 3 tasks | 4 files |
+| Phase 02 P02 | 6min | 1 tasks | 2 files |
