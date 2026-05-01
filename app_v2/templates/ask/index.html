@@ -30,53 +30,58 @@
 {% block content %}
 <div class="shell">
 
-  {# Page header bar (D-01, D-12, D-13) #}
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="m-0" style="font-size: 22px; font-weight: 700;">Ask</h1>
-
-    {# D-13 LLM dropdown — label shows active backend; each item posts to /settings/llm.
-       hx-swap="none" because the 204 + HX-Refresh: true header drives a full page reload.
-       Bootstrap .dropdown-menu-end aligns the menu to the right edge of the trigger. #}
-    <div class="dropdown">
-      <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
-              type="button"
-              id="llm-selector-trigger"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              aria-label="Select LLM backend">
-        LLM: {{ backend_name | e }}
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="llm-selector-trigger">
-        {% for llm in llms %}
-          {% if llm.type == 'openai' %}
-            {% set display_name = 'OpenAI' %}
-          {% else %}
-            {% set display_name = 'Ollama' %}
-          {% endif %}
-          {% set is_active = (backend_name | lower == display_name | lower) %}
-          <li>
-            <button type="button"
-                    class="dropdown-item{% if is_active %} active{% endif %}"
-                    hx-post="/settings/llm"
-                    hx-vals='{"name": "{{ llm.name | e }}"}'
-                    hx-swap="none"
-                    {% if is_active %}aria-current="true"{% endif %}>
-              {{ display_name }}
-              <small class="text-muted ms-2">{{ llm.name | e }}</small>
-            </button>
-          </li>
-        {% endfor %}
-        {% if not llms %}
-          <li><span class="dropdown-item-text text-muted">No LLMs configured.</span></li>
-        {% endif %}
-      </ul>
-    </div>
-  </div>
-
-  {# Question form (ASK-V2-01) — first-turn submit. The form posts to /ask/query
+  {# Question card (ASK-V2-01) — first-turn submit. The form posts to /ask/query
      with the textarea content; the response replaces #answer-zone (outerHTML swap).
-     The textarea persists its value across queries until the user manually clears it (D-06). #}
+     The textarea persists its value across queries until the user manually clears it (D-06).
+
+     260502-ui: title "Ask" + LLM dropdown moved INSIDE the panel-header
+     for visual consistency with JV (`<h1 class="panel-title">` inside
+     `.panel-header`) and Browse (`<b>Browse</b>` inside `.panel-header`).
+     The prior page-header bar floated the h1 + dropdown OUTSIDE any
+     panel — an isolated heading on grey — which broke the rounded-card
+     pattern used by every other page. #}
   <div class="panel mb-3">
+    <div class="panel-header">
+      <h1 class="panel-title">Ask</h1>
+
+      {# D-13 LLM dropdown — label shows active backend; each item posts to /settings/llm.
+         hx-swap="none" because the 204 + HX-Refresh: true header drives a full page reload.
+         Bootstrap .dropdown-menu-end aligns the menu to the right edge of the trigger. #}
+      <div class="dropdown ms-auto">
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                type="button"
+                id="llm-selector-trigger"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="Select LLM backend">
+          LLM: {{ backend_name | e }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="llm-selector-trigger">
+          {% for llm in llms %}
+            {% if llm.type == 'openai' %}
+              {% set display_name = 'OpenAI' %}
+            {% else %}
+              {% set display_name = 'Ollama' %}
+            {% endif %}
+            {% set is_active = (backend_name | lower == display_name | lower) %}
+            <li>
+              <button type="button"
+                      class="dropdown-item{% if is_active %} active{% endif %}"
+                      hx-post="/settings/llm"
+                      hx-vals='{"name": "{{ llm.name | e }}"}'
+                      hx-swap="none"
+                      {% if is_active %}aria-current="true"{% endif %}>
+                {{ display_name }}
+                <small class="text-muted ms-2">{{ llm.name | e }}</small>
+              </button>
+            </li>
+          {% endfor %}
+          {% if not llms %}
+            <li><span class="dropdown-item-text text-muted">No LLMs configured.</span></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
     <div class="panel-body">
       <form id="ask-query-form"
             hx-post="/ask/query"
