@@ -1,16 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="shell">
-  <div class="page-head mb-3">
-    <h1 class="page-title">Joint Validation</h1>
-  </div>
+  {# Phase 02 D-UI2-07/11/12: single panel mirroring Browse. h1 + count
+     live in .panel-header; filter bar + grid live in .panel-body.
+     The legacy `.page-head` wrapper that placed h1 OUTSIDE the panel is
+     removed (D-UI2-12). The count caption migrates from .panel-body
+     into .panel-header right zone via ms-auto (D-UI2-11). #}
+  <div class="panel">
 
-  {% include "overview/_filter_bar.html" %}
+    <div class="panel-header" id="overview-panel-header">
+      <h1 class="panel-title">Joint Validation</h1>
+      <span id="overview-count" class="ms-auto text-muted small" aria-live="polite">
+        {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
+      </span>
+    </div>
 
-  <div id="overview-filter-badges-wrapper">
-    {# OOB filter badges block — rendered both in full page and in HTMX swaps #}
+    {# Filter bar — D-UI2-07/08/09/10. The form inside is the flex
+       container; macro byte-stable; Clear-all has ms-auto. #}
+    {% include "overview/_filter_bar.html" %}
+
+    {# OOB filter badges block — rendered both in full page and in HTMX swaps.
+       B1 (revision 1): Filter badges ARE user-visible today (each active filter
+       with count > 0 renders a chip-style "Status: 1" badge). Visibility is
+       PRESERVED in the new layout. Placement: BELOW the filter row and ABOVE
+       the grid scroll container — same visual relationship as the pre-rewrite
+       template (where the wrapper sat between _filter_bar.html and the grid
+       panel). The wrapper div from the old template (`overview-filter-badges-wrapper`)
+       is removed because the inner OOB div is itself the visible badges
+       container. The OOB target id `#overview-filter-badges` is byte-stable;
+       HTMX merges by id regardless of DOM location. NO `visually-hidden`
+       class — badges remain visible. #}
     {% block filter_badges_oob %}
-      <div id="overview-filter-badges" hx-swap-oob="true">
+      <div id="overview-filter-badges" hx-swap-oob="true" class="px-3 pt-2">
         {% for col, count in vm.active_filter_counts.items() %}
           {% if count > 0 %}
             <span class="badge bg-secondary me-1">
@@ -20,15 +41,22 @@
         {% endfor %}
       </div>
     {% endblock %}
-  </div>
 
-  <div class="panel">
-    <div class="panel-body p-0">
-      {# OOB count caption #}
+    {# Grid scroll container — mirrors Browse's .panel-body.browse-grid-body
+       pattern. The .panel-body class gives the panel-edge alignment and
+       p-0 zeros padding so the table reaches the panel edges. #}
+    <div class="panel-body overview-grid-body p-0" tabindex="0" aria-label="Joint Validation results">
+      {# OOB count caption — emitted by POST /overview/grid alongside the
+         primary grid swap. HTMX merges the #overview-count span by id
+         into the panel-header receiver above (mechanism unchanged from
+         Phase 01 Plan 05; only the receiver's DOM location moves to the
+         panel-header). The element shape changes from div to span to
+         match the panel-header receiver — both share the same id
+         so HTMX merge-by-id stays correct. #}
       {% block count_oob %}
-        <div id="overview-count" class="px-3 pt-2 small text-muted" hx-swap-oob="true">
+        <span id="overview-count" hx-swap-oob="true" class="ms-auto text-muted small" aria-live="polite">
           {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
-        </div>
+        </span>
       {% endblock %}
 
       {# Main grid block — rendered both in full page and in HTMX fragment swaps.
@@ -60,12 +88,10 @@
         </div>
       {% endblock %}
     </div>
-  </div>
 
-  {# AI Summary modal (D-OV-15 → D-JV-15 inherits modal pattern). Body slot
-     #summary-modal-body is the hx-target for AI Summary button POSTs. The
-     show.bs.modal listener resets the slot to a placeholder spinner so each
-     open starts fresh. #}
+  </div>{# /.panel #}
+
+  {# AI Summary modal (D-OV-15 → D-JV-15). Byte-stable from Phase 01 Plan 05. #}
   <div class="modal fade" id="summary-modal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -89,5 +115,5 @@
     });
   </script>
 
-</div>
+</div>{# /.shell #}
 {% endblock %}
