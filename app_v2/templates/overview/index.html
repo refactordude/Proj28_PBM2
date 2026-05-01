@@ -72,7 +72,7 @@
                     class="btn btn-link btn-sm p-0 text-decoration-none {% if is_active %}fw-bold{% endif %}"
                     hx-post="/overview/grid"
                     hx-include="#overview-filter-form"
-                    hx-vals='{"sort": "{{ col | e }}", "order": "{{ next_order | e }}"}'
+                    hx-vals='{"sort": "{{ col | e }}", "order": "{{ next_order | e }}", "page": "1"}'
                     hx-target="#overview-grid"
                     hx-swap="outerHTML">
               {{ label | e }}
@@ -117,3 +117,19 @@
 
 </div>{# /.shell #}
 {% endblock %}
+{% block pagination_oob %}
+{# Phase 02 Plan 02-04 — OOB wrapper for #overview-pagination (with hx-swap-oob).
+   Defined OUTSIDE block content so jinja2-fragments renders it in isolation.
+   Inner markup supplied by _pagination.html partial (B5 — single source of truth). #}
+<div id="overview-pagination" hx-swap-oob="true">
+  {% include "overview/_pagination.html" %}
+</div>
+{% endblock pagination_oob %}
+{% block footer %}
+{# Phase 02 Plan 02-04 — Initial-render receiver for the #overview-pagination slot.
+   Same wrapper id as the OOB emitter above; HTMX merges by id on POST /overview/grid.
+   Footer wrapper omits hx-swap-oob (initial-render only). B5: partial is the markup. #}
+<div id="overview-pagination">
+  {% include "overview/_pagination.html" %}
+</div>
+{% endblock footer %}

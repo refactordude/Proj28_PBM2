@@ -710,3 +710,140 @@ def test_post_overview_grid_emits_count_oob_span() -> None:
     assert 'hx-swap-oob="true"' in r.text, (
         'POST /overview/grid response must contain hx-swap-oob="true" (OOB swap mechanic)'
     )
+
+
+# ---------------------------------------------------------------------------
+# Plan 02-04 — JV pagination: filter bar, template blocks, partial, doc sync
+# Tests 41-45, 45b-e
+# ---------------------------------------------------------------------------
+
+OVERVIEW_PAGINATION_HTML = TPL / "overview" / "_pagination.html"
+UI_SPEC_MD = Path(__file__).parent.parent.parent / ".planning" / "phases" / \
+    "02-ui-shell-rewrite-browse-footer-joint-validation-layout-parit" / "02-UI-SPEC.md"
+
+
+def test_overview_filter_bar_has_hidden_page_input() -> None:
+    """Test 41 (B4): _filter_bar.html must contain hidden page input that resets to page 1."""
+    src = _read(OVERVIEW_FILTER_BAR_HTML)
+    assert '<input type="hidden" name="page" value="1">' in src, (
+        'overview/_filter_bar.html must contain <input type="hidden" name="page" value="1"> '
+        "(filter changes must reset page to 1 — D-UI2-13)"
+    )
+
+
+def test_overview_index_has_pagination_oob_block() -> None:
+    """Test 42: overview/index.html must contain {% block pagination_oob %} with
+    id="overview-pagination" and hx-swap-oob="true" wrapper."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert "{% block pagination_oob %}" in src, (
+        "overview/index.html must contain {% block pagination_oob %} (Phase 02 Plan 02-04)"
+    )
+    # The OOB wrapper must carry hx-swap-oob="true"
+    oob_start = src.find("{% block pagination_oob %}")
+    oob_end = src.find("{% endblock pagination_oob %}")
+    assert oob_start >= 0 and oob_end > oob_start, (
+        "{% block pagination_oob %} must have a matching {% endblock pagination_oob %}"
+    )
+    oob_region = src[oob_start:oob_end]
+    assert 'id="overview-pagination"' in oob_region, (
+        'block pagination_oob must contain a div with id="overview-pagination"'
+    )
+    assert 'hx-swap-oob="true"' in oob_region, (
+        'block pagination_oob wrapper must carry hx-swap-oob="true" (OOB merge target)'
+    )
+
+
+def test_overview_index_footer_carries_pagination() -> None:
+    """Test 43: overview/index.html {% block footer %} must contain id="overview-pagination"
+    (initial render path; same id as OOB target — no hx-swap-oob on initial render)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    footer_start = src.find("{% block footer %}")
+    footer_end = src.find("{% endblock footer %}")
+    assert footer_start >= 0, "overview/index.html must contain {% block footer %}"
+    assert footer_end > footer_start, "{% block footer %} must have matching {% endblock footer %}"
+    footer_region = src[footer_start:footer_end]
+    assert 'id="overview-pagination"' in footer_region, (
+        'overview/index.html {% block footer %} must contain id="overview-pagination" '
+        "(initial-render receiver for the pagination control)"
+    )
+
+
+def test_sortable_th_macro_emits_page_1() -> None:
+    """Test 44: sortable_th macro must include "page": "1" in hx-vals so sort resets to page 1."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    assert '"page": "1"' in src, (
+        'overview/index.html sortable_th macro hx-vals must include \'"page": "1"\' '
+        "(sort click must reset page to 1 — D-UI2-13)"
+    )
+
+
+def test_pagination_uses_page_links_loop() -> None:
+    """Test 45 (B5 form): _pagination.html iterates vm.page_links via {% for pl in vm.page_links %}
+    and accesses pl.label / pl.num (NOT tuple-unpacking)."""
+    src = _read(OVERVIEW_PAGINATION_HTML)
+    assert "{% for pl in vm.page_links %}" in src, (
+        'overview/_pagination.html must contain {% for pl in vm.page_links %} (B3 PageLink iteration)'
+    )
+    assert "pl.label" in src, (
+        "overview/_pagination.html must access pl.label (PageLink attribute — B3)"
+    )
+    assert "pl.num" in src, (
+        "overview/_pagination.html must access pl.num (PageLink attribute — B3)"
+    )
+    # Must NOT use tuple-unpacking syntax
+    assert "for label, num in vm.page_links" not in src, (
+        "overview/_pagination.html must NOT use tuple-unpacking 'for label, num in vm.page_links' "
+        "(B3 — PageLink submodel, not tuple)"
+    )
+
+
+def test_pagination_partial_included_twice() -> None:
+    """Test 45b (B5): overview/index.html must include _pagination.html exactly twice
+    (once in block footer, once in block pagination_oob — single source of truth)."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    include_count = src.count('{% include "overview/_pagination.html" %}')
+    assert include_count == 2, (
+        f'overview/index.html must include "overview/_pagination.html" exactly 2 times '
+        f"(footer + pagination_oob), found {include_count} (B5 — single source of truth)"
+    )
+
+
+def test_pagination_partial_size_sanity() -> None:
+    """Test 45c (B5): _pagination.html must be ≤ 60 lines (single-source-of-truth sanity)."""
+    line_count = len(_read(OVERVIEW_PAGINATION_HTML).splitlines())
+    assert line_count <= 60, (
+        f"overview/_pagination.html must be ≤ 60 lines (B5 size sanity), found {line_count} lines"
+    )
+
+
+def test_overview_index_count_id_count() -> None:
+    """Test 45d (W2): id="overview-count" must appear exactly twice in overview/index.html
+    (panel-header receiver + count_oob emitter). The footer must NOT carry the count."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    count = src.count('id="overview-count"')
+    assert count == 2, (
+        f'overview/index.html must contain exactly 2 occurrences of id="overview-count" '
+        f"(panel-header receiver + count_oob emitter), found {count} "
+        "(W2 — footer carries pagination ONLY, not count)"
+    )
+
+
+def test_pagination_oob_wrapper_carries_oob_attr() -> None:
+    """Test 45e (B5): pagination_oob wrapper must carry hx-swap-oob="true";
+    footer wrapper must NOT carry hx-swap-oob="true"."""
+    src = _read(OVERVIEW_INDEX_HTML)
+    # OOB block: wrapper must carry the attribute
+    oob_start = src.find("{% block pagination_oob %}")
+    oob_end = src.find("{% endblock pagination_oob %}")
+    oob_region = src[oob_start:oob_end]
+    assert 'hx-swap-oob="true"' in oob_region, (
+        'block pagination_oob wrapper must carry hx-swap-oob="true" (HTMX OOB merge)'
+    )
+    # Footer block: must NOT carry hx-swap-oob="true" on the overview-pagination wrapper
+    footer_start = src.find("{% block footer %}")
+    footer_end = src.find("{% endblock footer %}")
+    footer_region = src[footer_start:footer_end]
+    # The footer wrapper div must NOT have hx-swap-oob
+    assert 'id="overview-pagination" hx-swap-oob="true"' not in footer_region, (
+        'block footer wrapper must NOT carry hx-swap-oob="true" (initial-render receiver, not OOB emitter)'
+    )

@@ -32,6 +32,7 @@ from fastapi.responses import HTMLResponse
 
 from app_v2.services.joint_validation_grid_service import (
     FILTERABLE_COLUMNS,
+    JV_PAGE_SIZE,                   # Phase 02 Plan 02-04 (D-UI2-14)
     JointValidationGridViewModel,
     build_joint_validation_grid_view_model,
 )
@@ -69,8 +70,9 @@ def _build_overview_url(
     filters: dict[str, list[str]],
     sort_col: str,
     sort_order: str,
+    page: int = 1,
 ) -> str:
-    """Compose canonical /overview?status=A&status=B&...&sort=start&order=desc URL.
+    """Compose canonical /overview?status=A&status=B&...&sort=start&order=desc&page=N URL.
 
     D-JV-14 (preserves D-OV-13 shape): repeated keys for multi-value
     (?status=A&status=B). Pitfall 6 from Phase 4 D-32: use
@@ -79,6 +81,9 @@ def _build_overview_url(
 
     sort + order are always emitted (even when at defaults) so the URL is
     explicit and bookmarkable. Empty filter values are dropped.
+
+    Phase 02 Plan 02-04 (D-UI2-13/14): page is included only when > 1 so
+    that ?page=1 is omitted from bookmark URLs and browser history.
     """
     pairs: list[tuple[str, str]] = []
     for col in ("status", "customer", "ap_company", "device", "controller", "application"):
@@ -89,6 +94,9 @@ def _build_overview_url(
         pairs.append(("sort", sort_col))
     if sort_order:
         pairs.append(("order", sort_order))
+    # Only include page when not at default (page=1 omitted for clean URLs).
+    if page > 1:
+        pairs.append(("page", str(page)))
     if not pairs:
         return "/overview"
     qs = urllib.parse.urlencode(pairs, quote_via=urllib.parse.quote)
@@ -113,6 +121,14 @@ def get_overview(
     application: Annotated[list[str], Query(default_factory=list)],
     sort:        Annotated[str | None, Query()] = None,
     order:       Annotated[str | None, Query()] = None,
+    # Phase 02 Plan 02-04 (D-UI2-13/14, T-02-04-02 mitigation):
+    # - ge=1 rejects 0 / negative (HTTP 422).
+    # - le=10_000 rejects extremely large values pre-emptively, blocking
+    #   resource-exhaustion via huge slice computation. 10_000 pages × 15
+    #   per page = 150_000 rows — far above any realistic JV dataset.
+    # - Non-integer values return 422 via FastAPI's int parser.
+    # - Service additionally clamps page > page_count to page_count.
+    page:        Annotated[int, Query(ge=1, le=10_000)] = 1,
 ):
     """Render the Joint Validation listing (D-JV-01, D-JV-09, D-JV-12, D-JV-14).
 
@@ -126,6 +142,7 @@ def get_overview(
         filters=filters,
         sort_col=sort,
         sort_order=order,  # type: ignore[arg-type]
+        page=page,
     )
     ctx = {
         "vm": vm,
@@ -161,13 +178,21 @@ def post_overview_grid(
     application: Annotated[list[str], Form()] = [],
     sort:        Annotated[str | None, Form()] = None,
     order:       Annotated[str | None, Form()] = None,
+    # Phase 02 Plan 02-04 (D-UI2-13/14, T-02-04-02 mitigation):
+    # Same ge=1, le=10_000 validation as the GET route's Query param.
+    page:        Annotated[int, Form(ge=1, le=10_000)] = 1,
 ):
-    """HTMX fragment swap. Returns three OOB blocks; pushes canonical URL.
+    """HTMX fragment swap. Returns four OOB blocks; pushes canonical URL.
 
     Sets HX-Push-Url on the constructed TemplateResponse (NOT via an injected
     `Response` dependency — FastAPI's parameter-Response merge does not apply
     when the route returns its own Response object; the returned object's
     headers are authoritative. Mirrors Phase 5 routers/overview.py:349-358.)
+
+    Phase 02 Plan 02-04: adds ``pagination_oob`` to block_names so HTMX
+    receives the pagination control update alongside grid/count/badges.
+    Uses vm.page (clamped by service) so HX-Push-Url reflects the actual
+    page the user lands on after server-side clamping (T-02-04-02 alignment).
     """
     filters = _parse_filter_dict(status, customer, ap_company, device, controller, application)
     vm: JointValidationGridViewModel = build_joint_validation_grid_view_model(
@@ -175,6 +200,7 @@ def post_overview_grid(
         filters=filters,
         sort_col=sort,
         sort_order=order,  # type: ignore[arg-type]
+        page=page,
     )
     ctx = {
         "vm": vm,
@@ -188,12 +214,13 @@ def post_overview_grid(
         request,
         "overview/index.html",
         ctx,
-        block_names=["grid", "count_oob", "filter_badges_oob"],
+        block_names=["grid", "count_oob", "filter_badges_oob", "pagination_oob"],
     )
     # D-JV-12 + D-JV-14 + Pitfall 6 from Phase 4: server-set push URL
     # (canonical /overview?..., NOT /overview/grid).
+    # Use vm.page (clamped) so URL reflects the actual landed page.
     response.headers["HX-Push-Url"] = _build_overview_url(
-        filters, vm.sort_col, vm.sort_order
+        filters, vm.sort_col, vm.sort_order, vm.page
     )
     return response
 
@@ -205,6 +232,7 @@ def post_overview_grid(
 __all__ = [
     "router",
     "FILTERABLE_COLUMNS",
+    "JV_PAGE_SIZE",
     "_parse_filter_dict",
     "_build_overview_url",
 ]
