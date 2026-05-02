@@ -11,22 +11,22 @@ Internal parameter browser for the `ufs_data` MySQL database — an EAV-form cat
 | Milestone | Status | Stack | Notes |
 |---|---|---|---|
 | **v1.0 MVP** | Shipped 2026-04-24 | Streamlit + SQLAlchemy + PydanticAI | 171 passing tests, 87 commits over 2 days. Browse + Ask + Settings. |
-| **v2.0 Bootstrap Shell** | Active — Phases 1–3 of 5 | FastAPI + Bootstrap 5 + HTMX + Jinja2 | 413 passing tests. Overview tab + curated watchlist + content pages + AI Summary live. Browse and Ask still pending. |
+| **v2.0 Bootstrap Shell** | Shipped 2026-04-29 | FastAPI + Bootstrap 5 + HTMX + Jinja2 | 526 passing tests. 6 phases: Foundation → Overview → Content/AI Summary → Browse → Overview Redesign → Ask. |
 
-v1.0 is preserved as-is in `app/` for rollback. v2.0 lives in `app_v2/` and reuses framework-agnostic v1.0 modules (LLM client factory, NL agent, safety harness, result normalizer) by import — not copy.
+`app_v2/` is the single UI. v1.0 Streamlit shell removed in quick task 260429-kn7; `app/` retains only the framework-agnostic core/adapters/services consumed by `app_v2/`.
 
 ---
 
 ## Stack
 
-- **Web:** Streamlit (v1.0) / FastAPI 0.136 + Bootstrap 5.3.8 + HTMX 2.0.10 + Jinja2 + jinja2-fragments (v2.0)
+- **Web:** FastAPI 0.136 + Bootstrap 5.3.8 + HTMX 2.0.10 + Jinja2 + jinja2-fragments
 - **DB:** SQLAlchemy 2.0 (sync) + pymysql, read-only user, single table (`ufs_data`)
 - **Data:** pandas 3.x for client-side pivot / coercion / export, openpyxl for Excel
 - **NL agent:** PydanticAI 1.x with structured output, `openai` SDK with `base_url` switching between OpenAI Cloud and Ollama
 - **Safety harness:** `sqlparse` SELECT-only validator, LIMIT injector, path scrubber, `<db_data>` prompt-injection wrapper, step-cap, MySQL `max_execution_time` timeout
 - **Markdown (v2.0):** markdown-it-py with `js-default` preset (HTML passthrough off — XSS-safe)
 - **Caching:** `cachetools.TTLCache` paired with `threading.Lock`
-- **Auth:** `streamlit-authenticator` scaffolded (intranet, shared-cred). Currently deferred per design decision; re-enable in a pre-deployment phase.
+- **Auth:** Deferred to pre-deployment phase (D-04); `streamlit-authenticator` removed in 260429-kn7. Credential strategy TBD when auth is re-enabled.
 
 ---
 
@@ -57,26 +57,18 @@ cp config/overview.example.yaml config/overview.yaml
 
 Edit `config/settings.yaml` to add at least one database (`databases:`) and one LLM backend (`llms:`). Set `OPENAI_API_KEY` in `.env` if using OpenAI.
 
-### Run v1.0 (Streamlit)
-
-```bash
-streamlit run app/main.py
-```
-
-Opens at `http://localhost:8501`. Browse / Ask / Settings tabs.
-
-### Run v2.0 (FastAPI + Bootstrap)
+### Run
 
 ```bash
 uvicorn app_v2.main:app --port 8000 --reload
 ```
 
-Opens at `http://localhost:8000`. Overview tab is fully wired through Phase 3 (curated watchlist, content pages, AI Summary). Browse and Ask still serve placeholder stubs until Phases 4–5 land.
+Opens at `http://localhost:8000`. Overview / Browse / Ask tabs all live.
 
 ### Test
 
 ```bash
-.venv/bin/pytest tests/                 # full suite (413 passing as of v2.0 Phase 3)
+.venv/bin/pytest tests/                 # full suite (526 passing as of v2.0)
 .venv/bin/pytest tests/v2/ -v           # v2.0 only
 .venv/bin/pytest tests/ -m "not slow"   # skip cross-process race tests (Linux/macOS only)
 ```
@@ -84,12 +76,6 @@ Opens at `http://localhost:8000`. Overview tab is fully wired through Phase 3 (c
 ---
 
 ## What works today
-
-### v1.0 (Streamlit) — `app/`
-
-- **Browse:** wide-form pivot grid (platform × parameter), swap-axes, 30-column / 200-row caps, Plotly charts for numeric parameters, Excel + CSV export, shareable URL round-trip on filters
-- **Ask:** PydanticAI NL agent with structured `SQLResult | ClarificationNeeded` output, NL-05 two-turn parameter confirmation, OpenAI/Ollama switch in sidebar, full safety harness, 8 starter prompts
-- **Settings:** DB and LLM connection CRUD with per-row Test buttons
 
 ### v2.0 (FastAPI + Bootstrap) — `app_v2/`
 
@@ -106,7 +92,9 @@ Opens at `http://localhost:8000`. Overview tab is fully wired through Phase 3 (c
   - Two-layer path-traversal defense: FastAPI `Path(pattern=^[A-Za-z0-9_\-]{1,128}$)` + `Path.resolve()` + `relative_to()`
   - Cross-process race test using `multiprocessing.get_context("fork")` — proves `os.replace` atomicity on POSIX
 
-### Phase 4 (Browse) and Phase 5 (Ask) port the v1.0 features under the new shell. Not yet started.
+- **Phase 4 — Browse tab:** Pivot grid ported to Bootstrap; popover-search.js; `HX-Push-Url` URL round-trip; Parameters filter depends on selected Platforms (server-side intersection, OOB picker refresh)
+- **Phase 5 — Overview Redesign:** Sortable Bootstrap table + 6 popover-checklist multi-filters; AI Summary modal; Link button with URL sanitizer; frontmatter properties table on detail page
+- **Phase 6 — Ask tab:** NL agent ported under FastAPI/HTMX; NL-05 two-turn confirmation; Ask-page-only LLM dropdown with `pbm2_llm` cookie; 8 starter chips; v1.0 Streamlit Ask deleted
 
 ---
 
@@ -114,20 +102,20 @@ Opens at `http://localhost:8000`. Overview tab is fully wired through Phase 3 (c
 
 ```
 ┌─────────────────────────────┐
-│  app/             v1.0      │  ←  Streamlit pages, components, services
-│   ├─ pages/       (Browse,  │      Stays archived once v2.0 ports each tab.
-│   │   Ask, Settings)        │
-│   ├─ adapters/    (DB, LLM) │
-│   └─ core/        (config,  │  ←  Framework-agnostic. Imported by both apps.
-│       agent, safety,        │
-│       result_normalizer)    │
+│  app/             shared    │  ←  Framework-agnostic library modules
+│   ├─ adapters/    (DB, LLM) │      Streamlit shell removed in 260429-kn7;
+│   ├─ core/        (config,  │      core/adapters/services consumed by app_v2/.
+│   │   agent, safety)        │
+│   └─ services/   (normaliz- │
+│       er, validator, etc.)  │
 ├─────────────────────────────┤
-│  app_v2/          v2.0      │  ←  FastAPI + Bootstrap + HTMX
+│  app_v2/          v2.0      │  ←  FastAPI + Bootstrap + HTMX (single UI)
 │   ├─ main.py      (lifespan │      Reuses app/core/* and app/adapters/* directly.
 │   │   loads settings, DB,   │
 │   │   agent registry)       │
 │   ├─ routers/     (overview,│
-│   │   platforms, summary)   │
+│   │   platforms, browse,    │
+│   │   ask, summary)         │
 │   ├─ services/    (content, │
 │   │   summary, llm_resolver,│
 │   │   cache)                │
@@ -140,7 +128,7 @@ Opens at `http://localhost:8000`. Overview tab is fully wired through Phase 3 (c
 └─────────────────────────────┘
 ```
 
-Both apps point at the same `ufs_data` table via the same `MySQLAdapter`. v2.0 cannot write — the safety harness is rooted in DB-level read-only credentials.
+The app points at the `ufs_data` table via `MySQLAdapter`. It cannot write — the safety harness is rooted in DB-level read-only credentials.
 
 ---
 
@@ -148,8 +136,8 @@ Both apps point at the same `ufs_data` table via the same `MySQLAdapter`. v2.0 c
 
 | Path | Purpose |
 |---|---|
-| `app/` | v1.0 Streamlit (shipped, frozen) |
-| `app_v2/` | v2.0 FastAPI (active development) |
+| `app/` | Framework-agnostic shared modules (core, adapters, services) — imported by `app_v2/` |
+| `app_v2/` | v2.0 FastAPI app (shipped 2026-04-29) |
 | `tests/` | pytest suites — `tests/agent/`, `tests/v2/`, `tests/services/`, etc. |
 | `config/` | YAML configs — `settings.yaml`, `overview.yaml`, `starter_prompts.yaml`, `auth.yaml` (gitignored, examples committed) |
 | `content/platforms/` | Per-platform markdown content pages (gitignored, `.gitkeep` only) |
@@ -162,21 +150,9 @@ Both apps point at the same `ufs_data` table via the same `MySQLAdapter`. v2.0 c
 
 This project is built using the **GSD workflow** (Get Shit Done) — a Claude-Code-native process where each phase goes through `discuss → plan → execute → verify → code review → UI review`. All planning and verification artifacts live under `.planning/`.
 
-To resume work autonomously after Phase 3:
+v2.0 is complete. Run `/gsd-new-milestone` to define v2.1+ work when ready.
 
-```bash
-/gsd-autonomous --from 4    # Phases 4-5 (Browse + Ask ports)
-```
-
-Or run individual phases:
-
-```bash
-/gsd-discuss-phase 4
-/gsd-plan-phase 4
-/gsd-execute-phase 4
-```
-
-See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for current phase status and [`CLAUDE.md`](CLAUDE.md) for project conventions and tech-stack constraints.
+See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for milestone history and [`CLAUDE.md`](CLAUDE.md) for project conventions and tech-stack constraints.
 
 ### Test count trajectory
 
@@ -185,7 +161,8 @@ See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for current phase status and 
 | v1.0 ship | 171 |
 | v2.0 Phase 1 done | 212 |
 | v2.0 Phase 2 done | 290 |
-| v2.0 Phase 3 done | **413** |
+| v2.0 Phase 3 done | 413 |
+| v2.0 ship (all 6 phases + quick tasks) | **526** |
 
 ### Conventions worth knowing
 
