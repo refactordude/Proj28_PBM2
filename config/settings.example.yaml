@@ -47,3 +47,7 @@ app:
     allowed_tables:
       - "ufs_data"
     max_context_tokens: 30000
+    # Phase 3 D-CHAT-03: per-turn step budget for the multi-step chat agent loop.
+    # Independent from `max_steps` (which governs the legacy single-turn agent).
+    # Counts ALL tool calls including the terminal `present_result` call.
+    chat_max_steps: 12
