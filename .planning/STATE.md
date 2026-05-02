@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed Phase 03 Plan 03 — chat_session + chat_loop modules + lifespan hooks (D-CHAT-01/02/03/04/11/12/13/15)
-last_updated: "2026-05-02T18:38:32.940Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-05-02T18:58:23.426Z"
 last_activity: 2026-05-02
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 14
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 03 (Overhaul Ask feature into multi-step agentic chat) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-05-02
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T18:38:18.088Z
+Last session: 2026-05-02T18:58:13.519Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed Phase 03 Plan 03 — chat_session + chat_loop modules + lifespan hooks (D-CHAT-01/02/03/04/11/12/13/15)
+Stopped at: Completed 03-04-PLAN.md
 
 ## Accumulated Context
 
@@ -125,6 +125,9 @@ Stopped at: Completed Phase 03 Plan 03 — chat_session + chat_loop modules + li
 - [Phase 03]: Plan 03-03: AgentRunResult.new_messages() called via run_result.new_messages() (NOT getattr(ev, 'new_messages')) — Rule 1 auto-fix; new_messages is a method on ev.result, not on AgentRunResultEvent itself
 - [Phase 03]: Plan 03-03: asyncio.Event over threading.Event (RESEARCH Pitfall 6) — mixing threading.Event with asyncio leads to 'event set but generator never wakes'; per-session lock _SESSION_LOCK serializes append_session_history (Open Question 2 RESOLVED)
 - [Phase 03]: Plan 03-03: app.state.chat_turns / chat_sessions are DOCUMENTATION hooks; canonical store is module-level _TURNS / _SESSIONS in chat_session.py; router interacts only via chat_session helpers
+- [Phase 03]: Atomic Task 1 commit (D-CHAT-09): router rewrite + 4 deletions in single commit so working tree never has half-deleted artifacts
+- [Phase 03]: WARNING-3 contract honored: chat_loop emits structured final payload; router OWNS table_html + chart_html via _hydrate_final_card — agent module stays DB-free + Plotly-free
+- [Phase 03]: AA-compliant color overrides for .btn-stop (#cc2434) and .chat-error-card-soft (#8a5a00) baked into CSS rules — not promoted to tokens (RESEARCH Gap 15)
 
 ### Performance Metrics
 
@@ -143,3 +146,4 @@ Stopped at: Completed Phase 03 Plan 03 — chat_session + chat_loop modules + li
 | Phase 03 P01 | 10min | 2 tasks | 8 files |
 | Phase 03 P02 | 5min | 2 tasks | 1 files |
 | Phase 03 P03 | 12min | 3 tasks | 3 files |
+| Phase 03 P04 | 12min | 4 tasks | 11 files |
