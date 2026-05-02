@@ -4,3 +4,10 @@ downloaded: 2026-04-24
 pinned-reason: HTMX 4.0 is alpha (2026-04-09); 2.x is stable and maintained indefinitely.
 files:
   - htmx.min.js
+
+htmx-ext-sse: 2.2.4
+source: https://cdn.jsdelivr.net/npm/htmx-ext-sse@2.2.4/dist/sse.js
+downloaded: 2026-05-03
+pinned-reason: HTMX 2.x core does not bundle SSE; required for Phase 3 SSE chat surface.
+files:
+  - htmx-ext-sse.js
