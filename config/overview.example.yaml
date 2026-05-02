@@ -1,4 +1,0 @@
-# Phase 2 curated-entity store — list of user-added PLATFORM_IDs.
-# The live file at config/overview.yaml is gitignored. Copy this template
-# to config/overview.yaml once and edit via the Overview tab UI from then on.
-entities: []
