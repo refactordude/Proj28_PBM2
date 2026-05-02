@@ -34,3 +34,12 @@ class AgentConfig(BaseModel):
         description="Table names run_sql is permitted to query.",
     )
     max_context_tokens: int = Field(default=30_000, ge=1000, le=1_000_000)
+    chat_max_steps: int = Field(
+        default=12, ge=1, le=50,
+        description=(
+            "Per-turn step budget for the multi-step chat agent loop (Phase 3 D-CHAT-03). "
+            "Independent from `max_steps`, which governs the legacy single-turn agent. "
+            "Multi-step chat needs more headroom; default 12. "
+            "Counts ALL tool calls including the terminal `present_result` call."
+        ),
+    )
