@@ -28,6 +28,7 @@ Threat model alignments (per 03-04-PLAN.md):
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from typing import Annotated, Any
@@ -252,7 +253,12 @@ async def ask_stream(turn_id: str, request: Request):
             # All other events arrive as pre-rendered HTML in ev["html"].
             if ev["event"] == "final":
                 payload = ev["payload"]
-                html = _hydrate_final_card(
+                # WR-03: ``_hydrate_final_card`` runs sync ``pd.read_sql_query``
+                # against the pymysql/SQLAlchemy stack. Dispatch to a thread so
+                # the event loop is free to service other SSE streams + cancel
+                # endpoints during the final SQL execution.
+                html = await asyncio.to_thread(
+                    _hydrate_final_card,
                     payload=payload,
                     deps=deps,
                     request=request,
