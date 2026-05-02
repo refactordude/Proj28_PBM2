@@ -15,6 +15,7 @@ can string-prefix-match cleanly per D-CHAT-02.
 """
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
 import pandas as pd
@@ -27,6 +28,8 @@ from app.core.agent.config import AgentConfig
 from app.services.path_scrubber import scrub_paths
 from app.services.sql_limiter import inject_limit
 from app.services.sql_validator import validate_sql
+
+_log = logging.getLogger(__name__)
 
 
 # --- Structured output schemas -------------------------------------------
@@ -259,6 +262,11 @@ def _execute_and_wrap(
                     pass
                 df = pd.read_sql_query(sa.text(safe_sql), conn)
     except Exception as exc:
+        _log.warning(
+            "chat-agent run_sql execution error: %s: %s",
+            type(exc).__name__,
+            exc,
+        )
         return f"SQL execution error: {type(exc).__name__}"
 
     if df.empty:
