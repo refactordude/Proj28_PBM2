@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: Milestone complete
 stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-05-01T12:45:42.866Z"
-last_activity: 2026-05-01
+last_updated: "2026-05-02T13:32:00.000Z"
+last_activity: 2026-05-02
 progress:
   total_phases: 2
   completed_phases: 2
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 02
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-02 - Completed quick task 260502-sqi: Fix JV pagination losing sort state — thread sort/order into pagination hx-vals
+Last activity: 2026-05-02 - Completed quick task 260502-v09: Cleanup v1.0 Streamlit-era dead code (legacy LLM adapter cluster + 4 stale deps + orphan configs)
 
 Progress: [——————————] no active milestone
 
@@ -62,6 +62,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260430-wzg | Fix Joint Validation filter popover clipping (extend `.panel { overflow: visible }` to cover `.panel.overview-filter-bar` self-match) | 2026-04-30 | 067fd37 | [260430-wzg-fix-joint-validation-filter-popover-clip](./quick/260430-wzg-fix-joint-validation-filter-popover-clip/) |
 | 260502-jb2 | Add fake joint validation fixture folders to stress-test JV grid with 20+ results (16 new fakes → 22 total, page-2 active) | 2026-05-02 | cd9b417 | [260502-jb2-add-fake-joint-validation-fixture-folder](./quick/260502-jb2-add-fake-joint-validation-fixture-folder/) |
 | 260502-sqi | Fix JV pagination losing sort state — thread sort/order into pagination hx-vals | 2026-05-02 | 2167592 | [260502-sqi-fix-jv-pagination-losing-sort-state-thre](./quick/260502-sqi-fix-jv-pagination-losing-sort-state-thre/) |
+| 260502-v09 | Cleanup v1.0 Streamlit-era dead code — legacy LLM adapter cluster (4 files, ~226 LOC), 4 stale deps from requirements.txt, orphan `.streamlit/` + `config/overview.example.yaml` | 2026-05-02 | 03c9717 | [260502-v09-cleanup-v1-0-streamlit-era-dead-code-leg](./quick/260502-v09-cleanup-v1-0-streamlit-era-dead-code-leg/) |
 
 ## Blockers/Concerns
 
