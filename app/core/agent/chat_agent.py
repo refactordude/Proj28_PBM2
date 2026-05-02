@@ -129,9 +129,150 @@ def build_chat_agent(model) -> Agent:
         model_settings={"temperature": 0.2},
         system_prompt=_CHAT_SYSTEM_PROMPT,
     )
-    # Tools registered in Task 2 — placeholder line:
-    # @agent.tool decorators go here
+
+    @agent.tool
+    def inspect_schema(ctx: RunContext[ChatAgentDeps]) -> str:
+        """Return the static column list + types for ufs_data.
+
+        Cheap — statically known. Replaces the v1.0 NL-05 disambiguation step
+        per D-CHAT-09 (the agent calls this first when it needs to remind itself
+        of the schema before composing SQL).
+        """
+        return "PLATFORM_ID:str, InfoCategory:str, Item:str, Result:str"
+
+    @agent.tool
+    def get_distinct_values(ctx: RunContext[ChatAgentDeps], column: str) -> str:
+        """Return up to 200 distinct values for a ufs_data column (D-CHAT-09 disambiguation tool).
+
+        Whitelisted to the 4 ufs_data columns — anything else returns a REJECTED:
+        string so the agent can read the reason and try a different column.
+        """
+        if column not in ("PLATFORM_ID", "InfoCategory", "Item", "Result"):
+            return f"REJECTED: column {column!r} is not a column of ufs_data"
+        sql = f"SELECT DISTINCT `{column}` FROM ufs_data ORDER BY `{column}` LIMIT 200"
+        return _execute_and_wrap(ctx, sql, prefix_rejection=True)
+
+    @agent.tool
+    def count_rows(ctx: RunContext[ChatAgentDeps], where_clause: str) -> str:
+        """Cheap row-count pre-flight — kept separate from run_sql per Claude's Discretion.
+
+        The full assembled SELECT passes through validate_sql in _execute_and_wrap,
+        so a malicious where_clause containing UNION / a second statement / comments
+        is rejected with the same backstop as run_sql (T-03-02-02).
+        """
+        sql = f"SELECT COUNT(*) AS cnt FROM ufs_data WHERE {where_clause}"
+        return _execute_and_wrap(ctx, sql, prefix_rejection=True)
+
+    @agent.tool
+    def sample_rows(
+        ctx: RunContext[ChatAgentDeps], where_clause: str, limit: int = 10
+    ) -> str:
+        """Capped peek into rows matching a WHERE clause.
+
+        `limit` clamped into [1, agent_cfg.row_cap]; the assembled SELECT still
+        passes through inject_limit so the user-supplied limit can never exceed
+        row_cap even if validate_sql would otherwise let it.
+        """
+        limit = min(max(int(limit), 1), ctx.deps.agent_cfg.row_cap)
+        sql = f"SELECT * FROM ufs_data WHERE {where_clause} LIMIT {limit}"
+        return _execute_and_wrap(ctx, sql, prefix_rejection=True)
+
+    @agent.tool
+    def run_sql(ctx: RunContext[ChatAgentDeps], sql: str) -> str:
+        """Execute a validated SELECT (the agent's primary tool).
+
+        On guard rejection returns a string starting with 'REJECTED:' so the
+        chat-loop wrapper (plan 03) can count rejections per turn (D-CHAT-02).
+        """
+        return _execute_and_wrap(ctx, sql, prefix_rejection=True)
+
+    @agent.tool
+    def present_result(
+        ctx: RunContext[ChatAgentDeps],
+        summary: str,
+        sql: str,
+        chart_spec: ChartSpec | None = None,
+    ) -> PresentResult:
+        """Emit the structured final answer — calling this tool ENDS the turn (D-CHAT-05).
+
+        PydanticAI recognizes the PresentResult return as the output_type tool
+        and terminates the agent run.
+        """
+        return PresentResult(
+            summary=summary,
+            sql=sql,
+            chart_spec=chart_spec or ChartSpec(),
+        )
+
     return agent
+
+
+# --- SAFE-02..06 harness --------------------------------------------------
+
+
+def _execute_and_wrap(
+    ctx: RunContext[ChatAgentDeps],
+    sql: str,
+    *,
+    prefix_rejection: bool = True,
+) -> str:
+    """Verbatim port of nl_agent.run_sql — preserves SAFE-02..06 invariants.
+
+    SAFE-02: validate_sql (single SELECT, no UNION/CTE/comments, allowed tables)
+    SAFE-03: inject_limit (row cap)
+    SAFE-04: SET SESSION TRANSACTION READ ONLY
+    SAFE-04b: SET SESSION max_execution_time (timeout_s * 1000 ms)
+    SAFE-06: scrub_paths (OpenAI only — D-CHAT-11)
+    SAFE-05: <db_data>...</db_data> wrapper
+
+    Per D-CHAT-09 (the 5 disambiguation/exec tools satisfy the same need as the
+    deleted NL-05 confirmation), D-CHAT-11 (path scrub fires only when
+    active_llm_type=='openai'), D-CHAT-02 (REJECTED: prefix enables loop-wrapper
+    rejection counter). All harness invariants ported verbatim from
+    nl_agent.run_sql; only the rejection prefix changes.
+
+    prefix_rejection=True: validator failures return 'REJECTED: <reason>' (D-CHAT-02);
+    REPLACES the v1.0 'SQL rejected:' prefix so the chat-loop wrapper can
+    string-prefix-match.
+    """
+    cfg = ctx.deps.agent_cfg
+    vr = validate_sql(sql, cfg.allowed_tables)
+    if not vr.ok:
+        return f"REJECTED: {vr.reason}" if prefix_rejection else f"SQL rejected: {vr.reason}"
+
+    safe_sql = inject_limit(sql, cfg.row_cap)
+    timeout_ms = int(cfg.timeout_s) * 1000
+
+    engine_fn = getattr(ctx.deps.db, "_get_engine", None)
+    try:
+        if engine_fn is None:
+            df = ctx.deps.db.run_query(safe_sql)
+        else:
+            with engine_fn().connect() as conn:
+                try:
+                    conn.execute(sa.text("SET SESSION TRANSACTION READ ONLY"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(sa.text(f"SET SESSION max_execution_time={timeout_ms}"))
+                except Exception:
+                    pass
+                df = pd.read_sql_query(sa.text(safe_sql), conn)
+    except Exception as exc:
+        return f"SQL execution error: {type(exc).__name__}"
+
+    if df.empty:
+        rows_text = "(no rows returned)"
+    else:
+        header = " | ".join(str(c) for c in df.columns)
+        rows = "\n".join(
+            " | ".join(str(v) for v in row) for row in df.itertuples(index=False)
+        )
+        rows_text = f"{header}\n{rows}"
+
+    if ctx.deps.active_llm_type == "openai":
+        rows_text = scrub_paths(rows_text)
+    return f"<db_data>\n{rows_text}\n</db_data>"
 
 
 __all__ = ["ChartSpec", "PresentResult", "ChatAgentDeps", "build_chat_agent"]
