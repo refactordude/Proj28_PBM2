@@ -60,7 +60,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260429-kn7 | Remove v1.0 Streamlit shell — app_v2 becomes single source of truth (5 tasks, 507 tests green) | 2026-04-29 | 7266e00 | [260429-kn7-remove-v1-0-streamlit-shell-app-v2-fasta](./quick/260429-kn7-remove-v1-0-streamlit-shell-app-v2-fasta/) |
 | 260429-qyv | Browse: Parameters filter depends on selected Platforms (server-side intersection, disabled when none, OOB picker refresh) | 2026-04-29 | f1e002b | [260429-qyv-browse-parameters-filter-depends-on-sele](./quick/260429-qyv-browse-parameters-filter-depends-on-sele/) |
 | 260430-wzg | Fix Joint Validation filter popover clipping (extend `.panel { overflow: visible }` to cover `.panel.overview-filter-bar` self-match) | 2026-04-30 | 067fd37 | [260430-wzg-fix-joint-validation-filter-popover-clip](./quick/260430-wzg-fix-joint-validation-filter-popover-clip/) |
-| 260502-jb2 | Add fake joint validation fixture folders to stress-test JV grid with 20+ results (16 new fakes → 22 total, page-2 active) | 2026-05-02 | _pending_ | [260502-jb2-add-fake-joint-validation-fixture-folder](./quick/260502-jb2-add-fake-joint-validation-fixture-folder/) |
+| 260502-jb2 | Add fake joint validation fixture folders to stress-test JV grid with 20+ results (16 new fakes → 22 total, page-2 active) | 2026-05-02 | cd9b417 | [260502-jb2-add-fake-joint-validation-fixture-folder](./quick/260502-jb2-add-fake-joint-validation-fixture-folder/) |
 
 ## Blockers/Concerns
 
