@@ -6,7 +6,7 @@
   <ul class="pagination pagination-sm mb-0">
     <li class="page-item {% if vm.page <= 1 %}disabled{% endif %}" {% if vm.page <= 1 %}aria-disabled="true"{% endif %}>
       <a class="page-link"
-         {% if vm.page > 1 %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ vm.page - 1 }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}
+         {% if vm.page > 1 %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ vm.page - 1 }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}
          aria-label="Previous"><i class="bi bi-chevron-left"></i></a>
     </li>
     {% for pl in vm.page_links %}
@@ -15,7 +15,7 @@
       {% else %}
         <li class="page-item {% if pl.num == vm.page %}active{% endif %}" {% if pl.num == vm.page %}aria-current="page"{% endif %}>
           <a class="page-link"
-             {% if pl.num != vm.page %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ pl.num }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}>
+             {% if pl.num != vm.page %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ pl.num }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}>
             {{ pl.label | e }}
           </a>
         </li>
@@ -23,7 +23,7 @@
     {% endfor %}
     <li class="page-item {% if vm.page >= vm.page_count %}disabled{% endif %}" {% if vm.page >= vm.page_count %}aria-disabled="true"{% endif %}>
       <a class="page-link"
-         {% if vm.page < vm.page_count %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ vm.page + 1 }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}
+         {% if vm.page < vm.page_count %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ vm.page + 1 }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}
          aria-label="Next"><i class="bi bi-chevron-right"></i></a>
     </li>
   </ul>
