@@ -1,0 +1,17 @@
+{# Phase 3 — Thought event partial (D-CHAT-12, UI-SPEC §C).
+
+   Rendered by chat_loop._render_thought when the agent emits a ThinkingPart.
+   Native <details> for collapse/expand — keyboard-navigable by default; no
+   custom JS toggle handler.
+
+   {{ truncated }} arrives pre-truncated to 140 chars (last-whitespace cut +
+   U+2026 ellipsis) from chat_loop._truncate_thought. The full reasoning text
+   is in {{ full_content }}; the .chat-thought[open] CSS rule reveals it on
+   click.
+
+   Autoescape: agent-supplied — both vars use | e. NO | safe.
+#}
+<details class="chat-thought">
+  <summary aria-label="Reasoning step">{{ truncated | e }}</summary>
+  <div class="chat-thought-full">{{ full_content | e }}</div>
+</details>

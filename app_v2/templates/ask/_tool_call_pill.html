@@ -1,0 +1,15 @@
+{# Phase 3 — Tool-call pill partial (D-CHAT-13, UI-SPEC §D).
+
+   Rendered by chat_loop._render_tool_call_pill when the agent emits a
+   FunctionToolCallEvent. Pill collapsed by default (.chat-pill-tool-call —
+   violet inline pill). Expanded view shows the full args (sqlparse-formatted
+   SQL for run_sql; JSON.dumps(indent=2) for other tools).
+
+   {{ pretty_args }} is the formatted body the chat-loop helper produced.
+   Both args_summary and pretty_args are agent-derived — every variable uses
+   | e. NO | safe.
+#}
+<details class="chat-pill-tool-call">
+  <summary aria-label="Tool call details">▸ {{ tool_name | e }}({{ args_summary | e }})</summary>
+  <pre><code>{{ pretty_args | e }}</code></pre>
+</details>
