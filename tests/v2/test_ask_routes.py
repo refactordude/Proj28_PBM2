@@ -253,27 +253,25 @@ def test_get_ask_stream_final_frame_contains_table_rows_when_sql_returns_rows(
     Verifies router-side _hydrate_final_card runs PresentResult.sql against
     app.state.db and renders _final_card.html with table_html populated.
     """
+    from pydantic_ai.run import AgentRunResultEvent
+
     df = pd.DataFrame({"a": [1, 2], "b": ["x", "y"]})
 
     class _FakeRunResult:
+        """Minimal AgentRunResult-like — chat_loop only reads .output + .new_messages()."""
+
         def __init__(self, output):
             self.output = output
 
         def new_messages(self):
             return []
 
-    class _FakeAgentRunResultEvent:
-        """Emulates the terminal AgentRunResultEvent — has a `result` attribute."""
-
-        def __init__(self, output):
-            self.result = _FakeRunResult(output)
-
-        # A fallback `new_messages` method for chat_loop's defensive `getattr` is on result.
-
     async def fake_stream(*a, **kw):
         # Yield only the terminal AgentRunResultEvent carrying a PresentResult.
-        yield _FakeAgentRunResultEvent(
-            PresentResult(summary="ok", sql="SELECT * FROM ufs_data LIMIT 2")
+        yield AgentRunResultEvent(
+            result=_FakeRunResult(
+                PresentResult(summary="ok", sql="SELECT * FROM ufs_data LIMIT 2")
+            )
         )
 
     mock_agent = MagicMock()
@@ -314,6 +312,7 @@ def test_get_ask_stream_emits_terminal_event_with_mocked_agent(
     mock_build_agent, mock_build_model, client
 ):
     """D-CHAT-08 + D-CHAT-04/05: SSE stream produces a terminal final or error event."""
+    from pydantic_ai.run import AgentRunResultEvent
 
     class _FakeRunResult:
         def __init__(self):
@@ -322,12 +321,8 @@ def test_get_ask_stream_emits_terminal_event_with_mocked_agent(
         def new_messages(self):
             return []
 
-    class _FakeAgentRunResultEvent:
-        def __init__(self):
-            self.result = _FakeRunResult()
-
     async def fake_stream(*a, **kw):
-        yield _FakeAgentRunResultEvent()
+        yield AgentRunResultEvent(result=_FakeRunResult())
 
     mock_agent = MagicMock()
     mock_agent.run_stream_events = fake_stream

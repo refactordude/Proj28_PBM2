@@ -53,6 +53,7 @@ from pydantic_ai.messages import (
     ToolCallPart,  # noqa: F401 — used by isinstance checks in PartStartEvent payload
     ToolReturnPart,
 )
+from pydantic_ai.run import AgentRunResultEvent
 from pydantic_ai.usage import UsageLimits
 
 from app.core.agent.chat_agent import ChartSpec, ChatAgentDeps, PresentResult
@@ -132,7 +133,13 @@ async def stream_chat_turn(
             # AgentRunResultEvent is the terminal payload carrying agent_run.result.
             # AgentRunResult.new_messages() returns ONLY this turn's messages
             # (replayed history excluded — verified in pydantic_ai/run.py).
-            if hasattr(ev, "result"):
+            #
+            # IMPORTANT: ``isinstance(ev, AgentRunResultEvent)`` is the correct
+            # discriminator here. ``hasattr(ev, "result")`` would ALSO match
+            # ``FunctionToolResultEvent`` (which carries a ``result``
+            # ToolReturnPart attribute), wrongly classifying every tool result
+            # as the terminal frame.
+            if isinstance(ev, AgentRunResultEvent):
                 run_result = ev.result
                 try:
                     new_messages = list(run_result.new_messages())
