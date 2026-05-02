@@ -78,3 +78,13 @@ Plans:
 - [x] 02-02-PLAN.md — Browse footer count migration: move `<span id="grid-count">` from panel-header into `{% block footer %}`; OOB count_oob byte-stable (D-UI2-06)
 - [x] 02-03-PLAN.md — JV layout parity: single panel, horizontal flex filter form, h1 + count in panel-header, .overview-filter-bar without .panel class, picker macro byte-stable (D-UI2-07..12)
 - [x] 02-04-PLAN.md — JV pagination: JV_PAGE_SIZE=15 constant, page query/form param with ge=1/le=10_000 validation, view-model rows slicing + page_links helper, footer pagination control with prev/next/ellipsis, hidden page input + sortable_th reset to page 1 (D-UI2-13, D-UI2-14)
+
+### Phase 3: Overhaul Ask feature into multi-step agentic chat — replace one-shot Q&A with PydanticAI tool-using agent loop (run_sql, inspect_schema, get_distinct_values, sample_rows, present_result), SSE streaming of thought/tool_call/tool_result/final events via sse-starlette + HTMX, ephemeral session-scoped chat history using PydanticAI message_history, UI lockout + visible Stop button during reasoning, guard-rail rejections fed back as tool-result errors so the agent retries on its own. Anchor visual design to Dashboard_v2.html. Full architectural decisions, motivating example (SM8850 vs SM8650 UNION rejection), tool surface, stack alignment, and open questions for the planner are documented in .planning/notes/ask-chat-overhaul-decisions.md — the planner should read that note first.
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 3 to break down)

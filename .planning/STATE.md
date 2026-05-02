@@ -79,6 +79,7 @@ Stopped at: Completed 02-04-PLAN.md
 ### Roadmap Evolution
 
 - Phase 1 added: Overview Tab: Auto-discover Platforms from HTML Files (2026-04-30)
+- Phase 3 added: Overhaul Ask feature into multi-step agentic chat — PydanticAI tool loop + SSE streaming + ephemeral history; full decisions captured in `.planning/notes/ask-chat-overhaul-decisions.md` (2026-05-03)
 
 ### Decisions
 
