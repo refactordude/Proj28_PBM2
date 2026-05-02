@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-05-02T18:58:23.426Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-05-02T19:28:51.119Z"
 last_activity: 2026-05-02
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T18:58:13.519Z
+Last session: 2026-05-02T19:28:32.669Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed 03-04-PLAN.md
+Stopped at: Completed 03-05-PLAN.md
 
 ## Accumulated Context
 
@@ -128,6 +128,12 @@ Stopped at: Completed 03-04-PLAN.md
 - [Phase 03]: Atomic Task 1 commit (D-CHAT-09): router rewrite + 4 deletions in single commit so working tree never has half-deleted artifacts
 - [Phase 03]: WARNING-3 contract honored: chat_loop emits structured final payload; router OWNS table_html + chart_html via _hydrate_final_card — agent module stays DB-free + Plotly-free
 - [Phase 03]: AA-compliant color overrides for .btn-stop (#cc2434) and .chat-error-card-soft (#8a5a00) baked into CSS rules — not promoted to tokens (RESEARCH Gap 15)
+- [Phase 03]: Plan 03-05: Rule 1 auto-fix in app_v2/routers/ask.py — pbm2_session cookie set on TemplateResponse directly via _apply_session_cookie helper; FastAPI parameter Response cookies don't merge into a returned Response object
+- [Phase 03]: Plan 03-05: Rule 1 auto-fix in app/core/agent/chat_loop.py — terminal-event discriminator switched from hasattr(ev,'result') to isinstance(ev, AgentRunResultEvent); FunctionToolResultEvent ALSO has a result attribute, causing every tool call to misclassify as terminal
+- [Phase 03]: Plan 03-05: Rule 2 auto-fix — added data-reason attribute on _error_card.html for machine-readable D-CHAT-04 vocabulary; tests assert on data-reason rather than body copy
+- [Phase 03]: Plan 03-05: Phase 4 plotly invariant narrowed by whitelisting app_v2/routers/ask.py only — D-CHAT-05 + T-03-04-09 require server-side Plotly chart construction in chat router; lazy import inside _build_plotly_chart_html keeps Browse/JV/Settings free of import cost
+- [Phase 03]: Plan 03-05: anyio's pytest plugin (group='pytest11', provided by anyio package) used via @pytest.mark.anyio + anyio_backend='asyncio' fixture — pytest-asyncio NOT required; avoids new dev dependency
+- [Phase 03]: Plan 03-05: Real DBAdapter subclass _FakeDB instead of MagicMock — Pydantic v2 ChatAgentDeps.db field annotated DBAdapter rejects MagicMock with isinstance check; reused across test_ask_routes.py and test_chat_agent_tools.py
 
 ### Performance Metrics
 
@@ -147,3 +153,4 @@ Stopped at: Completed 03-04-PLAN.md
 | Phase 03 P02 | 5min | 2 tasks | 1 files |
 | Phase 03 P03 | 12min | 3 tasks | 3 files |
 | Phase 03 P04 | 12min | 4 tasks | 11 files |
+| Phase 03 P05 | 20min | 2 tasks | 9 files |
