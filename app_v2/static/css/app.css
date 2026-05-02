@@ -337,3 +337,189 @@ main.container-fluid {
    utility classes (.position-absolute.top-0.end-0); no Phase 6 CSS rule
    needed. Existing .position-relative on the parent <div> in index.html
    provides the anchor.                                                    */
+
+/* ================================================================
+   Phase 3 — Chat surface (D-CHAT-04, D-CHAT-07, D-CHAT-12, D-CHAT-13, D-CHAT-14)
+   Tokens reused from tokens.css (Phase 02 token system). NO new tokens added
+   per RESEARCH Gap 15 (one-off pill measurements bake into rules).
+   ================================================================ */
+
+/* User message + thinking placeholder (UI-SPEC §B) */
+.chat-user-message { margin-bottom: 12px; }
+.chat-user-question { font-size: 15px; font-weight: 600; color: var(--ink); margin: 0 0 8px; }
+.chat-thinking { font-size: 13px; font-style: italic; color: var(--mute); margin: 0 0 16px; }
+
+/* Thought event (D-CHAT-12; UI-SPEC §C) */
+.chat-thought {
+  font-style: italic;
+  color: var(--mute);
+  border-left: 2px solid var(--line-2);
+  padding: 4px 12px;
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.chat-thought summary { cursor: pointer; list-style: none; }
+.chat-thought summary::-webkit-details-marker { display: none; }
+.chat-thought[open] summary { color: var(--ink-2); }
+.chat-thought[open] .chat-thought-full {
+  margin-top: 6px;
+  font-style: normal;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Tool-call pill (D-CHAT-13; UI-SPEC §D) */
+.chat-pill-tool-call {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 6px 0;
+  background: var(--violet-soft);
+  color: var(--violet);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0;
+}
+.chat-pill-tool-call summary { cursor: pointer; list-style: none; }
+.chat-pill-tool-call summary::-webkit-details-marker { display: none; }
+.chat-pill-tool-call[open] {
+  display: block;
+  border-radius: var(--radius-card);
+  background: #f7f4ff;
+  padding: 12px 16px;
+}
+.chat-pill-tool-call[open] summary { display: block; margin-bottom: 8px; }
+.chat-pill-tool-call pre {
+  margin: 0;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-btn);
+  font-size: 13px;
+  overflow-x: auto;
+  color: var(--ink);
+}
+
+/* Tool-result pill (D-CHAT-13; UI-SPEC §E) */
+.chat-pill-tool-result-ok,
+.chat-pill-tool-result-rejected {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 6px 0;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+}
+.chat-pill-tool-result-ok       { background: var(--green-soft); color: var(--green); }
+.chat-pill-tool-result-rejected { background: var(--red-soft);   color: var(--red);   }
+.chat-pill-tool-result-ok summary,
+.chat-pill-tool-result-rejected summary { cursor: pointer; list-style: none; }
+.chat-pill-tool-result-ok summary::-webkit-details-marker,
+.chat-pill-tool-result-rejected summary::-webkit-details-marker { display: none; }
+.chat-pill-tool-result-ok[open],
+.chat-pill-tool-result-rejected[open] {
+  display: block;
+  border-radius: var(--radius-card);
+  padding: 12px 16px;
+}
+.chat-pill-tool-result-ok[open]       { background: #ddf3e7; }
+.chat-pill-tool-result-rejected[open] { background: #fad6da; }
+.chat-tool-result-reason {
+  white-space: pre-wrap;
+  margin-top: 8px;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+/* Tool-result inline preview table (UI-SPEC §E) */
+.chat-result-preview {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+.chat-result-preview th {
+  text-align: left; padding: 6px 10px; font-weight: 600;
+  color: var(--mute); border-bottom: 1px solid var(--line);
+}
+.chat-result-preview td { padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.chat-result-preview tr:last-child td { border-bottom: 0; }
+
+/* Final answer card (D-CHAT-05; UI-SPEC §F) */
+.chat-summary-callout {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  padding: 14px 18px;
+  border-radius: var(--radius-card);
+  margin-bottom: 18px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+.chat-plotly { margin-top: 18px; min-height: 320px; }
+
+/* Error card hard / soft (D-CHAT-04; UI-SPEC §G) */
+.chat-error-card-hard,
+.chat-error-card-soft {
+  border-radius: var(--radius-card);
+  padding: 18px;
+  margin: 12px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.chat-error-card-hard {
+  background: var(--red-soft);
+  color: var(--ink);
+  border: 1px solid var(--red);
+}
+.chat-error-card-hard strong {
+  color: var(--red);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+}
+.chat-error-card-soft {
+  background: var(--amber-soft);
+  color: var(--ink);
+  border: 1px solid var(--amber);
+}
+.chat-error-card-soft strong {
+  color: #8a5a00;     /* AA on --amber-soft = 5.37:1 (UI-SPEC §Color rationale) */
+  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+}
+.chat-error-card-hard .btn,
+.chat-error-card-soft .btn { margin-top: 12px; }
+
+/* Stop button (D-CHAT-14; UI-SPEC §H) */
+.btn-stop {
+  background: transparent;
+  color: #cc2434;       /* AA on white = 4.74:1 at 14px/600 (UI-SPEC §H rationale) */
+  border: 1px solid #cc2434;
+  border-radius: var(--radius-btn);
+  padding: 8px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 120ms ease;
+  letter-spacing: -.005em;
+}
+.btn-stop:hover  { background: var(--red-soft); }
+.btn-stop:active { background: #fbd2d6; }
+.btn-stop:focus-visible {
+  outline: 2px solid #cc2434;
+  outline-offset: 2px;
+}
+.btn-stop:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* prefers-reduced-motion (UI-SPEC §Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  .btn-stop { transition: none; }
+}
