@@ -74,6 +74,15 @@ class SessionState:
 _TURN_LOCK = threading.Lock()
 _TURNS: dict[str, TurnState] = {}
 
+# WR-02 mitigation: bound `_TURNS` growth when the SSE stream is never opened.
+# `pop_turn` only fires from the SSE BackgroundTask, so a POST /ask/chat that
+# never gets a paired GET /ask/stream (tab close mid-submit, network drop,
+# scanner traffic) leaks the entry. Cap the dict at `_TURN_SOFT_CAP` and evict
+# the oldest entries (insertion order — Py3.7+ dicts are ordered) on overflow.
+# Sized so that even worst-case orphan-rate burst is bounded; normal operation
+# keeps the dict tiny because pop_turn fires within seconds of stream close.
+_TURN_SOFT_CAP = 500
+
 _SESSION_LOCK = threading.Lock()
 _SESSIONS: dict[str, SessionState] = {}
 
@@ -87,9 +96,19 @@ def new_turn(session_id: str, question: str) -> str:
     Called from POST /ask/chat (plan 03-04). The returned turn_id is what the
     HTMX fragment renders into `sse-connect="/ask/stream/{turn_id}"` so the
     browser opens the SSE stream against this turn.
+
+    WR-02: when ``len(_TURNS) >= _TURN_SOFT_CAP`` we evict the oldest entry
+    (insertion order). This bounds the dict in pathological no-stream-attached
+    cases without breaking the normal POST /ask/chat → GET /ask/stream pairing.
     """
     turn_id = uuid.uuid4().hex
     with _TURN_LOCK:
+        if len(_TURNS) >= _TURN_SOFT_CAP:
+            # Evict oldest by insertion order. Eviction is intentionally silent —
+            # this is best-effort cleanup for orphaned (stream-never-opened)
+            # turns; in normal operation pop_turn fires from the SSE
+            # BackgroundTask before the cap is approached.
+            _TURNS.pop(next(iter(_TURNS)), None)
         _TURNS[turn_id] = TurnState(pending_question=question, session_id=session_id)
     return turn_id
 
