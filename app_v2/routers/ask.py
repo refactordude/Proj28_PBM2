@@ -74,6 +74,12 @@ router = APIRouter()
 # RESEARCH Gap 6 / Pitfall 8: pbm2_session cookie shape mirrors pbm2_llm.
 _PBM2_SESSION_COOKIE = "pbm2_session"
 
+# WR-04: known-local LLM backends (no path scrub needed — local inference,
+# no cloud egress). Anything NOT in this set is treated as cloud and gets the
+# D-CHAT-11 path-scrub policy applied (default-deny posture). Extend this set
+# when a new local backend is introduced.
+_LOCAL_LLM_TYPES = frozenset({"ollama"})
+
 
 # --- Cookie helper --------------------------------------------------------
 
@@ -222,7 +228,23 @@ async def ask_stream(turn_id: str, request: Request):
             _unconfigured_event_generator(),
             background=BackgroundTask(pop_turn, turn_id),
         )
-    active_llm_type = "openai" if getattr(llm_cfg, "type", "") == "openai" else "ollama"
+    # WR-04: default-deny path-scrub policy. Any backend type that is NOT
+    # explicitly known-local (`_LOCAL_LLM_TYPES`) is treated as cloud and gets
+    # the D-CHAT-11 scrub applied. This protects against silent regression if a
+    # future cloud backend (e.g. anthropic) is added without updating this gate.
+    # The `active_llm_type` Literal admits only "openai" / "ollama"; we map any
+    # non-local type to "openai" so the existing scrub_paths gate fires.
+    raw_llm_type = getattr(llm_cfg, "type", "") or ""
+    if raw_llm_type in _LOCAL_LLM_TYPES:
+        active_llm_type = "ollama"
+    else:
+        if raw_llm_type and raw_llm_type != "openai":
+            _log.warning(
+                "unknown LLM type %r — applying cloud path-scrub policy "
+                "(treating as openai for scrub purposes)",
+                raw_llm_type,
+            )
+        active_llm_type = "openai"
     deps = ChatAgentDeps(
         db=db_adapter,
         agent_cfg=agent_cfg,
