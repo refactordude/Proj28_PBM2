@@ -1,0 +1,51 @@
+{# Phase 3 — Input zone, IDLE state (D-CHAT-14, UI-SPEC §H).
+
+   Single template with TWO states; this file renders ONLY the idle (form) state.
+   The active (Stop button) state is rendered inline by _user_message.html as an
+   OOB hx-swap-oob="true" element targeting #input-zone — no separate template
+   needed because the Stop button is a single <button>.
+
+   Form posts to POST /ask/chat (NOT /ask/query — that route was removed in
+   plan 03-04 Task 1 per D-CHAT-09). The response is _user_message.html which
+   appends into #chat-transcript via hx-target/hx-swap on this form, and OOB-flips
+   #input-zone to the Stop state.
+
+   Copywriting Contract (UI-SPEC):
+     - Label:           "Your question"
+     - Placeholder:     "e.g. What is the WriteProt status for all LUNs on platform X?"
+                        (verbatim from Phase 6 — keep familiarity for users carrying
+                         queries forward)
+     - Primary CTA:     "Run"  (NOT "Run Query"; "Run Query" was the NL-05 confirm
+                                button copy that was deleted with the NL-05 flow)
+     - Clear aria:      "Clear question"
+#}
+<form id="ask-form"
+      hx-post="/ask/chat"
+      hx-target="#chat-transcript"
+      hx-swap="beforeend"
+      hx-on::after-request="if(event.detail.successful) this.reset()">
+  <label class="form-label fw-semibold" for="ask-question">Your question</label>
+  <div class="position-relative">
+    <textarea id="ask-question"
+              name="question"
+              class="form-control"
+              rows="3"
+              placeholder="e.g. What is the WriteProt status for all LUNs on platform X?"
+              required></textarea>
+    {# ✕ clear button — verbatim from Phase 6 (CONTEXT.md Claude's Discretion:
+       inline onclick acceptable for trivial DOM mutation; avoids module-level JS). #}
+    <button type="button"
+            class="btn btn-sm btn-link position-absolute top-0 end-0 mt-1 me-1 text-secondary"
+            aria-label="Clear question"
+            onclick="document.getElementById('ask-question').value='';document.getElementById('ask-question').focus();">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+  <div class="d-flex justify-content-end mt-2">
+    <button type="submit"
+            class="btn btn-primary"
+            hx-disabled-elt="this">
+      Run
+    </button>
+  </div>
+</form>
