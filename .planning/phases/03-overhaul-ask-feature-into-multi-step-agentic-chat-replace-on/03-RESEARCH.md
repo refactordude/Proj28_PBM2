@@ -1464,27 +1464,29 @@ These can also live as plain values in `app.css` rules — adding them as tokens
 | A9 | `pbm2_session` cookie is acceptable to add (no Starlette session middleware) — same shape as `pbm2_llm` | Gap 6 | Low — mirrors an existing precedent in this codebase |
 | A10 | Replacing the Phase 6 `test_no_async_def_in_phase6_router` invariant with the Phase 3 narrowed version is acceptable to the user | Pitfall 1 | Low — D-CHAT-08 implies a route shape that requires SSE which requires async; the locked decision implies the invariant must change |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Where exactly does `CallToolsNode.stream(ctx)` live in PydanticAI 1.86.0?**
+All four questions were resolved during the planning revision pass on 2026-05-03. Resolutions are pinned below; downstream plans (03-01..03-05) honor these choices.
+
+### Q1: Where exactly does `CallToolsNode.stream(ctx)` live in PydanticAI 1.86.0? (RESOLVED)
    - What we know: `agent.iter()` returns an `AgentRun` and each yielded `node` carries graph context. `_agent_graph.py` defines the node classes.
    - What's unclear: Is `node.stream(...)` the actual method name, or is it `node.run_stream(...)` or another variant?
-   - Recommendation: Planner reads `.venv/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py` `CallToolsNode` class on Wave 0 of the implementation plan and pins the actual name. If `run_stream_events()` ends up sufficient (which it likely does for D-CHAT-01 cancellation between tool calls), skip `iter()` entirely.
+   - **RESOLVED — Recommendation:** Use `agent.run_stream_events(...)` (PydanticAI 1.86.0 public API; verified in `pydantic_ai/agent/abstract.py:946-1008`). This API is sufficient for D-CHAT-01 cancellation between tool calls and avoids the unverified `CallToolsNode.stream` introspection path. Aligned with the `chat_loop.py` implementation pinned in 03-03-PLAN.md Task 2 (the `stream_chat_turn` async generator drives `agent.run_stream_events`).
 
-2. **Does `ChatSession.append_session_history` need to atomicity-check against concurrent turns from the same browser?**
+### Q2: Does `ChatSession.append_session_history` need to atomicity-check against concurrent turns from the same browser? (RESOLVED)
    - What we know: a user can only have one in-flight turn per browser tab (the input is locked to a Stop button); but two tabs would each have their own turn, and both write to `state.messages`.
    - What's unclear: Should the writes be serialized?
-   - Recommendation: For Phase 3 ship, take a `threading.Lock()` per session_id when appending. The lock is uncontended in the single-tab common case; the multi-tab case is rare and the worst outcome is interleaved messages (which is fine — order doesn't matter for `[-12:]` slicing).
+   - **RESOLVED — Recommendation:** Serialize per-session via the existing per-session lock (`_SESSION_LOCK` taken in `append_session_history` and `get_or_create_session` per 03-03-PLAN.md Task 1). The lock is uncontended in the single-tab common case (one browser, one in-flight turn at a time per the UI lockout in D-CHAT-14). The multi-tab race window is documented as **accepted** — worst outcome is interleaved messages, which is benign for the `[-12:]` slice (D-CHAT-15) because order across concurrent turns from the same browser does not affect downstream replay.
 
-3. **Should `present_result` validate that `chart_spec.x_column` / `y_column` exist in the SQL result columns?**
+### Q3: Should `present_result` validate that `chart_spec.x_column` / `y_column` exist in the SQL result columns? (RESOLVED)
    - What we know: D-CHAT-06 says the agent picks chart_type with no user override; the heuristics are in the system prompt.
    - What's unclear: If the agent picks a column that doesn't exist, how does the chart render?
-   - Recommendation: At Plotly-render time, if `x_column` or `y_column` is empty or absent from `df.columns`, fall back to `chart_type="none"` and skip the chart. Don't throw — be forgiving (the table + summary are still useful).
+   - **RESOLVED — Recommendation:** Validate in the `PresentResult` Pydantic model — when the router (03-04 Task 1) hydrates the final card and the agent's `chart_spec.chart_type != "none"`, the router checks that `chart_spec.x_column` and `chart_spec.y_column` are non-empty AND present in `df.columns`. If either column is missing, the router downgrades to `chart_type="none"` and skips the chart (no exception). The agent itself is not asked to retry — be forgiving so the user still sees the summary + table. (The original "model_validator raise ValidationError" approach was reconsidered: raising would force an agent retry that wastes tool budget for an issue the user does not care about; silent downgrade is the better UX.)
 
-4. **Is there a risk that `pydantic_ai.exceptions.UsageLimitExceeded` fires AFTER the agent has already emitted a `final` event (because `tool_calls_limit` counts ALL tool calls including the output tool)?**
+### Q4: Is there a risk that `pydantic_ai.exceptions.UsageLimitExceeded` fires AFTER the agent has already emitted a `final` event (because `tool_calls_limit` counts ALL tool calls including the output tool)? (RESOLVED)
    - What we know: `present_result` IS implemented as an `@agent.tool` returning a `PresentResult` Pydantic model — PydanticAI counts it against `tool_calls_limit`.
    - What's unclear: Does the limit check fire before or after the output tool's invocation?
-   - Recommendation: Set `chat_max_steps` default to **12** (per D-CHAT-03 ≥ 12) which leaves comfortable headroom for `inspect_schema → get_distinct_values → run_sql (REJECTED) → run_sql → run_sql → present_result` (5 tool calls, well under 12). If users hit the limit in practice, raise default to 16. Add a comment in `config.py` about this counting behavior.
+   - **RESOLVED — Recommendation:** The `chat_loop.stream_chat_turn` wrapper catches `UsageLimitExceeded` only when raised BEFORE the final event is emitted. Once the `final` event is emitted (i.e., the loop sets `final_emitted=True` and `break`s out of the `async for`), any subsequent `UsageLimitExceeded` is moot because the generator has already terminated cleanly. This invariant is documented in `chat_loop.py`'s module docstring and enforced by 03-03 Task 2's acceptance criteria. Default `chat_max_steps=12` provides headroom for `inspect_schema → get_distinct_values → run_sql (REJECTED) → run_sql → run_sql → present_result` (~6 tool calls, well under 12). If users hit the limit in practice, raise default to 16 in a follow-up.
 
 ## Environment Availability
 
