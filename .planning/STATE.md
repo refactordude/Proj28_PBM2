@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed Phase 03 Plan 01 — chat foundation primitives (sse-starlette, chat_max_steps, extra_head, vendored bundles)
-last_updated: "2026-05-02T18:16:27.154Z"
+stopped_at: "Completed Phase 03 Plan 02 — chat_agent.py module with 6 tools + SAFE-02..06 harness (REJECTED: prefix per D-CHAT-02)"
+last_updated: "2026-05-02T18:25:41.497Z"
 last_activity: 2026-05-02
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 15
-  completed_plans: 11
-  percent: 73
+  completed_plans: 12
+  percent: 80
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 03 (Overhaul Ask feature into multi-step agentic chat) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-05-02
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T18:16:27.137Z
+Last session: 2026-05-02T18:25:41.479Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed Phase 03 Plan 01 — chat foundation primitives (sse-starlette, chat_max_steps, extra_head, vendored bundles)
+Stopped at: Completed Phase 03 Plan 02 — chat_agent.py module with 6 tools + SAFE-02..06 harness (REJECTED: prefix per D-CHAT-02)
 
 ## Accumulated Context
 
@@ -117,6 +117,9 @@ Stopped at: Completed Phase 03 Plan 01 — chat foundation primitives (sse-starl
 - [Phase 03]: Plan 03-01: Extend AgentConfig with chat_max_steps:int field over new AgentChatConfig submodel — avoids YAML schema bump (Gap 12); default=12 leaves headroom for ~6-tool typical turn; le=50 caps DoS surface
 - [Phase 03]: Plan 03-01: Plotly 2.35.2 + htmx-ext-sse 2.2.4 vendored under app_v2/static/vendor/; loaded only on /ask via per-page extra_head Jinja block — RESEARCH Pitfall 5 (4.5MB Plotly NOT in base.html)
 - [Phase 03]: Plan 03-01: VERSIONS.txt manifests use append-not-overwrite when extending an existing vendor dir — preserves audit trail of prior pins (htmx@2.0.10 untouched while adding htmx-ext-sse@2.2.4)
+- [Phase 03]: Plan 03-02: Verbatim port of SAFE-02..06 from nl_agent.run_sql to chat_agent._execute_and_wrap (NOT shared helper) — preserves D-CHAT-09 'nl_agent.py unchanged' promise; cost is two-harness sync, benefit is zero risk to existing test_nl_agent.py invariants
+- [Phase 03]: Plan 03-02: Rejection prefix REJECTED: replaces SQL rejected: at chat-tier boundary only (D-CHAT-02) — nl_agent.run_sql still emits 'SQL rejected:' for legacy single-turn flow; the two prefixes coexist so plan 03's loop wrapper can string-prefix-match cleanly
+- [Phase 03]: Plan 03-02: Module-private _execute_and_wrap (single-underscore prefix, excluded from __all__) — exposes a unit-test entry point under the underscore name without bloating the public surface; tests assert REJECTED-prefix contract directly on the helper
 
 ### Performance Metrics
 
@@ -133,3 +136,4 @@ Stopped at: Completed Phase 03 Plan 01 — chat foundation primitives (sse-starl
 | Phase 02 P03 | 10min | 3 tasks | 4 files |
 | Phase 02 P04 | 13min | 3 tasks | 8 files |
 | Phase 03 P01 | 10min | 2 tasks | 8 files |
+| Phase 03 P02 | 5min | 2 tasks | 1 files |
