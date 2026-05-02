@@ -28,7 +28,7 @@
    serializer that produces a JSON string literal — also XSS-safe.
    NO | safe filter anywhere.
 #}
-<div class="chat-error-card-{{ severity | e }}">
+<div class="chat-error-card-{{ severity | e }}" data-reason="{{ reason | e }}">
   <strong>{{ heading | e }}</strong>
   <p>{{ body | e }}</p>
   {% if original_question %}
