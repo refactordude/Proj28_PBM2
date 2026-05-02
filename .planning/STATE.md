@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-stopped_at: Phase 3 context gathered
-last_updated: "2026-05-02T16:38:33.468Z"
-last_activity: "2026-05-02 - Completed quick task 260502-v09: Cleanup v1.0 Streamlit-era dead code (legacy LLM adapter cluster + 4 stale deps + orphan configs)"
+status: Ready to execute
+stopped_at: Completed Phase 03 Plan 01 — chat foundation primitives (sse-starlette, chat_max_steps, extra_head, vendored bundles)
+last_updated: "2026-05-02T18:16:27.154Z"
+last_activity: 2026-05-02
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_plans: 15
+  completed_plans: 11
+  percent: 73
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-29)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 02 — ui-shell-rewrite-browse-footer-joint-validation-layout-parit
+**Current focus:** Phase 03 — Overhaul Ask feature into multi-step agentic chat
 
 ## Current Position
 
-Phase: 02
-Plan: Not started
+Phase: 03 (Overhaul Ask feature into multi-step agentic chat) — EXECUTING
+Plan: 2 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-02 - Completed quick task 260502-v09: Cleanup v1.0 Streamlit-era dead code (legacy LLM adapter cluster + 4 stale deps + orphan configs)
+Last activity: 2026-05-02
 
 Progress: [——————————] no active milestone
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T16:38:33.447Z
+Last session: 2026-05-02T18:16:27.137Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Phase 3 context gathered
+Stopped at: Completed Phase 03 Plan 01 — chat foundation primitives (sse-starlette, chat_max_steps, extra_head, vendored bundles)
 
 ## Accumulated Context
 
@@ -114,6 +114,9 @@ Stopped at: Phase 3 context gathered
 - [Phase 02]: B1: filter badges visibility preserved; legacy outer wrapper removed; inner OOB div repositioned below filter bar above grid with px-3 pt-2
 - [Phase 02]: D-UI2-13/14: JV_PAGE_SIZE=15 in service; PageLink Pydantic submodel (B3); Bootstrap .pagination in footer via _pagination.html partial (B5 single source); FastAPI Query/Form(ge=1,le=10000) two-layer DoS defense (T-02-04-02)
 - [Phase 02]: W2 fix: UI-SPEC contradictory footer-carries-count paragraph removed; footer carries pagination only per D-UI2-11
+- [Phase 03]: Plan 03-01: Extend AgentConfig with chat_max_steps:int field over new AgentChatConfig submodel — avoids YAML schema bump (Gap 12); default=12 leaves headroom for ~6-tool typical turn; le=50 caps DoS surface
+- [Phase 03]: Plan 03-01: Plotly 2.35.2 + htmx-ext-sse 2.2.4 vendored under app_v2/static/vendor/; loaded only on /ask via per-page extra_head Jinja block — RESEARCH Pitfall 5 (4.5MB Plotly NOT in base.html)
+- [Phase 03]: Plan 03-01: VERSIONS.txt manifests use append-not-overwrite when extending an existing vendor dir — preserves audit trail of prior pins (htmx@2.0.10 untouched while adding htmx-ext-sse@2.2.4)
 
 ### Performance Metrics
 
@@ -129,3 +132,4 @@ Stopped at: Phase 3 context gathered
 | Phase 02 P02 | 6min | 1 tasks | 2 files |
 | Phase 02 P03 | 10min | 3 tasks | 4 files |
 | Phase 02 P04 | 13min | 3 tasks | 8 files |
+| Phase 03 P01 | 10min | 2 tasks | 8 files |

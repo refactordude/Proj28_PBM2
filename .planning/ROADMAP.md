@@ -87,7 +87,7 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Foundation: pin sse-starlette, add AgentConfig.chat_max_steps, base.html extra_head block, vendor htmx-ext-sse + Plotly bundles
+- [x] 03-01-PLAN.md — Foundation: pin sse-starlette, add AgentConfig.chat_max_steps, base.html extra_head block, vendor htmx-ext-sse + Plotly bundles
 - [ ] 03-02-PLAN.md — Chat agent module: ChartSpec/PresentResult/ChatAgentDeps Pydantic models + build_chat_agent factory + 6-tool surface (REJECTED: prefix on guard rejections)
 - [ ] 03-03-PLAN.md — Chat plumbing: chat_session (per-turn registry + 12-msg sliding window + scrub-on-write) + chat_loop (stream_chat_turn async generator with cancel/retry-cap/step-budget/error classification) + main.py state init
 - [ ] 03-04-PLAN.md — Atomic rewrite: routers/ask.py end-to-end (4 new routes, session-cookie auth) + 8 new chat templates + delete NL-05 templates + chat-surface CSS append
