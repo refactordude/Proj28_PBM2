@@ -50,6 +50,11 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.agent_registry = {}  # populated lazily by Phase 3/5
 
+    # Phase 3: per-turn registry (cancel_event + pending_question) — see app/core/agent/chat_session.py
+    app.state.chat_turns = {}
+    # Phase 3: per-session message_history store (D-CHAT-15 sliding window source) — same module
+    app.state.chat_sessions = {}
+
     # Initialize default DB adapter if configured. Phase 1 smoke tests can run
     # without a DB (no queries executed yet) — if settings.databases is empty or
     # the default database cannot be resolved, lifespan still succeeds.
