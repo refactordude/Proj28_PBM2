@@ -84,6 +84,14 @@ def _ensure_session_cookie(request: Request, response: Response) -> str:
     ``HttpOnly=True``, ``SameSite=Lax``, ``Secure=False`` (intranet HTTP per
     project constraints). 1-year ``max_age`` so the same session is preserved
     across browser restarts.
+
+    NOTE: FastAPI's ``Response`` parameter merges Set-Cookie headers into the
+    final response only when the route returns a non-``Response`` object. Both
+    /ask and /ask/chat return a ``TemplateResponse`` directly, so callers that
+    need the cookie to actually reach the browser MUST also call
+    ``_apply_session_cookie(template_response, sid)`` on the returned response.
+    This helper still flips the parameter ``response`` for routes that DO use
+    the merge path (and is harmless when they don't).
     """
     sid = request.cookies.get(_PBM2_SESSION_COOKIE)
     if sid:
@@ -101,6 +109,27 @@ def _ensure_session_cookie(request: Request, response: Response) -> str:
     return sid
 
 
+def _apply_session_cookie(response: Response, request: Request, sid: str) -> None:
+    """Set ``pbm2_session`` on ``response`` only when the request did not carry it.
+
+    Used by routes that return a ``TemplateResponse`` directly — FastAPI's
+    parameter-Response merge does NOT apply in that case, so we set the cookie
+    on the actual response object. Idempotent: skipped when the request already
+    carried a ``pbm2_session`` value (no point re-issuing the same id).
+    """
+    if request.cookies.get(_PBM2_SESSION_COOKIE) == sid:
+        return  # client already has it
+    response.set_cookie(
+        _PBM2_SESSION_COOKIE,
+        sid,
+        max_age=31536000,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/",
+    )
+
+
 # --- Routes ---------------------------------------------------------------
 
 
@@ -111,9 +140,9 @@ def ask_page(request: Request, response: Response):
     backend_name = resolve_active_backend_name(settings, request)
     active_llm = resolve_active_llm(settings, request)
     llms = list(getattr(settings, "llms", []) or []) if settings is not None else []
-    _ensure_session_cookie(request, response)
+    sid = _ensure_session_cookie(request, response)
 
-    return templates.TemplateResponse(
+    tr = templates.TemplateResponse(
         request,
         "ask/index.html",
         {
@@ -124,6 +153,8 @@ def ask_page(request: Request, response: Response):
             "llms": llms,
         },
     )
+    _apply_session_cookie(tr, request, sid)
+    return tr
 
 
 @router.post("/ask/chat", response_class=HTMLResponse)
@@ -138,15 +169,17 @@ def ask_chat(
     initial HTML fragment. Phase 3 invariant (plan 05) allows ``async`` only on
     ``/ask/stream`` and ``/ask/cancel``.
     """
-    session_id = _ensure_session_cookie(request, response)
+    sid = _ensure_session_cookie(request, response)
     q = (question or "").strip()
-    turn_id = new_turn(session_id, q)
+    turn_id = new_turn(sid, q)
 
-    return templates.TemplateResponse(
+    tr = templates.TemplateResponse(
         request,
         "ask/_user_message.html",
         {"turn_id": turn_id, "question": q},
     )
+    _apply_session_cookie(tr, request, sid)
+    return tr
 
 
 @router.get("/ask/stream/{turn_id}")

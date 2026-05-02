@@ -1,51 +1,94 @@
-"""Route-level tests for app_v2/routers/ask.py (Phase 6, ASK-V2-01..03,-06,-07).
+"""Phase 3 D-CHAT-08 router-level tests for the rewritten Ask surface.
 
-D-19 mocking strategy: patch `app_v2.routers.ask.run_nl_query` at module
-level (matches test_summary_routes.py idiom). Tests construct canned
-NLResult variants and assert route status code, swap target, fragment
-template name, and selected fragment context values. NEVER instantiate the
-PydanticAI agent or hit a DB.
+Covers the 4 new routes (GET /ask, POST /ask/chat, GET /ask/stream/{turn_id},
+POST /ask/cancel/{turn_id}) plus the deletion of the legacy Phase 6 routes
+(POST /ask/query, POST /ask/confirm) per D-CHAT-09.
 
-D-20: no threat-model tests here — Phase 1 tests/agent/test_nl_service.py
-covers SAFE-02..06.
+Mocking strategy:
+  - ``build_chat_agent`` is patched at module level to return a fake agent whose
+    ``run_stream_events`` is a controlled async generator (RESEARCH Gap 11).
+  - ``request.app.state.db`` is set to a small ``_FakeDB(DBAdapter)`` subclass
+    (Pydantic v2 strict-instance check on ChatAgentDeps.db requires a real
+    DBAdapter — a MagicMock will not pass the validator).
+  - ``request.app.state.settings.app.agent`` is a real ``AgentConfig`` instance
+    (Pydantic v2 model_type validation on ``ChatAgentDeps.agent_cfg``).
+  - No real LLM calls are made in any test in this file.
+
+T-03-05-01 (test pollution): module-level ``_TURNS`` / ``_SESSIONS`` registries
+are reset before AND after every test via the ``_reset_chat_registries``
+autouse fixture.
 """
 from __future__ import annotations
 
-import urllib.parse
+import re
 from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.agent.nl_agent import AgentRunFailure
-from app.core.agent.nl_service import NLResult
+from app.adapters.db.base import DBAdapter
+from app.core.agent.chat_agent import ChartSpec, PresentResult
+from app.core.agent.chat_session import _SESSIONS, _TURNS
+from app.core.agent.config import AgentConfig
 
 
-def _post_form_pairs(client, url: str, pairs: list[tuple[str, str]]):
-    """POST a URL with repeated-key form fields using the httpx 0.28-safe pattern.
+class _FakeDB(DBAdapter):
+    """Minimal in-memory DBAdapter subclass for router tests.
 
-    httpx 0.28 dropped list-of-tuples support on ``data=`` (raises TypeError).
-    This helper mirrors the workaround documented in STATE.md 04-04 and used in
-    ``tests/v2/test_browse_routes.py``: encode pairs manually with
-    ``urllib.parse.urlencode`` (quote_via=quote preserves %20 spaces) and pass
-    the body as ``content=`` with an explicit Content-Type header.
+    Subclasses the abstract base so it passes Pydantic v2's
+    ``isinstance(value, DBAdapter)`` check on ``ChatAgentDeps.db``.
+    The ``run_query`` impl returns whatever DataFrame ``_df`` was set to
+    (default empty); tests mutate ``_df`` to drive _hydrate_final_card.
     """
-    body = urllib.parse.urlencode(pairs, quote_via=urllib.parse.quote)
-    return client.post(
-        url,
-        content=body,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
+
+    def __init__(self, df: pd.DataFrame | None = None) -> None:
+        # Skip the parent __init__ — we don't need a real DatabaseConfig.
+        self._df = df if df is not None else pd.DataFrame()
+        # Sentinel so router's getattr(self, '_get_engine', None) returns None
+        # and falls back to the simpler run_query path.
+        self._get_engine = None
+
+    def test_connection(self) -> tuple[bool, str]:
+        return True, "ok"
+
+    def list_tables(self) -> list[str]:
+        return ["ufs_data"]
+
+    def get_schema(self, tables=None):
+        return {"ufs_data": []}
+
+    def run_query(self, sql: str) -> pd.DataFrame:
+        return self._df.copy()
+
+
+# --- Fixtures -------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _reset_chat_registries():
+    """T-03-05-01: clear the module-level chat registries before AND after every test."""
+    _TURNS.clear()
+    _SESSIONS.clear()
+    yield
+    _TURNS.clear()
+    _SESSIONS.clear()
 
 
 def _stub_settings():
+    """Minimal settings stub honoring resolve_active_llm + resolve_active_backend_name.
+
+    ``app.agent`` is a real ``AgentConfig`` instance so ChatAgentDeps's
+    Pydantic v2 ``agent_cfg`` validator accepts it (model_type check).
+    """
     return SimpleNamespace(
         app=SimpleNamespace(
             default_llm="ollama-local",
-            agent=SimpleNamespace(
-                allowed_tables=("ufs_data",),
+            agent=AgentConfig(
+                allowed_tables=["ufs_data"],
                 max_steps=5,
+                chat_max_steps=12,
                 timeout_s=30,
                 row_cap=200,
             ),
@@ -57,256 +100,250 @@ def _stub_settings():
     )
 
 
-@pytest.fixture()
-def ask_client(mocker):
-    """Yield a TestClient with run_nl_query + agent + deps mocked (D-19).
-
-    Three patches applied at module level:
-      - _get_agent     : returns a sentinel object (avoids real PydanticAI agent build)
-      - _build_deps    : returns a sentinel object (avoids Pydantic AgentDeps validation
-                         against a real DBAdapter; the deps value is never used because
-                         run_nl_query is also mocked)
-      - run_nl_query   : returns a canned NLResult (default kind="ok")
-
-    This is the minimal set required so every route handler reaches the
-    run_nl_query call without short-circuiting at agent/deps guards.
-    """
+@pytest.fixture
+def client():
+    """Plain TestClient with stub settings + fake DBAdapter injected after lifespan."""
     from app_v2.main import app
 
-    # Sentinel returned by both helpers — route code only checks `is None`
-    _sentinel = object()
-
-    mocker.patch("app_v2.routers.ask._get_agent", return_value=_sentinel)
-    mocker.patch("app_v2.routers.ask._build_deps", return_value=_sentinel)
-    # Default mock: kind="ok"
-    mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(
-            kind="ok",
-            sql="SELECT PLATFORM_ID FROM ufs_data LIMIT 200",
-            df=pd.DataFrame({"PLATFORM_ID": ["A", "B"]}),
-            summary="Two platforms.",
-        ),
-    )
-    with TestClient(app) as client:
-        # Inject AFTER lifespan ran — mirror of test_summary_routes.py isolated fixture
+    with TestClient(app) as c:
         app.state.settings = _stub_settings()
-        app.state.db = SimpleNamespace(  # only used by _render_confirmation (list_parameters fallback)
-            run_query=lambda *a, **k: pd.DataFrame(),
-            _get_engine=None,
-        )
-        app.state.agent_registry = {}
-        yield client
+        app.state.db = _FakeDB()
+        yield c
 
 
 # --- GET /ask -------------------------------------------------------------
 
-def test_get_ask_returns_200_with_html(ask_client, mocker):
-    """ASK-V2-01: GET /ask renders the page."""
-    # The default mock for _get_agent is fine; ask_page does NOT call run_nl_query
-    mocker.patch(
-        "app_v2.routers.ask.load_starter_prompts",
-        return_value=[{"label": f"L{i}", "question": f"Q{i}"} for i in range(8)],
-    )
-    resp = ask_client.get("/ask")
-    assert resp.status_code == 200
-    assert "text/html" in resp.headers.get("content-type", "")
-    body = resp.text
-    assert 'id="answer-zone"' in body
-    assert 'id="ask-q"' in body
-    assert 'hx-post="/ask/query"' in body
-    assert "Try asking..." in body
-    assert "LLM:" in body  # dropdown trigger label
+
+def test_ask_page_renders_chat_shell_with_no_starter_chips(client):
+    """D-CHAT-08 chat shell + D-CHAT-10 (no starter chips) + D-CHAT-11 (LLM dropdown)."""
+    r = client.get("/ask")
+    assert r.status_code == 200
+    body = r.text
+    # D-CHAT-10: starter chips include is gone from the shell.
+    assert "_starter_chips.html" not in body
+    # D-CHAT-08: chat shell IDs present.
+    assert 'id="chat-transcript"' in body
+    assert 'id="input-zone"' in body
+    # D-CHAT-11: LLM dropdown trigger preserved.
+    assert "LLM:" in body
+    # Phase 3: vendored Plotly + htmx-ext-sse loaded only here (T-03-04-07).
+    assert "vendor/plotly/plotly.min.js" in body
+    assert "vendor/htmx/htmx-ext-sse.js" in body
 
 
-def test_get_ask_dropdown_lists_all_configured_llms(ask_client, mocker):
-    """ASK-V2-05: every settings.llms[] entry appears as a dropdown-item."""
-    mocker.patch("app_v2.routers.ask.load_starter_prompts", return_value=[])
-    resp = ask_client.get("/ask")
-    assert resp.status_code == 200
-    body = resp.text
-    assert 'hx-post="/settings/llm"' in body
-    # Both names appear in the dropdown
-    assert "ollama-local" in body
-    assert "openai-prod" in body
+def test_ask_page_sets_pbm2_session_cookie_on_first_visit(client):
+    """RESEARCH Gap 6 / Pitfall 8 — pbm2_session cookie set on first GET /ask.
 
-
-# --- POST /ask/query ------------------------------------------------------
-
-def test_post_ask_query_ok_returns_answer_fragment(ask_client):
-    """NLResult.kind='ok' -> ask/_answer.html with table + summary + SQL expander."""
-    resp = ask_client.post("/ask/query", data={"question": "show all platforms"})
-    assert resp.status_code == 200
-    body = resp.text
-    assert 'id="answer-zone"' in body
-    assert "PLATFORM_ID" in body  # column header from the mocked DataFrame
-    assert "Two platforms." in body  # summary
-    assert "Generated SQL" in body
-    assert "SELECT PLATFORM_ID FROM ufs_data" in body
-
-
-def test_post_ask_query_clarification_returns_confirm_panel(ask_client, mocker):
-    """NLResult.kind='clarification_needed' -> ask/_confirm_panel.html."""
-    mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(
-            kind="clarification_needed",
-            message="Which params?",
-            candidate_params=["UFS · WriteProt", "UFS · LUNCount"],
-        ),
-    )
-    resp = ask_client.post("/ask/query", data={"question": "compare write prot"})
-    assert resp.status_code == 200
-    body = resp.text
-    assert 'id="answer-zone"' in body
-    assert "Which params?" in body
-    assert 'name="original_question"' in body
-    # original_question is propagated as the hidden input value (autoescaped)
-    assert "compare write prot" in body
-    assert "Run Query" in body
-
-
-def test_post_ask_query_failure_step_cap_returns_abort_banner(ask_client, mocker):
-    """NLResult.kind='failure', reason='step-cap' -> exact v1.0 copy."""
-    mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(
-            kind="failure",
-            failure=AgentRunFailure(reason="step-cap", last_sql="SELECT 1", detail="UsageLimitExceeded"),
-        ),
-    )
-    resp = ask_client.post("/ask/query", data={"question": "vague question"})
-    assert resp.status_code == 200
-    body = resp.text
-    assert 'id="answer-zone"' in body
-    assert "alert-danger" in body
-    assert "reached the 5-step limit" in body
-    assert "more specific parameters" in body
-
-
-def test_post_ask_query_failure_timeout_returns_abort_banner(ask_client, mocker):
-    """NLResult.kind='failure', reason='timeout' -> exact v1.0 copy."""
-    mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(
-            kind="failure",
-            failure=AgentRunFailure(reason="timeout", last_sql="SELECT 1", detail="MaxExecutionTime"),
-        ),
-    )
-    resp = ask_client.post("/ask/query", data={"question": "huge question"})
-    assert resp.status_code == 200
-    body = resp.text
-    assert "timed out after 30 seconds" in body
-    assert "more targeted question or switch to a faster model" in body
-
-
-def test_post_ask_query_no_llm_configured_returns_abort_banner(ask_client, mocker):
-    """When resolve_active_llm returns None, the route renders the abort banner."""
-    mocker.patch("app_v2.routers.ask.resolve_active_llm", return_value=None)
-    resp = ask_client.post("/ask/query", data={"question": "anything"})
-    assert resp.status_code == 200
-    body = resp.text
-    assert "alert-danger" in body
-    assert "No LLM backend configured" in body
-
-
-# --- POST /ask/confirm ---------------------------------------------------
-
-def test_post_ask_confirm_composes_loop_prevention_message(ask_client, mocker):
-    """D-10: composed message includes the loop-prevention sentence verbatim.
-
-    Uses _post_form_pairs (httpx 0.28 workaround from STATE.md 04-04) so that
-    repeated-key form fields (confirmed_params appearing twice) are encoded
-    correctly without triggering the httpx TypeError.
+    Inspect the response Set-Cookie header rather than the TestClient cookie
+    jar (the jar may not snapshot in time for the assertion in some
+    httpx versions; the response header is the authoritative signal).
     """
-    spy = mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(kind="ok", sql="SELECT 1", df=pd.DataFrame({"x": [1]}), summary="ok"),
+    r = client.get("/ask")
+    assert r.status_code == 200
+    set_cookie_headers = r.headers.get("set-cookie", "")
+    assert "pbm2_session=" in set_cookie_headers, (
+        f"pbm2_session not in Set-Cookie header: {set_cookie_headers!r}"
     )
-    resp = _post_form_pairs(
-        ask_client,
-        "/ask/confirm",
-        [("original_question", "compare X"), ("confirmed_params", "UFS · LUNCount")],
-    )
-    assert resp.status_code == 200
-    # First positional arg of run_nl_query is the composed question string
-    composed = spy.call_args.args[0]
-    assert "User-confirmed parameters: ['UFS · LUNCount']" in composed
-    assert "Original question: compare X" in composed
-    assert "Use ONLY the confirmed parameters above" in composed
-    assert "do not return ClarificationNeeded again" in composed
+    # And the TestClient cookie jar should now carry it for subsequent requests.
+    # (Cookies dict updates after iter_response; just check it was issued.)
+    assert "HttpOnly" in set_cookie_headers
+    assert "SameSite=lax" in set_cookie_headers.lower() or "samesite=lax" in set_cookie_headers.lower()
 
 
-def test_post_ask_confirm_with_empty_confirmed_params_still_runs(ask_client, mocker):
-    """D-10: Run Query with 0 selected params is permitted (loop-prevention sentence handles it)."""
-    spy = mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(kind="ok", sql="SELECT 1", df=pd.DataFrame({"x": [1]}), summary="ok"),
-    )
-    resp = ask_client.post("/ask/confirm", data={"original_question": "x"})
-    assert resp.status_code == 200
-    composed = spy.call_args.args[0]
-    assert "User-confirmed parameters: []" in composed
-    assert "If the list is empty" in composed
+# --- POST /ask/chat -------------------------------------------------------
 
 
-def test_post_ask_confirm_second_turn_clarification_is_suppressed(ask_client, mocker):
-    """Pitfall 6: second-turn ClarificationNeeded -> abort banner, NOT another picker."""
-    mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(
-            kind="clarification_needed",
-            message="still unclear",
-            candidate_params=["X · Y"],
-        ),
-    )
-    resp = ask_client.post(
-        "/ask/confirm",
-        data=[("original_question", "x"), ("confirmed_params", "A · B")],
-    )
-    assert resp.status_code == 200
-    body = resp.text
-    # Must be the abort banner, NOT the confirm panel
-    assert "alert-danger" in body
-    assert "Run Query" not in body  # no second confirm prompt
-    assert "Something went wrong" in body or "clarification a second time" in body
+def test_post_ask_chat_returns_user_message_fragment_with_sse_consumer(client):
+    """D-CHAT-08: POST /ask/chat returns the user-message + SSE consumer + OOB Stop swap."""
+    r = client.post("/ask/chat", data={"question": "compare X across SM8850 and SM8650"})
+    assert r.status_code == 200
+    body = r.text
+    # turn_id should be visible in sse-connect URL (uuid4().hex = 32 hex chars)
+    assert re.search(r'sse-connect="/ask/stream/[0-9a-f]{32}"', body)
+    # OOB swap to flip #input-zone to Stop state
+    assert 'hx-swap-oob="true"' in body
+    assert 'btn-stop' in body
+    # Original question is rendered (autoescaped)
+    assert "compare X across SM8850 and SM8650" in body
 
 
-def test_post_ask_confirm_failure_returns_abort_banner(ask_client, mocker):
-    """Standard failure path on second turn = abort banner."""
-    mocker.patch(
-        "app_v2.routers.ask.run_nl_query",
-        return_value=NLResult(
-            kind="failure",
-            failure=AgentRunFailure(reason="llm-error", last_sql="", detail="bad"),
-        ),
-    )
-    resp = ask_client.post(
-        "/ask/confirm",
-        data=[("original_question", "x"), ("confirmed_params", "A · B")],
-    )
-    assert resp.status_code == 200
-    assert "alert-danger" in resp.text
+def test_post_ask_chat_with_empty_question_still_creates_turn(client):
+    """The agent will produce an error event downstream; the route does not pre-validate."""
+    r = client.post("/ask/chat", data={"question": "  "})
+    assert r.status_code == 200
+    # turn_id is still created even on whitespace-only question
+    assert re.search(r'sse-connect="/ask/stream/[0-9a-f]{32}"', r.text)
 
 
-# --- Cookie-aware backend resolution -------------------------------------
-
-def test_post_ask_query_honors_pbm2_llm_cookie(ask_client, mocker):
-    """D-17: when pbm2_llm cookie is set to a valid llm name, the route resolves to that backend."""
-    spy = mocker.patch("app_v2.routers.ask._get_agent", return_value=object())
-    ask_client.cookies.set("pbm2_llm", "openai-prod")
-    resp = ask_client.post("/ask/query", data={"question": "x"})
-    assert resp.status_code == 200
-    # _get_agent receives the cookie-resolved llm_name, not the default
-    called_llm_name = spy.call_args.args[1]
-    assert called_llm_name == "openai-prod"
+# --- POST /ask/cancel/{turn_id} -------------------------------------------
 
 
-def test_post_ask_query_falls_back_when_cookie_invalid(ask_client, mocker):
-    """D-15: invalid cookie value silently falls back to settings.app.default_llm."""
-    spy = mocker.patch("app_v2.routers.ask._get_agent", return_value=object())
-    ask_client.cookies.set("pbm2_llm", "evil-tampered-value")
-    resp = ask_client.post("/ask/query", data={"question": "x"})
-    assert resp.status_code == 200
-    called_llm_name = spy.call_args.args[1]
-    assert called_llm_name == "ollama-local"  # the default
+def test_post_ask_cancel_with_foreign_session_returns_403(client):
+    """T-03-04-02: cancel must be authenticated to the originating session."""
+    r = client.post("/ask/chat", data={"question": "q"})
+    turn_id = re.search(r'sse-connect="/ask/stream/([0-9a-f]+)"', r.text).group(1)
+    # Session B (separate TestClient = separate cookie jar) tries to cancel.
+    from app_v2.main import app
+    other = TestClient(app)
+    other.cookies.set("pbm2_session", "b" * 32)  # set a different, valid-looking session id
+    cancel = other.post(f"/ask/cancel/{turn_id}")
+    assert cancel.status_code == 403
+
+
+def test_post_ask_cancel_with_unknown_turn_returns_404(client):
+    """Unregistered turn_id (well-formed but never created) returns 404."""
+    r = client.post("/ask/cancel/" + "0" * 32)
+    assert r.status_code == 404
+
+
+def test_post_ask_cancel_with_owning_session_returns_204(client):
+    """Owner session cancels its own turn — returns 204 (no body)."""
+    r = client.post("/ask/chat", data={"question": "q"})
+    turn_id = re.search(r'sse-connect="/ask/stream/([0-9a-f]+)"', r.text).group(1)
+    cancel = client.post(f"/ask/cancel/{turn_id}")
+    assert cancel.status_code == 204
+
+
+# --- GET /ask/stream/{turn_id} -------------------------------------------
+
+
+def test_get_ask_stream_with_foreign_session_returns_403(client):
+    """T-03-04-01: stream must be authenticated to the originating session."""
+    r = client.post("/ask/chat", data={"question": "q"})
+    turn_id = re.search(r'sse-connect="/ask/stream/([0-9a-f]+)"', r.text).group(1)
+    from app_v2.main import app
+    other = TestClient(app)
+    other.cookies.set("pbm2_session", "b" * 32)
+    stream = other.get(f"/ask/stream/{turn_id}")
+    assert stream.status_code == 403
+
+
+def test_get_ask_stream_with_unknown_turn_returns_404(client):
+    """Unregistered turn_id returns 404 from the SSE endpoint as well."""
+    stream = client.get("/ask/stream/" + "0" * 32)
+    assert stream.status_code == 404
+
+
+# --- Legacy Phase 6 route deletion (D-CHAT-09) ----------------------------
+
+
+def test_post_ask_query_route_no_longer_exists(client):
+    """D-CHAT-09: legacy one-shot /ask/query route deleted in plan 03-04."""
+    r = client.post("/ask/query", data={"question": "q"})
+    assert r.status_code in (404, 405)
+
+
+def test_post_ask_confirm_route_no_longer_exists(client):
+    """D-CHAT-09: legacy NL-05 /ask/confirm route deleted in plan 03-04."""
+    r = client.post("/ask/confirm", data={"prompt_id": "x"})
+    assert r.status_code in (404, 405)
+
+
+# --- SSE event ordering + WARNING-3 final-card hydration ------------------
+
+
+@patch("app_v2.routers.ask.build_pydantic_model", return_value=MagicMock(name="ai_model"))
+@patch("app_v2.routers.ask.build_chat_agent")
+def test_get_ask_stream_final_frame_contains_table_rows_when_sql_returns_rows(
+    mock_build_agent, mock_build_model, client
+):
+    """WARNING-3 contract: when the agent emits PresentResult with sql that returns
+    rows, the final SSE frame's rendered fragment contains a non-empty <tbody>.
+
+    Verifies router-side _hydrate_final_card runs PresentResult.sql against
+    app.state.db and renders _final_card.html with table_html populated.
+    """
+    df = pd.DataFrame({"a": [1, 2], "b": ["x", "y"]})
+
+    class _FakeRunResult:
+        def __init__(self, output):
+            self.output = output
+
+        def new_messages(self):
+            return []
+
+    class _FakeAgentRunResultEvent:
+        """Emulates the terminal AgentRunResultEvent — has a `result` attribute."""
+
+        def __init__(self, output):
+            self.result = _FakeRunResult(output)
+
+        # A fallback `new_messages` method for chat_loop's defensive `getattr` is on result.
+
+    async def fake_stream(*a, **kw):
+        # Yield only the terminal AgentRunResultEvent carrying a PresentResult.
+        yield _FakeAgentRunResultEvent(
+            PresentResult(summary="ok", sql="SELECT * FROM ufs_data LIMIT 2")
+        )
+
+    mock_agent = MagicMock()
+    mock_agent.run_stream_events = fake_stream
+    mock_build_agent.return_value = mock_agent
+
+    # _FakeDB returns the given DataFrame from run_query so _hydrate_final_card
+    # renders a populated <tbody>. Use a real DBAdapter subclass so the
+    # ChatAgentDeps Pydantic v2 isinstance(DBAdapter) check passes.
+    from app_v2.main import app as fastapi_app
+    original_db = getattr(fastapi_app.state, "db", None)
+    fastapi_app.state.db = _FakeDB(df)
+    try:
+        r = client.post("/ask/chat", data={"question": "q"})
+        turn_id = re.search(r'sse-connect="/ask/stream/([0-9a-f]+)"', r.text).group(1)
+        body = ""
+        with client.stream("GET", f"/ask/stream/{turn_id}") as resp:
+            assert resp.status_code == 200
+            for line in resp.iter_lines():
+                body += line + "\n"
+                # The fake agent stream ends after one event, so once we see
+                # </tbody> the rest of the response is just the SSE
+                # close-of-stream sentinels — break out cleanly.
+                if "</tbody>" in body and "event: final" in body:
+                    break
+        assert "event: final" in body, f"final SSE event not seen:\n{body[:500]}"
+        assert "<tbody>" in body, f"final SSE frame missing <tbody>:\n{body[:2000]}"
+        assert "</tbody>" in body, (
+            f"final SSE frame missing </tbody>:\n{body[:2000]}"
+        )
+    finally:
+        fastapi_app.state.db = original_db
+
+
+@patch("app_v2.routers.ask.build_pydantic_model", return_value=MagicMock(name="ai_model"))
+@patch("app_v2.routers.ask.build_chat_agent")
+def test_get_ask_stream_emits_terminal_event_with_mocked_agent(
+    mock_build_agent, mock_build_model, client
+):
+    """D-CHAT-08 + D-CHAT-04/05: SSE stream produces a terminal final or error event."""
+
+    class _FakeRunResult:
+        def __init__(self):
+            self.output = None  # forces 'agent-no-final-result' error path
+
+        def new_messages(self):
+            return []
+
+    class _FakeAgentRunResultEvent:
+        def __init__(self):
+            self.result = _FakeRunResult()
+
+    async def fake_stream(*a, **kw):
+        yield _FakeAgentRunResultEvent()
+
+    mock_agent = MagicMock()
+    mock_agent.run_stream_events = fake_stream
+    mock_build_agent.return_value = mock_agent
+
+    r = client.post("/ask/chat", data={"question": "q"})
+    turn_id = re.search(r'sse-connect="/ask/stream/([0-9a-f]+)"', r.text).group(1)
+
+    events = []
+    with client.stream("GET", f"/ask/stream/{turn_id}") as resp:
+        assert resp.status_code == 200
+        for line in resp.iter_lines():
+            if line.startswith("event:"):
+                events.append(line.split(":", 1)[1].strip())
+            if events and events[-1] in ("final", "error"):
+                break
+
+    assert events, "no SSE events received"
+    assert events[-1] in ("final", "error")
