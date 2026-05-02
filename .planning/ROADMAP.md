@@ -81,10 +81,14 @@ Plans:
 
 ### Phase 3: Overhaul Ask feature into multi-step agentic chat — replace one-shot Q&A with PydanticAI tool-using agent loop (run_sql, inspect_schema, get_distinct_values, sample_rows, present_result), SSE streaming of thought/tool_call/tool_result/final events via sse-starlette + HTMX, ephemeral session-scoped chat history using PydanticAI message_history, UI lockout + visible Stop button during reasoning, guard-rail rejections fed back as tool-result errors so the agent retries on its own. Anchor visual design to Dashboard_v2.html. Full architectural decisions, motivating example (SM8850 vs SM8650 UNION rejection), tool surface, stack alignment, and open questions for the planner are documented in .planning/notes/ask-chat-overhaul-decisions.md — the planner should read that note first.
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Replace the v2.0 Phase 6 one-shot Ask page with a multi-step PydanticAI tool-using agent loop. The agent runs multiple SQL queries, inspects schema, samples distincts, reasons across tool results, and emits a structured final answer. SSE streaming via sse-starlette pushes `thought` / `tool_call` / `tool_result` / `final` / `error` events to an HTMX-driven chat surface. Cooperative cancellation via Stop button, guard-rail rejection retry (cap=5), step-budget enforcement (default=12), ephemeral 6-pair session history, NL-05 confirmation flow deleted in same atomic commit. LLM dropdown carried forward verbatim from Phase 6 (D-CHAT-11). Anchored visually to Dashboard_v2.html palette via existing Phase 02 tokens. 15 D-CHAT-* decisions locked in 03-CONTEXT.md.
+**Requirements**: D-CHAT-01, D-CHAT-02, D-CHAT-03, D-CHAT-04, D-CHAT-05, D-CHAT-06, D-CHAT-07, D-CHAT-08, D-CHAT-09, D-CHAT-10, D-CHAT-11, D-CHAT-12, D-CHAT-13, D-CHAT-14, D-CHAT-15
 **Depends on:** Phase 2
-**Plans:** 0 plans
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 3 to break down)
+- [ ] 03-01-PLAN.md — Foundation: pin sse-starlette, add AgentConfig.chat_max_steps, base.html extra_head block, vendor htmx-ext-sse + Plotly bundles
+- [ ] 03-02-PLAN.md — Chat agent module: ChartSpec/PresentResult/ChatAgentDeps Pydantic models + build_chat_agent factory + 6-tool surface (REJECTED: prefix on guard rejections)
+- [ ] 03-03-PLAN.md — Chat plumbing: chat_session (per-turn registry + 12-msg sliding window + scrub-on-write) + chat_loop (stream_chat_turn async generator with cancel/retry-cap/step-budget/error classification) + main.py state init
+- [ ] 03-04-PLAN.md — Atomic rewrite: routers/ask.py end-to-end (4 new routes, session-cookie auth) + 8 new chat templates + delete NL-05 templates + chat-surface CSS append
+- [ ] 03-05-PLAN.md — Tests: rewrite test_ask_routes.py + Phase 3 invariants + chat_loop/chat_session/chat_agent unit tests + delete test_phase06_invariants.py
