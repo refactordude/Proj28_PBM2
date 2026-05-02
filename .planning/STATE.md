@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 02
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-02 - Completed quick task 260502-jb2: Add fake joint validation fixture folders to stress-test JV grid with 20+ results
+Last activity: 2026-05-02 - Completed quick task 260502-sqi: Fix JV pagination losing sort state — thread sort/order into pagination hx-vals
 
 Progress: [——————————] no active milestone
 
@@ -61,6 +61,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260429-qyv | Browse: Parameters filter depends on selected Platforms (server-side intersection, disabled when none, OOB picker refresh) | 2026-04-29 | f1e002b | [260429-qyv-browse-parameters-filter-depends-on-sele](./quick/260429-qyv-browse-parameters-filter-depends-on-sele/) |
 | 260430-wzg | Fix Joint Validation filter popover clipping (extend `.panel { overflow: visible }` to cover `.panel.overview-filter-bar` self-match) | 2026-04-30 | 067fd37 | [260430-wzg-fix-joint-validation-filter-popover-clip](./quick/260430-wzg-fix-joint-validation-filter-popover-clip/) |
 | 260502-jb2 | Add fake joint validation fixture folders to stress-test JV grid with 20+ results (16 new fakes → 22 total, page-2 active) | 2026-05-02 | cd9b417 | [260502-jb2-add-fake-joint-validation-fixture-folder](./quick/260502-jb2-add-fake-joint-validation-fixture-folder/) |
+| 260502-sqi | Fix JV pagination losing sort state — thread sort/order into pagination hx-vals | 2026-05-02 | 2167592 | [260502-sqi-fix-jv-pagination-losing-sort-state-thre](./quick/260502-sqi-fix-jv-pagination-losing-sort-state-thre/) |
 
 ## Blockers/Concerns
 
