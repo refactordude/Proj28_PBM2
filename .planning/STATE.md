@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 04-01-PLAN.md (Wave 1 — CSS foundation)
-last_updated: "2026-05-03T08:00:21.852Z"
+stopped_at: Completed 04-02-PLAN.md (Wave 2 — Jinja partials + Pydantic view-models + chip-toggle.js)
+last_updated: "2026-05-03T08:10:22.507Z"
 last_activity: 2026-05-03
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 20
-  completed_plans: 16
-  percent: 80
+  completed_plans: 17
+  percent: 85
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 04 (UI Foundation — Helix-aligned shell & primitives) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-05-03
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-03T08:00:21.834Z
+Last session: 2026-05-03T08:09:53.527Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed 04-01-PLAN.md (Wave 1 — CSS foundation)
+Stopped at: Completed 04-02-PLAN.md (Wave 2 — Jinja partials + Pydantic view-models + chip-toggle.js)
 
 ## Accumulated Context
 
@@ -140,6 +140,14 @@ Stopped at: Completed 04-01-PLAN.md (Wave 1 — CSS foundation)
 - [Phase 04]: Plan 04-01: Inter Tight + JetBrains Mono via Google Fonts CDN — fixes Pitfall 1 (.page-title font-weight 800 was silently degrading to system fallback ~700 because base.html had no <link> for the font). Loaded BEFORE tokens.css so @font-face rules are available when font-family declarations apply. Vendored woff2 fallback deferred to follow-up if intranet DNS restricts fonts.googleapis.com.
 - [Phase 04]: Plan 04-01: btn-helix namespace (NOT overriding Bootstrap .btn) — Phase 4 primary-button rules apply only via .btn-helix class, avoiding site-wide Bootstrap button restyling. Co-exists with Bootstrap .btn (Bootstrap rules win for unscoped .btn callers; Phase 4 rules apply when paired with .btn-helix or used inside .pop).
 - [Phase 04]: Plan 04-01: !important on .pop width/min-width to defeat Bootstrap --bs-dropdown-min-width: 10rem default (Pitfall 3) — when Wave 2 macros apply .pop to a .dropdown-menu, this guarantees the 300px width wins regardless of cascade tie-breaker.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: chip-toggle.js as SIBLING of popover-search.js (not fork) — D-UIF-05 + D-UI2-09 keep popover-search.js byte-stable; both helpers coexist via document-level capture-phase delegation with precise selectors (chip-toggle binds .pop .opt and early-returns inside .popover-search-root per Pitfall 8 boundary).
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: chip-value-as-payload (NOT '1') in chip-toggle.js — when chip is ON, hidden input gets the chip's data-value; OFF clears it. Diverges from RESEARCH §Pitfall 8 sketch ('1' flag) so multi-option groups submit meaningful per-option values (?status=open&status=closed) instead of opaque flags.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: HeroSpec and FilterGroup live in SEPARATE files (hero_spec.py + filter_spec.py) — RESEARCH Open Question 2 resolved as separate-file; mirrors one-concept-per-file convention in app_v2/services/.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: kpi_card variant arg dropped per UI-SPEC line 280 — caller sets .kpis or .kpis.five wrapper class; macro renders ONE card. Reduces signature surface; Wave 4 showcase emits the wrapper directly.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: btn-helix used inside popovers + showcase to leverage Wave 1's namespaced primary button without fighting Bootstrap .btn cascade.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: hero macro inline-overrides grid-template-columns to 1fr when spec.side_stats is empty — only runtime-data-dependent style override; everything else lives in app.css.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: filters_popover hyphen-safe group_name (lowercase + replace ' '→'_' + replace '-'→'_') — UFS-eMMC label produces name='ufs_emmc' (Python attr-safe). BLOCKER 2 from plan revision honored (both space AND hyphen replaced).
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: sparkline namespace() pattern + height/2 mid-height fallback for hi==lo — Jinja loop scope cannot reassign outer scalars; namespace is the canonical idiom. Constant data renders flat horizontal line at mid-height (13 for default 26px viewBox), no NaN.
 
 ### Performance Metrics
 
@@ -161,3 +169,4 @@ Stopped at: Completed 04-01-PLAN.md (Wave 1 — CSS foundation)
 | Phase 03 P04 | 12min | 4 tasks | 11 files |
 | Phase 03 P05 | 20min | 2 tasks | 9 files |
 | Phase 04 P01 | 5min | 2 tasks | 2 files |
+| Phase 04 P02 | 5min | 2 tasks | 11 files |
