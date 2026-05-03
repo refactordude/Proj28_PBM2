@@ -132,6 +132,54 @@ def test_sample_rows_with_empty_where_clause_raises_model_retry_without_db_call(
         sample_rows(ctx, where_clause="", limit=5)
 
 
+def test_repeat_tool_call_returns_cached_result_with_terminate_nudge():
+    """Aider/Cursor pattern: repeated calls with identical args short-circuit
+    to the cached result with a "[CACHED]" prefix that nudges the model to
+    call present_result. Bounds runaway loops regardless of model quality.
+    """
+    from pydantic_ai.models.test import TestModel
+
+    df = pd.DataFrame({"PLATFORM_ID": ["SM8650_v1", "SM8650_v2"]})
+    agent = build_chat_agent(TestModel())
+    get_distinct_values = agent._function_toolset.tools["get_distinct_values"].function
+    ctx = _make_ctx(df=df)
+    ctx.run_step = 1
+
+    # First call — populates the cache and returns real data.
+    out1 = get_distinct_values(ctx, column="PLATFORM_ID")
+    assert "<db_data>" in out1, "first call should return live DB output"
+    assert "[CACHED" not in out1, "first call should NOT have CACHED prefix"
+    assert ctx.deps.tool_call_cache, "cache should be populated after first call"
+
+    # Second call with same args — cache hit, prepends CACHED note.
+    ctx.run_step = 2
+    out2 = get_distinct_values(ctx, column="PLATFORM_ID")
+    assert out2.startswith("[CACHED"), f"repeat call should be CACHED; got {out2[:80]!r}"
+    assert "present_result" in out2, "CACHED note should nudge toward present_result"
+    assert "<db_data>" in out2, "CACHED result should still include the original data"
+
+
+def test_rejected_tool_result_is_not_cached():
+    """REJECTED:/error results MUST NOT be cached — the agent should be
+    able to retry the same tool with different args via ModelRetry.
+    Caching a REJECTED result would trap the agent in a stale rejection.
+    """
+    from pydantic_ai import ModelRetry
+    from pydantic_ai.models.test import TestModel
+
+    agent = build_chat_agent(TestModel())
+    get_distinct_values = agent._function_toolset.tools["get_distinct_values"].function
+    ctx = _make_ctx()
+    ctx.run_step = 1
+
+    # Invalid column → REJECTED → ModelRetry → tool_call_cache stays empty.
+    with pytest.raises(ModelRetry):
+        get_distinct_values(ctx, column="not_a_column")
+    assert "get_distinct_values:not_a_column" not in ctx.deps.tool_call_cache, (
+        "REJECTED results must not be cached"
+    )
+
+
 def test_successful_tool_result_carries_remaining_budget_hint():
     """Cursor / Aider pattern: tool results inject a remaining-budget hint
     so the model self-paces and calls present_result before exhaustion.
