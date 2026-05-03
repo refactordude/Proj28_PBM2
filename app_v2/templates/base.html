@@ -1,3 +1,4 @@
+{% from "_components/topbar.html" import topbar %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -35,6 +36,12 @@
      AFTER bootstrap.bundle.min.js so bootstrap.Dropdown.getInstance(...) is
      available; defer order matches document source order at parse time. #}
   <script src="{{ url_for('static', path='js/popover-search.js') }}" defer></script>
+  {# Phase 04 — chip-toggle.js handles `.pop .opt` chip toggle behavior
+     inside `_components/filters_popover.html`. Sibling of popover-search.js
+     (D-UIF-05 byte-stable). Loaded with defer AFTER bootstrap.bundle.min.js
+     and AFTER popover-search.js so document-level click delegation finds
+     both handlers in source order. #}
+  <script src="{{ url_for('static', path='js/chip-toggle.js') }}" defer></script>
 
   {# Phase 03: per-page scripts that depend on htmx (e.g., htmx extensions).
      Loaded AFTER htmx.min.js so htmx-ext-* registrations find the htmx
@@ -43,39 +50,11 @@
   {% block scripts %}{% endblock %}
 </head>
 <body>
-  {# Horizontal top-nav tabs (INFRA-02). hx-boost is NOT applied here per
-     Pitfall 8 — tab nav uses plain links + explicit full-page routes so browser
-     back/forward always loads a full page, not a fragment. #}
-  <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="/">
-        <i class="bi bi-database"></i> PBM2
-      </a>
-      <ul class="nav nav-tabs card-header-tabs ms-3">
-        <li class="nav-item">
-          <a class="nav-link {% if active_tab == 'overview' %}active{% endif %}"
-             {% if active_tab == 'overview' %}aria-current="page"{% endif %}
-             href="/">
-            <i class="bi bi-list-ul"></i> Joint Validation
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if active_tab == 'browse' %}active{% endif %}"
-             {% if active_tab == 'browse' %}aria-current="page"{% endif %}
-             href="/browse">
-            <i class="bi bi-table"></i> Browse
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if active_tab == 'ask' %}active{% endif %}"
-             {% if active_tab == 'ask' %}aria-current="page"{% endif %}
-             href="/ask">
-            <i class="bi bi-chat-dots"></i> Ask
-          </a>
-        </li>
-      </ul>
-    </div>
-  </nav>
+  {# Phase 04 — Helix topbar (D-UIF-06, D-UIF-07).
+     Replaces the legacy Bootstrap navbar markup. Brand "P" + wordmark
+     "PBM2" + tab strip (Joint Validation / Browse / Ask) + static "PM"
+     avatar. Tabs are <a href> per Phase 1 Pitfall 8 (no hx-boost). #}
+  {{ topbar(active_tab=active_tab|default("")) }}
 
   {# INFRA-02: HTMX error container — htmx-error-handler.js swaps 4xx/5xx responses here.
      Kept in the persistent shell (NOT inside swappable tab content) to survive navigation. #}

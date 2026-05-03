@@ -151,28 +151,11 @@ def test_site_footer_rule() -> None:
     )
 
 
-def test_navbar_padding_override() -> None:
-    """D-UI2-02: app.css must contain a .navbar rule with padding-top: 16px and padding-bottom: 16px."""
-    src = _read(APP_CSS)
-    # There must be a .navbar rule (our new one, not the Bootstrap base)
-    # that has both padding-top: 16px and padding-bottom: 16px
-    assert "padding-top: 16px" in src, (
-        "app.css must contain padding-top: 16px for taller nav bar (D-UI2-02)"
-    )
-    assert "padding-bottom: 16px" in src, (
-        "app.css must contain padding-bottom: 16px for taller nav bar (D-UI2-02)"
-    )
-    # They must be inside a .navbar selector block
-    idx = src.find(".navbar")
-    assert idx >= 0, "app.css must contain a .navbar rule (D-UI2-02)"
-    block_end = src.find("}", idx)
-    block = src[idx:block_end]
-    assert "padding-top: 16px" in block, (
-        ".navbar rule must contain padding-top: 16px (D-UI2-02)"
-    )
-    assert "padding-bottom: 16px" in block, (
-        ".navbar rule must contain padding-bottom: 16px (D-UI2-02)"
-    )
+# Phase 04 D-UIF-06: test_navbar_padding_override removed. The .navbar
+# CSS rule it asserted (D-UI2-02) was deleted because the legacy
+# <nav class="navbar"> markup it targeted was replaced by the Helix
+# .topbar primitive. The .topbar rule itself is invariant-tested in
+# tests/v2/test_phase04_uif_invariants.py (Wave 4).
 
 
 def test_panel_title_rule() -> None:
@@ -238,18 +221,11 @@ def test_base_html_has_footer_block() -> None:
     )
 
 
-def test_base_html_nav_left_aligned() -> None:
-    """D-UI2-01: nav tabs must NOT have ms-auto on the <ul> (already left-aligned)."""
-    src = _read(BASE_HTML)
-    # Find the nav-tabs ul
-    ul_start = src.find('class="nav nav-tabs')
-    assert ul_start >= 0, "base.html must contain a nav-tabs ul"
-    # Check the same line/opening tag for ms-auto
-    ul_end = src.find(">", ul_start)
-    ul_tag = src[ul_start:ul_end]
-    assert "ms-auto" not in ul_tag, (
-        "The nav-tabs <ul> must NOT have ms-auto (D-UI2-01 — tabs are left-aligned)"
-    )
+# Phase 04 D-UIF-06: test_base_html_nav_left_aligned removed. The
+# legacy <ul class="nav nav-tabs"> it asserted on was replaced by
+# the .topbar > .tabs flex layout in _components/topbar.html. Tabs
+# are left-aligned by structure (between .brand and .top-right);
+# Wave 4 invariant tests pin the topbar shape if needed.
 
 
 def test_full_page_renders_with_footer() -> None:

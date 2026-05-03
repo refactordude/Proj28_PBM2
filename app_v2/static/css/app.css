@@ -30,10 +30,11 @@ main.container-fluid {
    is now usually empty. Whitespace-strip in base.html keeps the empty
    render truly element-only so :empty matches. */
 .site-footer:empty { display: none; }
-.navbar {
-  padding-top: 16px;
-  padding-bottom: 16px;
-}
+/* Phase 04 D-UIF-06: legacy Bootstrap navbar padding override rule removed
+   (was `.navbar` selector with padding-top:16px / padding-bottom:16px).
+   The Bootstrap navbar markup it targeted was replaced by the .topbar
+   partial in base.html. The .topbar rule (lines later in this file)
+   owns the new shell padding. */
 
 /* §1 Page Shell */
 /* Phase 02 — Full-width content (D-UI2-03). max-width and outer margin/padding removed; inner panels keep their own padding. */
