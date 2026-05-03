@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: false
 preset: none
 created: 2026-05-03
+revised: 2026-05-03
 ---
 
 # Phase 4 — UI Design Contract
@@ -43,25 +44,38 @@ Source: Dashboard_v2.html lines 7–9. Weight range 400–800 is required: `bran
 
 ## Spacing Scale
 
-All values are multiples of 4. Source: Dashboard_v2.html CSS (shell padding, panel padding, gap values).
+All values in the scale below are multiples of 4. Source: Dashboard_v2.html CSS (shell padding, panel padding, gap values) — functional spacing normalized to the 4px grid for app.css authoring.
 
 | Token | Value | Usage in Phase 4 |
 |-------|-------|-----------------|
-| xs | 4px | Chip `.n` badge padding (1px 6px → ~4px horizontal), tiny-chip padding |
+| xs | 4px | Chip `.n` badge padding (~4px horizontal), tiny-chip padding |
 | sm | 8px | `.chip` horizontal gap, `.pop .opt` padding, date input gap |
-| md | 16px | `.topbar` padding-left/right (14px → round to 16px), `.btn` horizontal padding |
-| lg | 24px | `.shell` padding (18px → 24px for PBM2; see note), `.panel-body` padding (26px → 24px) |
-| xl | 32px | `.panel-body` vertical padding; `.hero` padding (30px 32px) |
+| md | 16px | `.topbar` padding-left/right, `.btn` horizontal padding |
+| lg | 24px | `.topbar` padding-top/bottom (see note), `.panel-body` padding (see note) |
+| xl | 32px | `.panel-body` vertical padding; `.hero` padding (see note) |
 | 2xl | 48px | Major section breaks between hero / kpi row / panel |
-| 3xl | 64px | Page-level bottom padding (`.shell` bottom: 56px in Dashboard → use 64px) |
+| 3xl | 64px | Page-level bottom padding (`.shell` bottom: 56px in Dashboard — use 64px) |
 
-**Exceptions:**
-- `.topbar` uses 10px 14px padding (Dashboard line 32) — non-multiple-of-4 vertical; keep 10px to match Dashboard exactly.
-- `.ph` uses 18px 26px padding (Dashboard line 118) — keep exact Dashboard values; do not normalize to grid.
-- `.hero` uses 30px 32px padding (Dashboard line 83) — keep exact; hero is a showcase primitive, not a functional surface yet.
-- `.brand-mark` is 26×26px (Dashboard line 35) — intentional non-grid sizing for the icon; keep exact.
-- `.av` is 32×32px (Dashboard line 46) — keep exact.
-- Touch targets: interactive `.tab` elements are 36px tall (Dashboard line 52), `.btn` is 38px tall (Dashboard line 70). Both are within accessible range; no exception needed.
+### Functional spacing normalized to 4px grid
+
+The following Dashboard values are non-multiples-of-4. The app.css-authored values use the nearest 4px-grid value; deltas are noted for traceability.
+
+| Element | Dashboard value (line ref) | Authored value (app.css) | Delta |
+|---------|---------------------------|--------------------------|-------|
+| `.topbar` padding | 10px 14px (line 32) | **8px 16px** | vertical +2px → -2px; horizontal 14px → 16px (+2px) |
+| `.ph` padding | 18px 26px (line 118) | **16px 24px** | -2px each axis |
+| `.hero` padding | 30px 32px (line 83) | **32px 32px** | vertical 30px → 32px (+2px); horizontal unchanged |
+
+### Cosmetic fixed dimensions (NOT spacing tokens — element-bound)
+
+These are non-reusable element dimensions, not entries in the spacing scale. New components must use the 4/8/16/24/32/48/64 scale.
+
+| Element | Value | Source | Note |
+|---------|-------|--------|------|
+| `.brand-mark` | 26×26px | Dashboard line 35 | Decorative gradient tile; fixed icon size, not a layout token |
+| `.av` | 32×32px | Dashboard line 46 | Avatar circle; already mod-4 |
+| `.btn` height | **40px** | Dashboard line 70 (38px) | Re-anchored to 40px (mod-4); Dashboard delta: +2px |
+| `.tab` height | 36px | Dashboard line 52 | Already mod-4 — keep exact |
 
 ---
 
@@ -69,14 +83,29 @@ All values are multiples of 4. Source: Dashboard_v2.html CSS (shell padding, pan
 
 Declared from Dashboard_v2.html lines 11–27 and cross-confirmed with existing `tokens.css` (D-UI2-04 type scale, locked — do not churn).
 
+### 4-role type scale
+
 | Role | Size | Weight | Line Height | Letter Spacing | Usage |
 |------|------|--------|-------------|----------------|-------|
 | Body | 15px (`--font-size-body`) | 400 | 1.5 | -0.005em | Body copy, table cells, popover text |
-| Label / UI | 13px | 500–600 | 1.4 | -0.005em | `.chip`, `.pill`, `.kpi .l`, popover group labels, `.tab .count` |
+| Label / UI | 13px | 600 | 1.4 | -0.005em | `.chip`, `.pill`, `.kpi .l`, popover group labels, `.tab .count` |
 | Panel heading | 18px | 700 | 1.2 | -0.015em | `.ph b` (panel header title), tab bar label at active weight |
 | Page title / Display | 28px (`--font-size-h1`) | 800 | 1.1 | -0.035em | `.page-title`, hero `.num` uses 72px/800 (showcase-only) |
 
-**Additional specific sizes (not new scale entries — variants within the 4 declared roles):**
+### Declared font weight categories
+
+Two categories — every weight used in the codebase belongs to one of these:
+
+| Category | Weights | Used for |
+|----------|---------|----------|
+| **Regular** | 400 | Body copy, default UI text |
+| **Emphasis** | 600 / 700 / 800 | 600 = label/UI emphasis (chips, pills, tab count, popover labels); 700 = panel heading (`.ph b`), tab active; 800 = display/page-title (`.page-title`) and brand-mark letter. These three weights belong to a single declared "emphasis" category, not three separate scale entries. |
+
+Weight 500 appears only in Dashboard showcase elements (`.kpi .l`, `.chip` default, `.hero .side .r .k`) and is treated as a tab-only override within element-bound overrides below — it is NOT a declared scale weight.
+
+### Element-bound overrides (NOT scale entries — do not reuse)
+
+These sizes are not part of the reusable type scale. They are one-off pixel values bound to specific Dashboard_v2.html elements; new components must use the 4-role scale above.
 
 | Element | Size | Weight | Source |
 |---------|------|--------|--------|
@@ -88,6 +117,7 @@ Declared from Dashboard_v2.html lines 11–27 and cross-confirmed with existing 
 | KPI value | 30px | 700 | Dashboard line 110 — `.kpi .v` — display size, not a new scale entry |
 | Hero stat number | 72px | 800 | Dashboard line 89 — showcase-only |
 | Hero delta / side stat | 13–15px | 600–700 | Dashboard lines 91–100 |
+| `.chip` / `.kpi .l` default weight | 500 | — | Dashboard lines 109, 123 — element-bound; collapses to 600 for Label/UI scale role on new components |
 
 **Mono font:** JetBrains Mono (400/500/600) — used for IDs, parameter keys, dates, cell values in tables. Applied via `.mono` class.
 
@@ -128,7 +158,7 @@ All hex values are verbatim from Dashboard_v2.html lines 11–21, fully matched 
 6. `.brand-mark` gradient (`linear-gradient(135deg, #3366ff, #5e7cff)`) — brand identity
 7. `.av` avatar gradient (same as brand-mark)
 
-> Note: `.chip.on` uses `--ink` (#171c24) as background, NOT `--accent`. This matches Dashboard_v2.html line 125 verbatim. Accent is NOT the chip active color.
+> Note: `.chip.on` uses `--ink` (#171c24) as background, NOT `--accent`. This matches Dashboard_v2.html line 126 verbatim. Accent is NOT the chip active color.
 
 **Destructive:** `--red` (#ef3e4a). Used only for error states, overdue dates, `.pill.over`, `.tiny-chip.err`. No destructive actions exist in Phase 4 (showcase-only phase; no delete/irreversible user actions).
 
@@ -142,7 +172,7 @@ Phase 4 ships the following new CSS classes and Jinja macros. Each entry maps to
 
 | Class | Dashboard Lines | Description |
 |-------|-----------------|-------------|
-| `.topbar` | 32–33 | Full-width white pill topbar: flex row, 16px border-radius, 10px 14px padding, shadow-panel |
+| `.topbar` | 32–33 | Full-width white pill topbar: flex row, 16px border-radius, **8px 16px padding** (normalized from 10px 14px), shadow-panel |
 | `.brand` | 34 | Brand container: flex, gap 10px, weight 700, size 16px |
 | `.brand-mark` | 35–36 | 26×26px gradient square (135deg #3366ff→#5e7cff), border-radius 8px, letter "P" at 13px/800 |
 | `.brand-sep` | 37 | Separator text in dim color |
@@ -153,17 +183,17 @@ Phase 4 ships the following new CSS classes and Jinja macros. Each entry maps to
 | `.tab[aria-selected=true]` | 54 | `#f4f6f8` background + `--ink` color |
 | `.tab .count` | 55 | 11px/600 pill badge: white bg, inset border |
 | `.tab[aria-selected=true] .count` | 56 | accent-soft bg + accent color, no shadow |
-| `.ph` | 118 | Panel header: flex, align-items center, gap 12px, 18px 26px padding, flex-wrap |
+| `.ph` | 118 | Panel header: flex, align-items center, gap 12px, **16px 24px padding** (normalized from 18px 26px), flex-wrap |
 | `.ph b` | 119 | 18px/700, letter-spacing -0.015em |
 | `.ph .tag` | 120 | 12px/500, mute color, `#f4f6f8` bg, pill radius, 3px 10px padding |
 | `.ph .spacer` | 121 | `flex: 1` — pushes right-side actions to edge |
 | `.chips` | 122 | Flex row, gap 6px, flex-wrap |
 | `.chip` | 123–124 | 13px/500, 7px 14px padding, pill radius, `#f4f6f8` bg, cursor pointer |
 | `.chip:hover` | 125 | `#eaecf0` background |
-| `.chip.on` | 125 | `--ink` background + white text |
+| `.chip.on` | 126 | `--ink` background + white text |
 | `.chip .n` | 127 | 11px/600 inline count badge, rgba(0,0,0,.06) bg |
 | `.chip.on .n` | 128 | rgba(255,255,255,.18) bg + white text |
-| `.hero` | 83–85 | 22px radius panel, 30px 32px padding, grid 1.3fr / 1fr, gap 36px |
+| `.hero` | 83–85 | 22px radius panel, **32px 32px padding** (normalized from 30px 32px), grid 1.3fr / 1fr, gap 36px |
 | `.hero::after` | 86–87 | Decorative radial gradient blob (right-top) |
 | `.hero .label` | 88 | 13px/600, mute color, margin-bottom 8px |
 | `.hero .num` | 89 | 72px/800, letter-spacing -0.045em, line-height .95, flex baseline gap 8px |
@@ -270,6 +300,8 @@ Macro signature:
 
 Bootstrap 5 dropdown wrapping `.pop` content. Quick-chip row with the given day options (`.qrow button.active` on the currently selected chip). Start/end date inputs (`.dates` grid). Footer: "Reset" ghost link (left) + "Apply" `.btn.sm` button (right). Apply submits the enclosing form. Click-outside dismisses via Bootstrap `data-bs-auto-close="outside"`.
 
+CTA labels: "Reset" and "Apply" (single-word, matches the 300px pop width budget — no wrapping risk).
+
 Macro signature:
 ```jinja
 {% macro date_range_popover(form_id, field_prefix="date", quick_days=[7,14,30,60], start_val="", end_val="") %}
@@ -277,7 +309,7 @@ Macro signature:
 
 ### `_components/filters_popover.html` — `filters_popover(form_id, groups, button_label="Filters")`
 
-Bootstrap 5 dropdown wrapping chip-group `.pop` content. `groups` is a list of `FilterGroup` objects (or dicts): each has `label` (group label) and `options` (list of `FilterOption` with `label`, `value`, `on: bool`). Renders `.grp` / `.grp-l` / `.opts` / `.opt` / `.opt.on` markup. Header includes "Reset all" link. Footer: Apply `.btn.sm`. This is NOT a fork of `_picker_popover.html` — it is a sibling.
+Bootstrap 5 dropdown wrapping chip-group `.pop` content. `groups` is a list of `FilterGroup` objects (or dicts): each has `label` (group label) and `options` (list of `FilterOption` with `label`, `value`, `on: bool`). Renders `.grp` / `.grp-l` / `.opts` / `.opt` / `.opt.on` markup. Header includes "Reset Filters" link (strengthened from "Reset" — context-specific label fits the 300px pop width; no wrapping risk). Footer: "Apply Filters" `.btn.sm` (strengthened from "Apply" — same rationale). This is NOT a fork of `_picker_popover.html` — it is a sibling.
 
 Macro signature:
 ```jinja
@@ -380,7 +412,7 @@ Every occurrence of `class="panel-header"` in:
 - `app_v2/templates/overview/index.html` — the `<div id="overview-panel-header">`
 - Any Ask templates that have a panel header
 
-Migrate to `class="ph"`. The CSS rule for `.ph` is added to `app.css` verbatim from Dashboard_v2.html line 118. The existing `.panel-header` CSS rule and its children remain in `app.css` (non-breaking). Template tests that grep for `panel-header` must be updated.
+Migrate to `class="ph"`. The CSS rule for `.ph` is added to `app.css` verbatim from Dashboard_v2.html line 118 (with padding normalized to 16px 24px per spacing contract above). The existing `.panel-header` CSS rule and its children remain in `app.css` (non-breaking). Template tests that grep for `panel-header` must be updated.
 
 **EXCEPTION:** `_picker_popover.html` — read-only, zero edits (D-UIF-05 / D-UI2-09).
 
@@ -398,8 +430,10 @@ Phase 4 is a foundation/primitives phase. There are no new user-facing data surf
 | Topbar avatar placeholder | "PM" (two-letter initials) |
 | KPI default empty delta | "" (empty string — no delta displayed) |
 | Hero empty side stats | (side panel not rendered — graceful omission) |
-| Popover "Reset" link | "Reset" |
-| Popover "Apply" button | "Apply" |
+| Date popover "Reset" link | "Reset" |
+| Date popover "Apply" button | "Apply" |
+| Filters popover "Reset" link | "Reset Filters" |
+| Filters popover "Apply" button | "Apply Filters" |
 | Popover date label: start | "Start" |
 | Popover date label: end | "End" |
 | Tab: Joint Validation | "Joint Validation" (D-JV-01 exact label) |
@@ -444,8 +478,11 @@ No third-party component registries. All new components are authored inline. Boo
 | Type scale (--font-size-*) | `tokens.css` D-UI2-04 (locked, do not churn) |
 | Font family + weight range | Dashboard_v2.html lines 7–9, 25–26 |
 | Font weight 800 already in use | `app.css` line 44 (`.page-title`) |
-| Spacing values | Dashboard_v2.html CSS rules (panel, topbar, hero, kpi padding/gap values) |
-| `.ph` class definition | Dashboard_v2.html line 118 |
+| Spacing values (normalized) | Dashboard_v2.html CSS rules normalized to 4px grid; deltas noted in Spacing section |
+| `.ph` class definition | Dashboard_v2.html line 118 (padding normalized: 18px 26px → 16px 24px) |
+| `.topbar` padding normalized | Dashboard_v2.html line 32 (10px 14px → 8px 16px) |
+| `.hero` padding normalized | Dashboard_v2.html line 83 (30px 32px → 32px 32px) |
+| `.btn` height re-anchored | Dashboard_v2.html line 70 (38px → 40px mod-4) |
 | `.chip` / `.chips` class | Dashboard_v2.html lines 122–128 |
 | Popover CSS (`.pop`, `.pop-wrap`, etc.) | Dashboard_v2.html lines 130–152 |
 | `.tiny-chip` variants | Dashboard_v2.html lines 263–268 |
@@ -464,3 +501,6 @@ No third-party component registries. All new components are authored inline. Boo
 | `chip-toggle.js` sibling (not fork) | Claude's Discretion — avoids touching D-UI2-09 byte-stable `popover-search.js` |
 | `HeroSpec` location `app_v2/services/hero_spec.py` | Claude's Discretion — mirrors `OverviewGridViewModel` in services |
 | Google Fonts link required | Researcher finding — base.html has no font link; Inter Tight is system-fallback only currently |
+| Typography weights restructured to 2 categories | Revision pass — collapsed 5 weights to Regular (400) + Emphasis (600/700/800); weight 500 demoted to element-bound override |
+| Spacing normalized to 4px grid | Revision pass — functional spacing re-anchored; cosmetic fixed dimensions moved to named subsection |
+| Filters popover CTAs strengthened | Revision pass — "Reset Filters" / "Apply Filters" adopted (300px pop width accommodates; date popover stays "Reset" / "Apply") |
