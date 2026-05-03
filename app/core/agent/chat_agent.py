@@ -22,6 +22,7 @@ import pandas as pd
 import sqlalchemy as sa
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.output import ToolOutput
 
 from app.adapters.db.base import DBAdapter
 from app.core.agent.config import AgentConfig
@@ -127,7 +128,15 @@ def build_chat_agent(model) -> Agent:
     """
     agent: Agent[ChatAgentDeps, PresentResult] = Agent(
         model,
-        output_type=PresentResult,
+        output_type=ToolOutput(
+            PresentResult,
+            name="present_result",
+            description=(
+                "Emit the final structured answer (D-CHAT-05). Calling this "
+                "tool ENDS the turn — the agent loop terminates and the chat "
+                "surface renders the summary + table + chart."
+            ),
+        ),
         deps_type=ChatAgentDeps,
         model_settings={"temperature": 0.2},
         system_prompt=_CHAT_SYSTEM_PROMPT,
@@ -189,23 +198,11 @@ def build_chat_agent(model) -> Agent:
         """
         return _execute_and_wrap(ctx, sql, prefix_rejection=True)
 
-    @agent.tool
-    def present_result(
-        ctx: RunContext[ChatAgentDeps],
-        summary: str,
-        sql: str,
-        chart_spec: ChartSpec | None = None,
-    ) -> PresentResult:
-        """Emit the structured final answer — calling this tool ENDS the turn (D-CHAT-05).
-
-        PydanticAI recognizes the PresentResult return as the output_type tool
-        and terminates the agent run.
-        """
-        return PresentResult(
-            summary=summary,
-            sql=sql,
-            chart_spec=chart_spec or ChartSpec(),
-        )
+    # `present_result` is auto-created by ToolOutput(PresentResult, name="present_result")
+    # above — calling it terminates the agent run cleanly. Registering it here as a
+    # @agent.tool would create a SECOND tool of the same name that returns a value
+    # without terminating, which manifests as "agent always reaches step budget"
+    # because the agent keeps looping past its own final answer.
 
     return agent
 
