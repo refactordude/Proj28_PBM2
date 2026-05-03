@@ -9,6 +9,16 @@
   <link rel="stylesheet" href="{{ url_for('static', path='vendor/bootstrap/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', path='vendor/bootstrap-icons/bootstrap-icons.css') }}">
 
+  {# Phase 04 — Inter Tight + JetBrains Mono via Google Fonts (Pitfall 1).
+     tokens.css declares font-family "Inter Tight" but base.html had no link;
+     system fallback maxed at weight 700, silently degrading .page-title's
+     font-weight: 800. Loaded BEFORE tokens.css so the @font-face rules are
+     available when tokens.css applies font-family. Weight set 400/500/600/700/800
+     matches Dashboard_v2.html line 9 verbatim. #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
   {# Phase 03: Dashboard token layer + component classes.
      Order matters — tokens.css declares var(--*); app.css consumes them. #}
   <link rel="stylesheet" href="{{ url_for('static', path='css/tokens.css') }}">
