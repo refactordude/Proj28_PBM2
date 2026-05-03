@@ -33,6 +33,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from typing import Any, AsyncIterator, Callable
 
 import sqlparse
@@ -64,6 +65,15 @@ _log = logging.getLogger(__name__)
 
 # D-CHAT-12: thought-summary truncation cap (UI-SPEC §C — researcher pick: 140 chars)
 _THOUGHT_TRUNCATE_CAP = 140
+
+# Quick task 260504-30t — server-side chunked summary streaming.
+# The agent uses ToolOutput(PresentResult), so OpenAI/Ollama deliver the summary
+# atomically via AgentRunResultEvent — no token-level streaming upstream. We chunk
+# the summary server-side and emit one text_delta SSE event per word with this
+# delay between chunks, giving the chat surface visible streaming bytes on the
+# wire. Lower = faster reveal but more SSE messages (CPU + bandwidth); higher =
+# laggier perceived speed but lower overhead. 20ms ≈ a 30-word summary in ~600ms.
+_STREAM_CHUNK_DELAY_MS = 20
 
 # D-CHAT-04 reason vocabulary — exhaustive list of error reasons; the
 # template _error_card.html (plan 04) maps each to severity + heading + body copy.
@@ -148,6 +158,47 @@ async def stream_chat_turn(
                     new_messages = []
                 output = getattr(run_result, "output", None)
                 if isinstance(output, PresentResult):
+                    # Quick task 260504-30t — server-side chunked summary streaming.
+                    #
+                    # The agent uses ToolOutput(PresentResult), so OpenAI/Ollama
+                    # deliver the summary atomically here (no upstream token-level
+                    # streaming). To make streaming actually visible in the UI, we
+                    # split the summary into word-level chunks (preserving trailing
+                    # whitespace including newlines so consecutive spans concatenate
+                    # naturally with .chat-text-delta { white-space: pre-wrap }) and
+                    # emit one text_delta SSE event per chunk with a brief sleep
+                    # between chunks. The text_delta plumbing already exists (since
+                    # 260504-114) — _render_text_delta + _text_delta.html fragment
+                    # + sse-swap allow-list on .chat-events.
+                    #
+                    # Cancel-during-stream: cancel_event.is_set() breaks the chunker
+                    # loop early; the final event still fires below so the table +
+                    # chart still mount. We do NOT emit a 'stopped-by-user' error
+                    # event from inside the chunker (unlike lines ~188-192 where
+                    # cancel during agent execution does emit that error) because
+                    # the agent run has already completed and the structured payload
+                    # is in hand — partial reveal + final card is a coherent UX;
+                    # partial reveal + error card would not be.
+                    summary = output.summary or ""
+                    if summary.strip():
+                        # re.findall(r'\S+\s*', ...) yields tokens like
+                        # ['Hello ', 'world!\n', 'Done'] — each non-whitespace run
+                        # plus any trailing whitespace (spaces, tabs, newlines)
+                        # attached. Preserves original spacing structure that
+                        # summary.split() + manual " ".join() would lose.
+                        chunks = re.findall(r"\S+\s*", summary)
+                        for i, chunk in enumerate(chunks):
+                            if cancel_event.is_set():
+                                break
+                            yield {
+                                "event": "text_delta",
+                                "html": _render_text_delta(chunk),
+                            }
+                            # Sleep BETWEEN chunks (not after the last one) so the
+                            # final event fires immediately after the last delta.
+                            if i < len(chunks) - 1:
+                                await asyncio.sleep(_STREAM_CHUNK_DELAY_MS / 1000)
+
                     # WARNING-3 contract: chat_loop emits STRUCTURED final payload (JSON dict),
                     # NOT pre-rendered HTML. The router (plan 03-04) hydrates the final card by
                     # running PresentResult.sql against app.state.db and rendering _final_card.html

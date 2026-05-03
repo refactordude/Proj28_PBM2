@@ -2,32 +2,38 @@
 
    QUICK TASK 260504-220: dropped .panel/.panel-body chrome — the assistant's
    final response now renders as plain prose flush with the left column where
-   the tool-call/tool-result pills sit. The .chat-summary-callout (soft-accent
-   prose block) is preserved as the only surviving visual emphasis on the
-   summary text, matching markdown's "callout/note" idiom.
+   the tool-call/tool-result pills sit.
 
    QUICK TASK 260504-2jl (Bug 1 fix): the per-word <span class="sw"> wrappers
    and the client-side reveal animation introduced by 260504-220 caused the
    summary text to render invisible when the JS reveal handler failed to fire
-   (CSS default opacity was 0). Dropped both. Summary now renders as plain
-   text at full opacity, no animation, no JS dependency.
+   (CSS default opacity was 0). Dropped both. Summary rendered as plain text
+   at full opacity inside the soft-accent summary block, no animation, no JS
+   dependency.
+
+   QUICK TASK 260504-30t (Server-side streaming): the soft-accent summary
+   block is now removed entirely. The summary is painted by text_delta SSE
+   events that the chat_loop chunker emits BEFORE the final event, so the
+   prose mounts into .chat-events as a sequence of <span class="chat-text-delta">
+   spans (rendered via _text_delta.html). The final card carries the table +
+   chart only. The streamed summary visually precedes this final card inside
+   .chat-events because text_delta events fire before the final event in
+   stream_chat_turn. Real streaming bytes on the wire — no client JS, no
+   partial-JSON parser, structured-output contract preserved.
 
    Rendered by app_v2/routers/ask._hydrate_final_card when chat_loop emits the
    structured 'final' payload. The router OWNS the entire render so chat_loop
-   stays DB-free (WARNING-3 contract).
+   stays DB-free (WARNING-3 contract). The router still passes `summary` as a
+   kwarg to keep the router byte-stable; this template no longer references it.
 
-   Three vertical sections, all flush in the left column:
+   Two vertical sections, both flush in the left column:
 
-     1. Top — summary callout (.chat-summary-callout): NL summary on
-        --accent-soft background (D-CHAT-05). Plain {{ summary | e }} render
-        at full opacity (Quick task 260504-2jl).
-     2. Middle — pivot table: rendered by the router via the existing Browse
-        macro browse/_grid.html. Atomic render — no progressive reveal.
-     3. Bottom — Plotly chart: server-side render via plotly.graph_objects.Figure
-        in the router (T-03-04-09). Atomic render — no progressive reveal.
+     1. Pivot table: rendered by the router via the existing Browse macro
+        browse/_grid.html. Atomic render.
+     2. Plotly chart: server-side render via plotly.graph_objects.Figure
+        in the router (T-03-04-09). Atomic render.
 
    AUTOESCAPE CONTRACT (T-03-04-04):
-     - {{ summary | e }} — agent-supplied → | e (single render, full opacity)
      - {{ row_count }}   — int, type-safe
      - {{ table_html }}  — router-pre-rendered Jinja → | safe (whitelisted)
      - {{ chart_html }}  — router-pre-rendered Plotly → | safe (whitelisted)
@@ -35,17 +41,12 @@
      produced by trusted server-side renderers, never by agent text.
 #}
 <div class="chat-final-card">
-  {# 1. Summary callout — NL summary text on --accent-soft background
-     (D-CHAT-05). Quick task 260504-2jl: dropped the per-word <span class="sw">
-     wrappers and the client-side reveal animation — text now renders at full
-     opacity immediately so the user can always SEE the summary, no JS
-     dependency. The .chat-summary-callout block keeps its soft-accent
-     background, --accent-ink color, --radius-card corners. #}
-  <div class="chat-summary-callout">
-    {{ summary | e }}
-  </div>
+  {# Summary callout removed — quick task 260504-30t. The summary is painted
+     by text_delta SSE events emitted by the chat_loop chunker BEFORE this
+     final card mounts. See chat_loop.stream_chat_turn / _STREAM_CHUNK_DELAY_MS
+     for the chunking cadence. #}
 
-  {# 2. Pivot table — Browse _grid.html VERBATIM via router-side render. #}
+  {# 1. Pivot table — Browse _grid.html VERBATIM via router-side render. #}
   {% if table_html %}
     <div class="table-responsive">
       {{ table_html | safe }}
@@ -55,7 +56,7 @@
     {% endif %}
   {% endif %}
 
-  {# 3. Plotly chart — silently omitted when chart_type=='none' or columns
+  {# 2. Plotly chart — silently omitted when chart_type=='none' or columns
         missing. The Plotly bundle is loaded by ask/index.html via the
         {% block extra_head %} so include_plotlyjs=False is safe. #}
   {% if chart_html %}
