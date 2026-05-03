@@ -88,6 +88,65 @@
       });
     })();
   </script>
+
+  <script>
+    // Quick task 260504-220 — perceived streaming for the assistant summary.
+    //
+    // The agent uses ToolOutput(PresentResult), so OpenAI/Ollama deliver the
+    // summary atomically via the 'final' SSE event (no token-level streaming
+    // upstream). Rather than fight the structured-output contract, we
+    // reveal the summary text word-by-word client-side after the final card
+    // mounts: every <span class="sw"> in .chat-summary-callout starts at
+    // opacity 0; we add .is-visible to each on a 30ms timer in document
+    // order. The CSS transition fades each word in over 80ms. A typical
+    // 1-2 sentence summary completes in 600-1200ms — fast enough to feel
+    // "alive", slow enough that the eye reads it as progressive disclosure.
+    //
+    // Reduced-motion: CSS already forces .sw { opacity: 1 } in the
+    // prefers-reduced-motion media query (see app.css). The IIFE still runs
+    // and adds .is-visible classes (no-op since opacity is already 1), so
+    // the timing fires without producing any visible motion — accessible
+    // by construction.
+    //
+    // Idempotency: guarded by window.__pbm2RevealSummaryBound so re-renders
+    // can't double-bind. The handler scopes its action to the LAST
+    // .chat-summary-callout in the document — that's the one that just
+    // mounted, since per-turn final cards append at the end of the
+    // transcript.
+    (function () {
+      if (window.__pbm2RevealSummaryBound) return;
+      window.__pbm2RevealSummaryBound = true;
+      var REVEAL_INTERVAL_MS = 30;
+      document.body.addEventListener("htmx:sseMessage", function (evt) {
+        // evt.detail.type holds the SSE event name (htmx-ext-sse 2.x).
+        // Filter so this only runs on 'final' events; thought/tool_call/
+        // tool_result/text_delta/error each fire htmx:sseMessage too and
+        // we want the reveal to run exactly once per turn.
+        var detail = evt.detail || {};
+        if (detail.type !== "final") return;
+        // Wait one tick so htmx finishes inserting the final-card markup
+        // before we walk it. The final card mounts via beforeend swap on
+        // .chat-events; htmx fires sseMessage AFTER the swap completes,
+        // but defensively we use rAF to guarantee the DOM is settled.
+        requestAnimationFrame(function () {
+          var callouts = document.querySelectorAll(".chat-summary-callout");
+          if (callouts.length === 0) return;
+          var callout = callouts[callouts.length - 1];   // most recently mounted
+          var spans = callout.querySelectorAll(".sw");
+          if (spans.length === 0) return;
+          var i = 0;
+          var timer = setInterval(function () {
+            if (i >= spans.length) {
+              clearInterval(timer);
+              return;
+            }
+            spans[i].classList.add("is-visible");
+            i += 1;
+          }, REVEAL_INTERVAL_MS);
+        });
+      });
+    })();
+  </script>
 {% endblock %}
 
 {% block content %}
