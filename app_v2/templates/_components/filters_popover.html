@@ -31,7 +31,10 @@
   <div class="dropdown-menu pop">
     <div class="pop-head">
       <span>Filters</span>
-      <a href="#" data-action="reset">Reset Filters</a>
+      {# WR-02 fix: real <button type="button"> instead of <a href="#"> so the
+         browser does not navigate to "#" / scroll to top before chip-toggle.js
+         handles the [data-action="reset"] click. #}
+      <button type="button" class="pop-reset-link" data-action="reset">Reset Filters</button>
     </div>
     {% for grp in groups %}
       {# D-UIF-04: hyphen-safe group_name (UFS-eMMC -> ufs_emmc; downstream consumers can use Python attr access). #}

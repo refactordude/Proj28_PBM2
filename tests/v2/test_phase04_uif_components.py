@@ -207,11 +207,19 @@ def test_date_range_popover_markup(client):
     assert 'type="date"' in body
     assert 'name="date_start"' in body
     assert 'name="date_end"' in body
-    # Quick chip row
-    assert 'class="qrow"' in body
+    # WR-03 fix: the quick-range chip row (data-quick-days="...") was
+    # removed because no JS read the attribute. Verify the dead UI is
+    # gone — re-add this assertion only when a quick-range handler ships.
+    assert 'class="qrow"' not in body
+    assert 'data-quick-days=' not in body
     # CTAs (single-word per UI-SPEC §Copywriting)
     assert ">Reset<" in body
     assert ">Apply<" in body
+    # WR-02 fix: reset controls are real <button type="button"> elements
+    # (no <a href="#">) so chip-toggle.js can preventDefault before any
+    # browser-default navigation to the page-top fragment.
+    assert '<a href="#" data-action="reset"' not in body
+    assert 'data-action="reset"' in body
 
 
 # ----- D-UIF-10: sticky-corner table rendered -----

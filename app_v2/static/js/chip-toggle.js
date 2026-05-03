@@ -4,6 +4,11 @@
  * the value of an associated hidden <input>. Does NOT submit the form;
  * the popover's Apply button is responsible for submission.
  *
+ * Click on `[data-action="reset"]` (typically the "Reset" link in
+ * .pop-head and the ghost button in .foot) clears every `.opt.on`,
+ * zeroes every hidden input, and zeroes every date input within the
+ * enclosing `.pop`. (WR-02 fix.)
+ *
  * Loaded with `defer` AFTER bootstrap.bundle.min.js in base.html
  * (Wave 3), mirroring the popover-search.js loading pattern.
  *
@@ -26,6 +31,18 @@
 (function () {
   "use strict";
 
+  function findHiddenForChip(opt) {
+    var chipValue = opt.dataset.value || '';
+    // Try nested input first; fall back to data-opt sibling lookup.
+    var hidden = opt.querySelector('input[type=hidden]');
+    if (!hidden && opt.parentElement) {
+      hidden = opt.parentElement.querySelector(
+        'input[type=hidden][data-opt="' + chipValue + '"]'
+      );
+    }
+    return hidden;
+  }
+
   function onChipClick(e) {
     var opt = e.target.closest('.pop .opt');
     if (!opt) return;
@@ -44,18 +61,33 @@
     // RESEARCH §Pitfall 8 sketch (which used '1') so that multi-option
     // groups submit a meaningful value per option, not a generic flag.
     var chipValue = opt.dataset.value || '';
-
-    // Try nested input first; fall back to data-opt sibling lookup.
-    var hidden = opt.querySelector('input[type=hidden]');
-    if (!hidden && opt.parentElement) {
-      hidden = opt.parentElement.querySelector(
-        'input[type=hidden][data-opt="' + chipValue + '"]'
-      );
-    }
+    var hidden = findHiddenForChip(opt);
     if (hidden) {
       hidden.value = isOn ? chipValue : '';
     }
   }
 
+  function onResetClick(e) {
+    var btn = e.target.closest('[data-action="reset"]');
+    if (!btn) return;
+    var pop = btn.closest('.pop');
+    if (!pop) return;
+    // Skip resets inside the existing checkbox-list popover-search-root
+    // for the same reason onChipClick does (D-UI2-09 byte-stable).
+    if (btn.closest('.popover-search-root')) return;
+
+    e.preventDefault();
+    pop.querySelectorAll('.opt.on').forEach(function (o) {
+      o.classList.remove('on');
+    });
+    pop.querySelectorAll('input[type=hidden][data-opt]').forEach(function (i) {
+      i.value = '';
+    });
+    pop.querySelectorAll('input[type=date]').forEach(function (i) {
+      i.value = '';
+    });
+  }
+
   document.addEventListener('click', onChipClick, true);
+  document.addEventListener('click', onResetClick, true);
 })();

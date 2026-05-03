@@ -8,16 +8,23 @@
    inside the dropdown DOM.
 
    data-bs-auto-close="outside" keeps the popover open while the user
-   interacts with date inputs / quick chips; click-outside dismisses.
+   interacts with date inputs; click-outside dismisses.
 
-   Quick-chip "active" state is purely visual at the moment (no JS to
-   compute current selection vs quick_days; can be enhanced in a
-   follow-up by passing in the matched quick-day or computing it
-   server-side from start_val/end_val).
+   Reset controls (the small link in pop-head and the ghost button in
+   the foot row) carry `data-action="reset"` and are handled by
+   chip-toggle.js — clicking either clears all `.opt.on` chips, hidden
+   inputs, and `input[type=date]` values within the enclosing `.pop`.
+   Both controls are real `<button type="button">` elements so the
+   browser does not navigate to "#" before the handler runs (WR-02 fix).
+
+   The quick-range chip row (data-quick-days="7|14|30|...") was removed
+   in WR-03: no JS read the attribute, so the chips were dead UI that
+   misled users into thinking clicks would populate the date inputs.
+   Re-add when a quick-range handler ships.
 
    Caller: `{% from "_components/date_range_popover.html" import date_range_popover %}`
            `{{ date_range_popover("my-form", start_val=request.query_params.get("date_start", "")) }}` #}
-{% macro date_range_popover(form_id, field_prefix="date", quick_days=[7,14,30,60], start_val="", end_val="") %}
+{% macro date_range_popover(form_id, field_prefix="date", start_val="", end_val="") %}
 <div class="dropdown pop-wrap">
   <button class="btn btn-helix sm dropdown-toggle"
           type="button"
@@ -29,12 +36,7 @@
   <div class="dropdown-menu pop">
     <div class="pop-head">
       <span>Date range</span>
-      <a href="#" data-action="reset">Reset</a>
-    </div>
-    <div class="qrow" role="group" aria-label="Quick ranges">
-      {% for d in quick_days %}
-        <button type="button" data-quick-days="{{ d | e }}">{{ d | e }}d</button>
-      {% endfor %}
+      <button type="button" class="pop-reset-link" data-action="reset">Reset</button>
     </div>
     <div class="dates">
       <div>
