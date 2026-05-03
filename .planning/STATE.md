@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 04-02-PLAN.md (Wave 2 — Jinja partials + Pydantic view-models + chip-toggle.js)
-last_updated: "2026-05-03T08:10:22.507Z"
+stopped_at: Completed 04-03-PLAN.md (Wave 3 — atomic Helix topbar swap + chip-toggle.js + test rewrites)
+last_updated: "2026-05-03T08:22:43.435Z"
 last_activity: 2026-05-03
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 20
-  completed_plans: 17
-  percent: 85
+  completed_plans: 18
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 04 (UI Foundation — Helix-aligned shell & primitives) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-05-03
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-03T08:09:53.527Z
+Last session: 2026-05-03T08:22:27.642Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed 04-02-PLAN.md (Wave 2 — Jinja partials + Pydantic view-models + chip-toggle.js)
+Stopped at: Completed 04-03-PLAN.md (Wave 3 — atomic Helix topbar swap + chip-toggle.js + test rewrites)
 
 ## Accumulated Context
 
@@ -148,6 +148,9 @@ Stopped at: Completed 04-02-PLAN.md (Wave 2 — Jinja partials + Pydantic view-m
 - [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: hero macro inline-overrides grid-template-columns to 1fr when spec.side_stats is empty — only runtime-data-dependent style override; everything else lives in app.css.
 - [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: filters_popover hyphen-safe group_name (lowercase + replace ' '→'_' + replace '-'→'_') — UFS-eMMC label produces name='ufs_emmc' (Python attr-safe). BLOCKER 2 from plan revision honored (both space AND hyphen replaced).
 - [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-02: sparkline namespace() pattern + height/2 mid-height fallback for hi==lo — Jinja loop scope cannot reassign outer scalars; namespace is the canonical idiom. Constant data renders flat horizontal line at mid-height (13 for default 26px viewBox), no NaN.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-03: Single-commit atomicity for Wave 3 — markup swap + test rewrites + .navbar CSS rule removal landed in commit 395477b. Per RESEARCH §Migration Strategy + Pitfall 2: splitting them would leave the working tree red between commits (markup changed but tests pinning legacy literals, OR vice versa).
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-03: test_get_root_marks_overview_active rewrite expanded backward-window from 200 to 300 chars — the new .tabs / .tab markup wraps differently and aria-selected="true" can sit on a different attribute line than href. 300 chars provides headroom without over-matching neighboring tabs.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-03: Comment text in base.html and app.css avoids echoing legacy literals (e.g. <nav class="navbar"> or .navbar { ... }) so grep-based acceptance criteria pass cleanly. Stub-comment-on-deletion pattern in tests preserves git blame continuity — function names retained, body documents the rename via Phase 04 D-UIF-06 comment.
 
 ### Performance Metrics
 
@@ -170,3 +173,4 @@ Stopped at: Completed 04-02-PLAN.md (Wave 2 — Jinja partials + Pydantic view-m
 | Phase 03 P05 | 20min | 2 tasks | 9 files |
 | Phase 04 P01 | 5min | 2 tasks | 2 files |
 | Phase 04 P02 | 5min | 2 tasks | 11 files |
+| Phase 04 P03 | 6min | 3 tasks | 4 files |
