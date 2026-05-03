@@ -1,0 +1,6 @@
+plotly.js: 2.35.2
+source: https://cdn.plot.ly/plotly-2.35.2.min.js
+downloaded: 2026-05-03
+pinned-reason: Phase 3 D-CHAT-05 — Plotly chart in _final_card.html. Loaded only on /ask page via per-page extra_head block (RESEARCH Pitfall 5: avoid global load).
+files:
+  - plotly.min.js

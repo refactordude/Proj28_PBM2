@@ -1,223 +1,152 @@
-{# app_v2/templates/overview/index.html
-   Phase 5 Overview tab full rewrite (D-OV-05). Mirrors the Phase 4 Browse
-   pivot-grid styling for visual consistency: table table-striped table-hover
-   table-sm with thead.sticky-top.bg-light, sortable column headers, OOB
-   blocks for count + filter badges.
-
-   Block names: 'grid' (innerHTML target #overview-grid), 'count_oob' (OOB
-   to #overview-count caption in panel-header), 'filter_badges_oob' (OOB
-   to 6 picker badge spans). These names match Plan 05-04's POST
-   /overview/grid response: block_names=["grid", "count_oob",
-   "filter_badges_oob"].
-
-   Empty <form id="overview-filter-form"> precedes the filter bar so picker
-   checkboxes inside dropdown menus can associate via form= attribute
-   (gap-2 mechanism from Phase 4).
-
-   Pivot grid scroll container is .panel-body.overview-grid-body — vertical
-   scroll lives HERE so thead.sticky-top engages (Pattern 5 / Pitfall 1
-   from Phase 4). The .overview-grid-body class is added to app.css in
-   Task 5 mirroring .browse-grid-body's behavior.
-
-   Every dynamic Jinja2 output uses the explicit-escape filter
-   (defense-in-depth XSS — same discipline as Phase 4 templates).
-   The autoescape-bypass filter and inline scripts are banned by acceptance
-   grep — neither token appears anywhere in this file (audit-grep-friendly
-   comment hygiene convention from Plan 05-02). #}
 {% extends "base.html" %}
-
 {% block content %}
-
 <div class="shell">
+  {# Phase 02 D-UI2-07/11/12: single panel mirroring Browse. h1 + count
+     live in .panel-header; filter bar + grid live in .panel-body.
+     The legacy `.page-head` wrapper that placed h1 OUTSIDE the panel is
+     removed (D-UI2-12). The count caption migrates from .panel-body
+     into .panel-header right zone via ms-auto (D-UI2-11). #}
   <div class="panel">
 
     <div class="panel-header" id="overview-panel-header">
-      <b>Overview</b>
-      <span class="tag">Curated platforms</span>
-      <div class="ms-auto d-flex align-items-center gap-3">
-        <span id="overview-count" class="text-muted small" aria-live="polite">
-          {{ vm.rows | length }} platform{% if vm.rows | length != 1 %}s{% endif %}
-        </span>
+      <h1 class="panel-title">Joint Validation</h1>
+      <span id="overview-count" class="ms-auto text-muted small" aria-live="polite">
+        {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
+      </span>
+    </div>
+
+    {# Filter bar — D-UI2-07/08/09/10. The form inside is the flex
+       container; macro byte-stable; Clear-all has ms-auto. #}
+    {% include "overview/_filter_bar.html" %}
+
+    {# OOB filter badges block — rendered both in full page and in HTMX swaps.
+       B1 (revision 1): Filter badges ARE user-visible today (each active filter
+       with count > 0 renders a chip-style "Status: 1" badge). Visibility is
+       PRESERVED in the new layout. Placement: BELOW the filter row and ABOVE
+       the grid scroll container — same visual relationship as the pre-rewrite
+       template (where the wrapper sat between _filter_bar.html and the grid
+       panel). The wrapper div from the old template (`overview-filter-badges-wrapper`)
+       is removed because the inner OOB div is itself the visible badges
+       container. The OOB target id `#overview-filter-badges` is byte-stable;
+       HTMX merges by id regardless of DOM location. NO `visually-hidden`
+       class — badges remain visible. #}
+    {% block filter_badges_oob %}
+      <div id="overview-filter-badges" hx-swap-oob="true" class="px-3 pt-2">
+        {% for col, count in vm.active_filter_counts.items() %}
+          {% if count > 0 %}
+            <span class="badge bg-secondary me-1">
+              {{ col | e }}: {{ count | e }}
+            </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endblock %}
+
+    {# Grid scroll container — mirrors Browse's .panel-body.browse-grid-body
+       pattern. The .panel-body class gives the panel-edge alignment and
+       p-0 zeros padding so the table reaches the panel edges. #}
+    <div class="panel-body overview-grid-body p-0" tabindex="0" aria-label="Joint Validation results">
+      {# Main grid block — rendered both in full page and in HTMX fragment swaps.
+         IMPORTANT (Pitfall 8): sortable_th macro MUST be defined INSIDE this
+         block, not at the template top, otherwise jinja2-fragments
+         block_names=['grid', ...] rendering loses the macro. #}
+      {% block grid %}
+        {% macro sortable_th(col, label) %}
+          {%- set is_active = (vm.sort_col == col) -%}
+          {%- set next_order = "desc" if (is_active and vm.sort_order == "asc") else "asc" -%}
+          <th>
+            <button type="button"
+                    class="btn btn-link btn-sm p-0 text-decoration-none {% if is_active %}fw-bold{% endif %}"
+                    hx-post="/overview/grid"
+                    hx-include="#overview-filter-form"
+                    hx-vals='{"sort": "{{ col | e }}", "order": "{{ next_order | e }}", "page": "1"}'
+                    hx-target="#overview-grid"
+                    hx-swap="outerHTML">
+              {{ label | e }}
+              {% if is_active %}
+                <i class="bi bi-caret-{% if vm.sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+              {% endif %}
+            </button>
+          </th>
+        {% endmacro %}
+
+        <div id="overview-grid">
+          {% include "overview/_grid.html" %}
+        </div>
+      {% endblock %}
+    </div>
+
+    {# 260502-ui — pagination embedded inside the panel as a `.panel-footer`,
+       replacing the prior global `.site-footer` band that read as a square
+       block disconnected from the rounded panel above. The same
+       `#overview-pagination` wrapper id is preserved (HTMX merges by id on
+       POST /overview/grid via `block pagination_oob` above), so the OOB
+       update mechanism is byte-stable. The pagination partial conditionally
+       renders only when `vm.page_count > 1`, so for ≤15-entry datasets the
+       panel-footer collapses to an empty 48px strip with a thin top border —
+       still preferable to the disconnected global band. #}
+    <div class="panel-footer">
+      <div id="overview-pagination">
+        {% include "overview/_pagination.html" %}
       </div>
     </div>
 
-    <div class="panel-body">
+  </div>{# /.panel #}
 
-      {# Add platform input row (D-OV-11 — preserved). After successful
-         POST /overview/add, the route returns 200 + HX-Redirect: /overview
-         so HTMX triggers a full window navigation; no hx-target needed. #}
-      <form hx-post="/overview/add"
-            hx-on::after-request="this.reset()"
-            class="d-flex gap-2 align-items-center mb-3">
-        <label for="platform-input" class="form-label mb-0 text-nowrap">Add platform to overview</label>
-        <input id="platform-input"
-               type="text"
-               name="platform_id"
-               list="platforms-datalist"
-               class="form-control"
-               placeholder="Start typing a PLATFORM_ID…"
-               autocomplete="off"
-               required>
-        <datalist id="platforms-datalist">
-          {% for pid in all_platform_ids %}
-            <option value="{{ pid | e }}"></option>
-          {% endfor %}
-        </datalist>
-        <button type="submit" class="btn btn-primary text-nowrap">Add</button>
-      </form>
-
-      {# Empty hidden form — picker checkboxes associate via form= attribute.
-         Gap-2 mechanism from Phase 4: HTMX iterates form.elements (browser
-         DOM API includes all form-associated controls) so checkboxes
-         inside dropdown menus participate even though they are NOT
-         DOM-descendants of this form element. Must precede the filter bar
-         include so the checkboxes find their target by id at parse time. #}
-      <form id="overview-filter-form" autocomplete="off" class="visually-hidden" aria-hidden="true"></form>
-
-      {# Filter bar — 6 picker popovers (Plan 05-05 Task 4). #}
-      {% include "overview/_filter_bar.html" %}
-
-    </div>
-
-    {# Pivot grid scroll container. Vertical scroll lives HERE so
-       thead.sticky-top engages (Pitfall 1 from Phase 4). The
-       .overview-grid-body class mirrors .browse-grid-body's behavior
-       (max-height: 70vh; overflow-y: auto) — see app.css Phase 5 block. #}
-    <div class="panel-body overview-grid-body" tabindex="0" aria-label="Overview platform table">
-      <div id="overview-grid">
-        {% block grid %}
-          {# Sortable column header macro — D-OV-07. asc → desc → asc cycle.
-             Encodes the next-order JSON inline via hx-vals so each click
-             transitions correctly without JS state. T-05-05-06 mitigation:
-             the `col` argument is hardcoded as a literal string in the
-             sortable_th calls below — NEVER from user input — so the inline
-             JSON is safe; `| e` is defense-in-depth on top of that.
-
-             Defined INSIDE {% block grid %} (NOT at template-top) so it is
-             visible when jinja2-fragments renders this block in isolation
-             for POST /overview/grid (block_names=["grid", ...]). Template-top
-             macros are NOT carried into a single-block fragment render — only
-             the block's own body and its enclosed definitions are. Mirror of
-             the `maybe` macro inlined in _grid.html (same constraint, same
-             solution). Plan 05-06 Task 2 deviation (Rule 1 bug fix). #}
-          {% macro sortable_th(col, label) %}
-            <th scope="col" role="columnheader"
-                aria-sort="{% if vm.sort_col == col %}{{ 'descending' if vm.sort_order == 'desc' else 'ascending' }}{% else %}none{% endif %}">
-              <button type="button" class="btn btn-link p-0 text-decoration-none text-reset"
-                      hx-post="/overview/grid"
-                      hx-include="#overview-filter-form"
-                      hx-target="#overview-grid"
-                      hx-swap="innerHTML swap:200ms"
-                      hx-vals='{"sort": "{{ col | e }}", "order": "{% if vm.sort_col == col and vm.sort_order == 'asc' %}desc{% else %}asc{% endif %}"}'
-                      aria-label="Sort by {{ label | e }}">
-                {{ label | e }}
-                {% if vm.sort_col == col %}
-                  {% if vm.sort_order == 'desc' %}
-                    <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
-                  {% else %}
-                    <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
-                  {% endif %}
-                {% endif %}
-              </button>
-            </th>
-          {% endmacro %}
-          <table class="table table-striped table-hover table-sm overview-table">
-            <thead class="sticky-top bg-light">
-              <tr>
-                {{ sortable_th('title',       'Title') }}
-                {{ sortable_th('status',      'Status') }}
-                {{ sortable_th('customer',    'Customer') }}
-                {{ sortable_th('model_name',  'Model Name') }}
-                {{ sortable_th('ap_company',  'AP Company') }}
-                {{ sortable_th('ap_model',    'AP Model') }}
-                {{ sortable_th('device',      'Device') }}
-                {{ sortable_th('controller',  'Controller') }}
-                {{ sortable_th('application', 'Application') }}
-                {{ sortable_th('assignee',    '담당자') }}
-                {{ sortable_th('start',       'Start') }}
-                {{ sortable_th('end',         'End') }}
-                <th scope="col" class="text-end">Actions</th>
-              </tr>
-            </thead>
-            {% include "overview/_grid.html" %}
-          </table>
-        {% endblock grid %}
-      </div>
-    </div>
-
-  </div>
-</div>
-
-{# AI Summary modal (D-OV-15 — supersedes D-OV-10).
-   Single global modal — every row's ✨ button targets this body. Bootstrap
-   data-bs-toggle on the button opens the modal; HTMX swaps the body. The
-   tiny inline 'show.bs.modal' handler resets the body to the spinner
-   placeholder so a re-click on a different row never flashes the previous
-   platform's summary while the new request is in flight.
-   The summary route reads HX-Target and threads it into the rendered
-   _success.html / _error.html so inner Retry/Regenerate buttons swap back
-   into the same #summary-modal-body slot they were rendered into. #}
-<div class="modal fade" id="summary-modal" tabindex="-1"
-     aria-labelledby="summary-modal-title" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="summary-modal-title">
-          <i class="bi bi-stars" aria-hidden="true"></i> AI Summary
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="summary-modal-body" aria-live="polite">
-        <div class="text-center text-muted py-4">
-          <div class="spinner-border spinner-border-sm me-2" role="status">
-            <span class="visually-hidden">Loading…</span>
+  {# AI Summary modal (D-OV-15 → D-JV-15). Byte-stable from Phase 01 Plan 05. #}
+  <div class="modal fade" id="summary-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">AI Summary</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="summary-modal-body">
+          <div class="text-center text-muted py-4">
+            <div class="spinner-border" role="status"></div>
+            <div class="mt-2">Generating…</div>
           </div>
-          Generating summary…
         </div>
       </div>
     </div>
   </div>
-</div>
-<script>
-  // Reset modal body to the spinner placeholder every time the modal opens
-  // (before the new HTMX swap lands). Without this, opening the modal for
-  // platform B briefly shows platform A's previous summary.
-  (function () {
-    var modal = document.getElementById('summary-modal');
-    if (!modal) return;
-    var body = document.getElementById('summary-modal-body');
-    var placeholder = body.innerHTML;
-    modal.addEventListener('show.bs.modal', function () {
-      body.innerHTML = placeholder;
+  <script>
+    document.getElementById('summary-modal').addEventListener('show.bs.modal', function () {
+      var slot = document.getElementById('summary-modal-body');
+      slot.innerHTML = '<div class="text-center text-muted py-4"><div class="spinner-border" role="status"></div><div class="mt-2">Generating…</div></div>';
     });
-  })();
-</script>
+  </script>
 
-{# OOB count caption — emitted on POST /overview/grid alongside the
-   primary grid swap. HTMX merges into <span id="overview-count">
-   in panel-header. Stable target outside #overview-grid (Pitfall 7
-   from Phase 4). #}
+</div>{# /.shell #}
+{% endblock %}
+{% block pagination_oob %}
+{# Phase 02 Plan 02-04 — OOB wrapper for #overview-pagination (with hx-swap-oob).
+   Defined OUTSIDE block content so jinja2-fragments renders it in isolation.
+   Inner markup supplied by _pagination.html partial (B5 — single source of truth). #}
+<div id="overview-pagination" hx-swap-oob="true">
+  {% include "overview/_pagination.html" %}
+</div>
+{% endblock pagination_oob %}
 {% block count_oob %}
-  <span id="overview-count" hx-swap-oob="true" class="text-muted small" aria-live="polite">
-    {{ vm.rows | length }} platform{% if vm.rows | length != 1 %}s{% endif %}
+{# OOB count caption — emitted by POST /overview/grid alongside the primary
+   grid swap. HTMX merges the #overview-count span by id into the
+   panel-header receiver above (mechanism unchanged from Phase 01 Plan 05;
+   only the receiver's DOM location moves to the panel-header). The element
+   shape is <span> to match the panel-header receiver — both share the same
+   id so HTMX merge-by-id stays correct (W1, Test 35b).
+
+   DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this
+   block in isolation via `block_names=["count_oob"]` WITHOUT it leaking
+   into the full-page render of GET /overview (which would produce a
+   duplicate #overview-count span — once in panel-header, once orphaned in
+   the panel-body). Same hotfix pattern as `params_picker_oob` (260429-qyv). #}
+  <span id="overview-count" hx-swap-oob="true" class="ms-auto text-muted small" aria-live="polite">
+    {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
   </span>
 {% endblock count_oob %}
-
-{# OOB picker badges — emitted on POST /overview/grid alongside the
-   grid swap so the trigger button count badges in the filter bar
-   refresh. HTMX merges each <span> by id into the corresponding
-   picker-{name}-badge in the persistent .panel shell. Both badges
-   are ALWAYS emitted on every POST (mirrors Phase 4 D-14(b) gap-3
-   always-emit-with-d-none pattern). The d-none class is toggled to
-   match D-08 (no visible badge when count is 0). Stable targets:
-   precedent Phase 4 picker_badges_oob block. The keys iterated here
-   are the 6 FILTERABLE_COLUMNS from overview_grid_service.py. #}
-{% block filter_badges_oob %}
-  {% for col, count in active_filter_counts.items() %}
-    <span id="picker-{{ col | e }}-badge" hx-swap-oob="true"
-          class="badge bg-secondary ms-1{% if count == 0 %} d-none{% endif %}"
-          aria-live="polite">{{ count }}</span>
-  {% endfor %}
-{% endblock filter_badges_oob %}
-
-{% endblock %}
+{# 260502-ui — `block footer` is no longer overridden here. The pagination
+   receiver moved into a `.panel-footer` inside the panel (above) so the
+   rounded card silhouette closes cleanly; the global `.site-footer` band
+   is hidden via `.site-footer:empty { display: none }` when no page
+   emits content. The `pagination_oob` block above still emits the OOB
+   wrapper for HTMX merge-by-id on POST /overview/grid. #}

@@ -21,8 +21,15 @@
     {# Platforms picker (D-07..D-11) — full DB catalog source (D-12) #}
     {{ picker_popover("platforms", "Platforms", vm.all_platforms, vm.selected_platforms) }}
 
-    {# Parameters picker (D-07..D-11) — combined labels "InfoCategory · Item" (D-13) #}
-    {{ picker_popover("params", "Parameters", vm.all_param_labels, vm.selected_params) }}
+    {# Parameters picker (D-07..D-11) — combined labels "InfoCategory · Item" (D-13).
+       260429-qyv: FILTERED to currently-selected platforms via
+       list_parameters_for_platforms. Wrapped in #params-picker-slot so the
+       grid POST response can OOB-swap the entire picker on every Platforms
+       change. When vm.params_disabled (no platforms selected), the macro
+       renders the disabled trigger and omits the dropdown body. #}
+    <div id="params-picker-slot">
+      {{ picker_popover("params", "Parameters", vm.all_param_labels, vm.selected_params, disabled=vm.params_disabled) }}
+    </div>
 
     {# Swap-axes toggle (D-16): immediate fire on change, NO Apply needed.
        Pure view transform — re-pivots the cached DataFrame server-side.

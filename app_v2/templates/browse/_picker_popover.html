@@ -31,24 +31,40 @@
      template is responsible for its own explicit commit trigger (e.g. the
      "Run Query ▸" button in ``_confirm_panel.html``). Default ``False``
      preserves Phase 4 / Phase 5 auto-commit behavior byte-stable.
+   - **260429-qyv:** When ``disabled=True`` is passed, the trigger button is
+     rendered with the Bootstrap ``disabled`` attribute and ``aria-disabled``;
+     the dropdown body (the entire ``<div class="dropdown-menu">``) is
+     OMITTED so no checkboxes are in the DOM and form-association cannot
+     leak any checked state. The badge stays hidden via ``d-none``. Used by
+     the Browse Parameters picker when zero Platforms are selected — the
+     user cannot interact with parameters until at least one platform is
+     chosen. Default ``False`` preserves byte-stable rendering for all
+     existing call sites (Browse Platforms, Overview's six pickers, Ask's
+     NL-05 confirm panel).
 
    Every dynamic output uses Jinja2 explicit-escape (autoescape is also
    globally on for .html templates; the explicit filter is belt-and-suspenders
    defense against XSS via PLATFORM_ID / parameter-label content from the DB
    — T-04-03-01, T-04-03-02, T-04-03-04). NEVER bypass autoescape here.
 #}
-{% macro picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid", disable_auto_commit=False) %}
+{% macro picker_popover(name, label, options, selected, form_id="browse-filter-form", hx_post="/browse/grid", hx_target="#browse-grid", disable_auto_commit=False, disabled=False) %}
 <div class="dropdown">
   <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
           type="button"
           id="picker-{{ name }}-trigger"
-          data-bs-toggle="dropdown"
+          {% if not disabled %}data-bs-toggle="dropdown"
           data-bs-auto-close="outside"
+          data-bs-boundary="viewport"{% endif %}
+          {% if disabled %}disabled aria-disabled="true"{% endif %}
           aria-expanded="false"
-          aria-label="Select {{ label | lower }}{% if selected %} ({{ selected | length }} selected){% endif %}">
-    {{ label }} <span id="picker-{{ name }}-badge" class="badge bg-secondary ms-1{% if not selected %} d-none{% endif %}" aria-live="polite">{{ selected | length }}</span> <i class="bi bi-chevron-down ms-1"></i>
+          aria-label="Select {{ label | lower }}{% if disabled %} (disabled — select a platform first){% elif selected %} ({{ selected | length }} selected){% endif %}">
+    {{ label }} <span id="picker-{{ name }}-badge" class="badge bg-secondary ms-1{% if not selected or disabled %} d-none{% endif %}" aria-live="polite">{{ selected | length }}</span> <i class="bi bi-chevron-down ms-1"></i>
   </button>
 
+  {# 260429-qyv: when disabled=True, the entire dropdown body is omitted from
+     the DOM. No checkboxes can be interacted with, and form-association
+     cannot leak any checked state into the next /browse/grid POST. #}
+  {% if not disabled %}
   <div class="dropdown-menu p-0 popover-search-root"
        style="min-width: 320px; max-width: 480px;"
        aria-labelledby="picker-{{ name }}-trigger">
@@ -84,6 +100,7 @@
         hx-target="{{ hx_target }}"
         hx-swap="innerHTML swap:200ms"
         hx-include="#{{ form_id }}"
+        hx-vals='{"_origin": "{{ name | e }}"}'
         hx-trigger="change delay:250ms from:closest .popover-search-root"{% endif %}>
       {% for opt in options %}
         <li data-label="{{ opt | e }}" role="option">
@@ -113,5 +130,6 @@
     </div>
 
   </div>
+  {% endif %}
 </div>
 {% endmacro %}

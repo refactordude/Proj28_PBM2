@@ -105,7 +105,13 @@ def _render_error(
     return templates.TemplateResponse(
         request,
         "summary/_error.html",
-        {"platform_id": platform_id, "reason": reason, "target_id": target_id},
+        {
+            "platform_id": platform_id,  # KEEP — backward compat
+            "entity_id": platform_id,  # NEW — generic
+            "summary_url": f"/platforms/{platform_id}/summary",  # NEW — generic
+            "reason": reason,
+            "target_id": target_id,
+        },
         status_code=200,
     )
 
@@ -169,7 +175,9 @@ def get_summary_route(
         request,
         "summary/_success.html",
         {
-            "platform_id": platform_id,
+            "platform_id": platform_id,  # KEEP — backward compat
+            "entity_id": platform_id,  # NEW — generic
+            "summary_url": f"/platforms/{platform_id}/summary",  # NEW — generic
             "summary_html": summary_html,
             "llm_name": result.llm_name,
             "llm_model": result.llm_model,

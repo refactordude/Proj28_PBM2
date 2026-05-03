@@ -1,0 +1,56 @@
+{# Phase 3 — First fragment swapped on POST /ask/chat (D-CHAT-14, UI-SPEC §B).
+
+   Three top-level pieces:
+
+     1. The user-message block (question + "Thinking…" placeholder) — appended
+        into #chat-transcript by the form's hx-target/hx-swap.
+     2. The SSE consumer wrapper — opens an EventSource against
+        /ask/stream/{{ turn_id }} and swaps each event payload INTO this same
+        wrapper (beforeend). Closes when the agent emits a 'final' or 'error'
+        event (sse-close attribute).
+     3. An OOB swap targeting #input-zone — flips it to the active (Stop button)
+        state. The Stop button POSTs to /ask/cancel/{{ turn_id }} and is
+        styled by .btn-stop in app.css (D-CHAT-14, UI-SPEC §H).
+
+   Per UI-SPEC §B:
+     - .chat-user-question is 15px / 600 / --ink — the user's question reads as
+       their own voice (no "You asked:" prefix).
+     - .chat-thinking is 13px italic / --mute — replaced by the first SSE event.
+       No animation in Phase 3 (motion is a Phase 4+ enhancement).
+#}
+<div class="chat-user-message">
+  <p class="chat-user-question">{{ question | e }}</p>
+  <p class="chat-thinking">Thinking…</p>
+</div>
+
+{# SSE consumer — opens EventSource against the per-turn stream and appends
+   each event's rendered fragment into THIS element (beforeend).
+
+   htmx-ext-sse 2.x's sse-close attribute accepts ONE event name only (it
+   registers a single addEventListener), so we listen for a synthetic "close"
+   event that the chat-loop generator always yields LAST after either "final"
+   or "error". Without this, the EventSource auto-reconnects on every
+   disconnect and the server logs 404 storms after each turn. #}
+<div class="chat-events"
+     hx-ext="sse"
+     sse-connect="/ask/stream/{{ turn_id }}"
+     sse-swap="thought,tool_call,tool_result,final,error"
+     hx-swap="beforeend"
+     sse-close="close">
+  {# Empty — the agent's events arrive here as they happen. #}
+</div>
+
+{# OOB swap — D-CHAT-14: flip #input-zone to the active (Stop button) state.
+   The button POSTs to /ask/cancel/{{ turn_id }}; the cancel route flips
+   the per-turn cancel_event and the chat-loop emits a 'stopped-by-user'
+   error frame at the next tool-call boundary (D-CHAT-01).
+   .btn-stop styling (red outline, AA-compliant #cc2434 ink) is in app.css. #}
+<div id="input-zone" hx-swap-oob="true">
+  <button type="button"
+          class="btn-stop"
+          hx-post="/ask/cancel/{{ turn_id }}"
+          hx-swap="none"
+          aria-label="Stop the current answer">
+    Stop
+  </button>
+</div>

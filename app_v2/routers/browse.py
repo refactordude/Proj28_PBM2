@@ -92,6 +92,7 @@ def browse_grid(
     platforms: Annotated[list[str], Form()] = [],
     params: Annotated[list[str], Form()] = [],
     swap: Annotated[str, Form()] = "",
+    origin: Annotated[str, Form(alias="_origin")] = "",
     db: DBAdapter | None = Depends(get_db),
 ):
     """Grid fragment — fired by Apply / swap-axes / Clear-all (BROWSE-V2-01).
@@ -107,6 +108,20 @@ def browse_grid(
 
     Clear-all (D-18) reuses this same route with empty form fields — no
     separate clear endpoint exists per CONTEXT.md decision D-18.
+
+    260429-qyv hotfix 2: `_origin` form field identifies which picker
+    triggered the request (the picker macro emits hx-vals='{"_origin":
+    "<name>"}'). When `_origin == "params"` the user is toggling a
+    parameter checkbox INSIDE the open Parameters popover — emitting the
+    `params_picker_oob` block in the response would replace the entire
+    `#params-picker-slot` div (including its open dropdown menu),
+    abruptly closing the popover after every checkbox tick. Solution:
+    skip `params_picker_oob` for params-origin requests so the popover
+    DOM stays intact while the grid + count + badges still update via
+    primary swap and the other OOBs. For platforms-origin, swap-axes,
+    and clear-all the slot OOB IS still emitted so the Parameters filter
+    re-renders with the platforms-filtered catalog and the
+    (possibly-trimmed) checked-set.
     """
     db_name = _resolve_db_name(db)
     vm = build_view_model(
@@ -117,13 +132,61 @@ def browse_grid(
         swap_axes=(swap == "1"),
     )
     ctx = {"vm": vm}
+    block_names = ["grid", "count_oob", "warnings_oob", "picker_badges_oob"]
+    if origin != "params":
+        # Refresh the Parameters picker slot when the request did NOT
+        # come from the params picker itself — e.g. platforms picker
+        # change, swap-axes toggle, clear-all. Filtered catalog +
+        # intersected checked-set are already in vm.
+        block_names.append("params_picker_oob")
     response = templates.TemplateResponse(
         request,
         "browse/index.html",
         ctx,
-        block_names=["grid", "count_oob", "warnings_oob", "picker_badges_oob"],
+        block_names=block_names,
     )
     response.headers["HX-Push-Url"] = _build_browse_url(
         platforms, params, swap == "1"
     )
     return response
+
+
+@router.post("/browse/params-fragment", response_class=HTMLResponse)
+def browse_params_fragment(
+    request: Request,
+    platforms: Annotated[list[str], Form()] = [],
+    params: Annotated[list[str], Form()] = [],
+    db: DBAdapter | None = Depends(get_db),
+):
+    """Re-render ONLY the Parameters picker block (260429-qyv).
+
+    Fired when the Platforms picker changes (or as a graceful-degradation
+    refresh path). When `platforms` is empty, the response is the
+    disabled-state Parameters picker (no checkboxes in DOM). Otherwise the
+    response is the picker populated with the parameters that exist for the
+    selected platforms, with the previously-checked set intersected against
+    the new available set (stale labels dropped).
+
+    swap_axes is irrelevant for this fragment (the picker doesn't depend on
+    it), so it is not accepted as a form field. The primary commit path
+    (POST /browse/grid) already emits a `params_picker_oob` block alongside
+    the grid swap, so most user actions never need this endpoint — but it is
+    kept for direct testability and future graceful-degradation hooks (e.g.
+    if /browse/grid times out, the picker can still be refreshed in
+    isolation).
+    """
+    db_name = _resolve_db_name(db)
+    vm = build_view_model(
+        db,
+        db_name,
+        selected_platforms=platforms,
+        selected_param_labels=params,
+        swap_axes=False,
+    )
+    ctx = {"vm": vm}
+    return templates.TemplateResponse(
+        request,
+        "browse/index.html",
+        ctx,
+        block_names=["params_picker"],
+    )

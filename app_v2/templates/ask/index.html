@@ -1,129 +1,142 @@
-{# Ask tab — full page (Phase 6, ASK-V2-01).
+{# Phase 3 — Multi-step agentic chat shell (D-CHAT-08, D-CHAT-10, D-CHAT-11, D-CHAT-14).
 
-   Layout per D-01 (single column, max-width 1280px from .shell token):
-     ┌─────────────────────────────────────────────┐
-     │ Header bar: <h1>Ask</h1> ........... [LLM ▾]│
-     │ Question form: textarea + ✕ + Run           │
-     │ {% if starter_prompts %}{% include _starter_chips %}{% endif %}
-     │ <div id="answer-zone"></div>                │
-     └─────────────────────────────────────────────┘
+   Chat surface replaces the v2.0 Phase 6 single-shot Q&A page under the same
+   /ask route. UI-SPEC §A pins the structure:
 
-   Copy ported VERBATIM from .planning/milestones/v1.0-phases/02-nl-agent-layer/02-UI-SPEC.md
-   Copywriting Contract:
-     - Page title: "Ask"
-     - Question input placeholder: "e.g. What is the WriteProt status for all LUNs on platform X?"
-     - Primary CTA: "Run" (Phase 6 deviates from v1.0 "Run Query" because v1.0 used "Run Query"
-       only in the param-confirmation row; Phase 6 keeps "Run Query ▸" for the confirmation
-       button and uses "Run" for the first-turn submit to keep the two visually distinct.)
+     ┌───────────────────────────────────────────────────────────────────┐
+     │ <div class="shell">                                               │
+     │   <div class="panel">                                             │
+     │     <div class="panel-header">                                    │
+     │       <h1 class="panel-title">Ask</h1>     [LLM: backend_name ▾] │
+     │     </div>                                                        │
+     │     <div class="panel-body">                                      │
+     │       <div id="chat-transcript" aria-live="polite">…</div>        │
+     │       <div id="input-zone">{% include "ask/_input_zone.html" %}</│
+     │     </div>                                                        │
+     │   </div>                                                          │
+     │ </div>                                                            │
+     └───────────────────────────────────────────────────────────────────┘
 
-   D-13 selector: dropdown label "LLM: {{ backend_name }} ▾" with one
-   <button class="dropdown-item"> per settings.llms[] entry.
-   Each item fires hx-post="/settings/llm" hx-swap="none"; the 204 + HX-Refresh: true
-   header drives a full page reload — no DOM swap needed.
-
-   D-08 swap target: #answer-zone is the SINGLE region for all NL state.
-   After the first POST /ask/query, the chips are gone (they live outside #answer-zone
-   and are only server-rendered on the initial page load with starter_prompts non-empty).
+   D-CHAT-10: NO _starter_chips include in the chat shell.
+   D-CHAT-11: LLM dropdown HTML carried VERBATIM from Phase 6 (lines 47-82
+              of the prior index.html).
+   UI-SPEC §A: Plotly loaded on /ask via {% block extra_head %}.
+   htmx-ext-sse loaded via {% block scripts %} so it registers AFTER
+   htmx.min.js — putting it in extra_head would cause defer-order to run
+   it before window.htmx exists, and the extension would silently fail.
 #}
 {% extends "base.html" %}
 
+{% block extra_head %}
+  {# Phase 3 only — Plotly bundle for _final_card.html chart rendering.
+     Loaded only on /ask; vendored in plan 03-01. #}
+  <script src="{{ url_for('static', path='vendor/plotly/plotly.min.js') }}" defer></script>
+{% endblock %}
+
+{% block scripts %}
+  {# htmx-ext-sse must load AFTER htmx.min.js so the extension can register
+     on the htmx global. Vendored in plan 03-01. #}
+  <script src="{{ url_for('static', path='vendor/htmx/htmx-ext-sse.js') }}" defer></script>
+
+  {# Drill-into-row handler — clicking the first cell of any row inside
+     a chat final-card copies that cell's text into the question textarea
+     and focuses it. Lets the user pivot from the agent's "did you mean
+     X?" suggestion (or any pivot-table row) into a follow-up question
+     without retyping the value.
+
+     Event delegation on document.body so it survives every HTMX swap of
+     the chat transcript. Single registration: the IIFE checks a guard
+     flag so re-renders don't double-bind. #}
+  <script>
+    (function () {
+      if (window.__pbm2ChatRowHandlerBound) return;
+      window.__pbm2ChatRowHandlerBound = true;
+      document.body.addEventListener("click", function (evt) {
+        var cell = evt.target.closest(
+          ".chat-final-card tbody tr td:first-child"
+        );
+        if (!cell) return;
+        var input = document.getElementById("ask-question");
+        if (!input) return;
+        var text = (cell.textContent || "").trim();
+        if (!text) return;
+        input.value = "show me data for " + text;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      });
+    })();
+  </script>
+{% endblock %}
+
 {% block content %}
 <div class="shell">
+  <div class="panel">
+    <div class="panel-header">
+      <h1 class="panel-title">Ask</h1>
 
-  {# Page header bar (D-01, D-12, D-13) #}
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="m-0" style="font-size: 22px; font-weight: 700;">Ask</h1>
-
-    {# D-13 LLM dropdown — label shows active backend; each item posts to /settings/llm.
-       hx-swap="none" because the 204 + HX-Refresh: true header drives a full page reload.
-       Bootstrap .dropdown-menu-end aligns the menu to the right edge of the trigger. #}
-    <div class="dropdown">
-      <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
-              type="button"
-              id="llm-selector-trigger"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              aria-label="Select LLM backend">
-        LLM: {{ backend_name | e }}
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="llm-selector-trigger">
-        {% for llm in llms %}
-          {% if llm.type == 'openai' %}
-            {% set display_name = 'OpenAI' %}
-          {% else %}
-            {% set display_name = 'Ollama' %}
+      {# === BEGIN LLM dropdown verbatim port (D-CHAT-11) ===
+         Block lifted byte-for-byte from the prior app_v2/templates/ask/index.html
+         lines 50-84. Bootstrap classes, trigger label "LLM: {{ backend_name }} ▾",
+         hx-post="/settings/llm" + hx-vals + hx-swap="none" all unchanged.
+         The 204 + HX-Refresh: true response from /settings/llm drives a full
+         page reload (set in app_v2/routers/settings.py — out of scope for this plan). #}
+      <div class="dropdown ms-auto">
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                type="button"
+                id="llm-selector-trigger"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="Select LLM backend">
+          LLM: {{ backend_name | e }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="llm-selector-trigger">
+          {% for llm in llms %}
+            {% if llm.type == 'openai' %}
+              {% set display_name = 'OpenAI' %}
+            {% else %}
+              {% set display_name = 'Ollama' %}
+            {% endif %}
+            {% set is_active = (backend_name | lower == display_name | lower) %}
+            <li>
+              <button type="button"
+                      class="dropdown-item{% if is_active %} active{% endif %}"
+                      hx-post="/settings/llm"
+                      hx-vals='{"name": "{{ llm.name | e }}"}'
+                      hx-swap="none"
+                      {% if is_active %}aria-current="true"{% endif %}>
+                {{ display_name }}
+                <small class="text-muted ms-2">{{ llm.name | e }}</small>
+              </button>
+            </li>
+          {% endfor %}
+          {% if not llms %}
+            <li><span class="dropdown-item-text text-muted">No LLMs configured.</span></li>
           {% endif %}
-          {% set is_active = (backend_name | lower == display_name | lower) %}
-          <li>
-            <button type="button"
-                    class="dropdown-item{% if is_active %} active{% endif %}"
-                    hx-post="/settings/llm"
-                    hx-vals='{"name": "{{ llm.name | e }}"}'
-                    hx-swap="none"
-                    {% if is_active %}aria-current="true"{% endif %}>
-              {{ display_name }}
-              <small class="text-muted ms-2">{{ llm.name | e }}</small>
-            </button>
-          </li>
-        {% endfor %}
-        {% if not llms %}
-          <li><span class="dropdown-item-text text-muted">No LLMs configured.</span></li>
-        {% endif %}
-      </ul>
+        </ul>
+      </div>
+      {# === END LLM dropdown verbatim port === #}
     </div>
-  </div>
 
-  {# Question form (ASK-V2-01) — first-turn submit. The form posts to /ask/query
-     with the textarea content; the response replaces #answer-zone (outerHTML swap).
-     The textarea persists its value across queries until the user manually clears it (D-06). #}
-  <div class="panel mb-3">
     <div class="panel-body">
-      <form id="ask-query-form"
-            hx-post="/ask/query"
-            hx-target="#answer-zone"
-            hx-swap="outerHTML">
-        <label for="ask-q" class="form-label fw-semibold">Your question</label>
-        <div class="position-relative">
-          <textarea id="ask-q"
-                    name="question"
-                    class="form-control"
-                    rows="3"
-                    placeholder="e.g. What is the WriteProt status for all LUNs on platform X?"></textarea>
-          {# ✕ clear button (D-06) — inline onclick is acceptable per CONTEXT.md
-             Claude's Discretion (no module-level JS for trivial cases). #}
-          <button type="button"
-                  class="btn btn-sm btn-link position-absolute top-0 end-0 mt-1 me-1 text-secondary"
-                  aria-label="Clear question"
-                  onclick="document.getElementById('ask-q').value='';document.getElementById('ask-q').focus();">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="d-flex justify-content-end mt-2">
-          <button type="submit"
-                  class="btn btn-primary"
-                  hx-disabled-elt="this">
-            Run
-          </button>
-        </div>
-      </form>
+      {# Transcript region — SSE event fragments append here (beforeend) as
+         the agent emits thought/tool_call/tool_result/final/error events.
+         aria-live="polite" announces arrivals to screen readers without
+         interrupting the user (UI-SPEC §Accessibility — explicitly NOT
+         "assertive" because that would be hostile during a multi-step turn). #}
+      <div id="chat-transcript" aria-live="polite">
+        {# Empty on initial render; events flow in via the SSE consumer
+           embedded in _user_message.html after the user submits a question. #}
+      </div>
+
+      {# Input zone — single region with two states (D-CHAT-14).
+         Idle (form): rendered by _input_zone.html.
+         Active (Stop button): rendered as an OOB swap target by _user_message.html
+                               when /ask/chat returns. Final/error fragments
+                               carry an OOB swap that flips this back to idle. #}
+      <div id="input-zone">
+        {% include "ask/_input_zone.html" %}
+      </div>
     </div>
   </div>
-
-  {# Starter chips (D-02, D-03, ASK-V2-08) — visible only on initial page render.
-     Once #answer-zone is populated by an HTMX swap, the chips are no longer
-     in the DOM (they live OUTSIDE #answer-zone; subsequent answer-zone swaps
-     don't re-render this section). After the first answer, the user must refresh
-     to see chips again — matches v1.0 D-27 single-session-life semantics. #}
-  {% if starter_prompts %}
-    {% include "ask/_starter_chips.html" %}
-  {% endif %}
-
-  {# Answer zone (D-08) — single DOM region for all NL state. The first POST
-     /ask/query response replaces this entire <div> (outerHTML swap); each of
-     ask/_answer.html, ask/_confirm_panel.html, ask/_abort_banner.html
-     carries id="answer-zone" on its outermost wrapper to keep subsequent
-     swaps idempotent. Empty initially on page load. #}
-  <div id="answer-zone"></div>
-
 </div>
 {% endblock %}

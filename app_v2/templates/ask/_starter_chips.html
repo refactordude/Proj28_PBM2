@@ -6,9 +6,19 @@
    Heading copy ported VERBATIM from 02-UI-SPEC.md Copywriting Contract:
      "Try asking..."  (st.subheader equivalent → <h2 class="h5">)
 
-   Click behavior (D-02, D-03): clicking a chip fills the textarea but does NOT
-   auto-submit. Inline onclick is acceptable per CONTEXT.md Claude's
-   Discretion — no module-level JS needed for this trivial fill operation.
+   Click behavior (D-02, D-03): clicking a chip fills the textarea AND
+   auto-submits via form.requestSubmit() so the question runs immediately.
+   Inline onclick is acceptable per CONTEXT.md Claude's Discretion — no
+   module-level JS needed for this trivial fill-and-submit operation.
+
+   IMPORTANT — why data-question instead of {{ tojson }} in onclick:
+   tojson produces a double-quoted JSON string (e.g. "My question"). Embedding
+   that inside an HTML double-quoted attribute (onclick="...") terminates the
+   attribute at the first embedded quote, producing broken HTML. The onclick
+   handler would be silently truncated and the chip click would do nothing.
+   Fix: store the question text in a data-question attribute (HTML-escaped,
+   safe for attribute context) and read it via this.dataset.question in the
+   onclick. No JS string literal appears inside the HTML attribute at all.
 
    The chips are NOT inside the #answer-zone — they live in their own
    container so an HTMX swap into #answer-zone doesn't replace them.
@@ -22,7 +32,8 @@
       <div class="col-md-3 col-sm-6">
         <button type="button"
                 class="ai-chip w-100 text-start"
-                onclick="var t=document.getElementById('ask-q');t.value={{ prompt.question | tojson }};t.focus();"
+                data-question="{{ prompt.question | e }}"
+                onclick="var t=document.getElementById('ask-q');t.value=this.dataset.question;t.focus();document.getElementById('ask-query-form').requestSubmit();"
                 title="{{ prompt.question | e }}">
           {{ prompt.label | e }}
         </button>

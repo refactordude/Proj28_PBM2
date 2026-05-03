@@ -80,18 +80,17 @@ def isolated_summary(tmp_path, monkeypatch, mocker):
     cd.mkdir(parents=True)
 
     import app_v2.routers.platforms as platforms_mod
-    import app_v2.routers.overview as overview_mod
-    import app_v2.services.overview_store as overview_store_mod
     from app_v2.services import summary_service
 
     monkeypatch.setattr(platforms_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(overview_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(overview_store_mod, "OVERVIEW_YAML", tmp_path / "overview.yaml")
-    monkeypatch.setattr(
-        overview_mod,
-        "list_platforms",
-        lambda db, db_name="": list(_FAKE_CATALOG),
-    )
+    # Phase 1 Plan 04: routers/overview.py was rewritten for the Joint
+    # Validation listing — CONTENT_DIR + list_platforms references were
+    # deleted along with the curated-Platform helpers. The summary route
+    # under test reads platforms_mod.CONTENT_DIR (above), not the legacy
+    # overview-side aliases.
+    # Phase 1 Plan 06: overview_store.py + OVERVIEW_YAML constant deleted
+    # along with config/overview.yaml — the curated-Platform list is gone.
+    # The platforms-side summary route under test no longer touches it.
 
     # Patch the LLM client builder — no real OpenAI() instantiation.
     mock_client = _make_mock_client(mocker)
@@ -323,6 +322,46 @@ def test_post_summary_uses_active_backend_name_in_metadata(isolated_summary):
     body = r.text
     assert "my-openai" in body
     assert "gpt-4o-mini" in body
+
+
+# ---------------------------------------------------------------------------
+# Generic-partial parameterization (Phase 01 Plan 01 — entity_id + summary_url)
+#
+# These assert the regression-safe rebinding from `platform_id` to the generic
+# `entity_id` + `summary_url` variables. Plans 04+05 will reuse the same
+# partials with `entity_id=confluence_page_id` and
+# `summary_url=/joint_validation/{cid}/summary`. The platform route MUST
+# still render the same on-the-wire output.
+# ---------------------------------------------------------------------------
+
+def test_post_summary_success_renders_summary_url_in_hx_post(isolated_summary):
+    """Regenerate button hx-post points at /platforms/{pid}/summary via summary_url."""
+    client, cd, mock_client = isolated_summary
+    (cd / f"{_PID}.md").write_text("notes", encoding="utf-8")
+    r = client.post(f"/platforms/{_PID}/summary")
+    assert r.status_code == 200
+    assert f'hx-post="/platforms/{_PID}/summary"' in r.text
+
+
+def test_post_summary_success_renders_entity_id_in_hx_indicator(isolated_summary):
+    """Spinner hx-indicator references summary-{entity_id}-spinner."""
+    client, cd, mock_client = isolated_summary
+    (cd / f"{_PID}.md").write_text("notes", encoding="utf-8")
+    r = client.post(f"/platforms/{_PID}/summary")
+    assert r.status_code == 200
+    # Phase 3 contract: hx-indicator id derived from entity_id (was platform_id).
+    assert f'hx-indicator="#summary-{_PID}-spinner"' in r.text
+
+
+def test_post_summary_error_retry_uses_summary_url(isolated_summary):
+    """Retry button on error fragment hx-posts to /platforms/{pid}/summary."""
+    client, cd, mock_client = isolated_summary
+    # No content file → triggers FileNotFoundError → error fragment.
+    r = client.post(f"/platforms/{_PID}/summary")
+    assert r.status_code == 200
+    assert "Retry" in r.text
+    assert f'hx-post="/platforms/{_PID}/summary"' in r.text
+    assert f'hx-indicator="#summary-{_PID}-spinner"' in r.text
 
 
 # ---------------------------------------------------------------------------

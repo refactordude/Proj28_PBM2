@@ -19,6 +19,8 @@ Key contract (Pitfall 11 / T-04-02):
 TTL rationale:
     - list_platforms: ttl=300s (catalog changes only on ingestion; ~5min is fine)
     - list_parameters: ttl=300s (same reasoning)
+    - list_parameters_for_platforms: ttl=300s (same reasoning — catalog data;
+      partitioned by (platforms, db_name) so each platform-set has its own slot)
     - fetch_cells: ttl=60s (cell data more volatile; 1min bound for parallel
       deployment where the ingest job may write while v2.0 reads)
 """
@@ -35,6 +37,7 @@ from app.adapters.db.base import DBAdapter
 from app.services.ufs_service import (
     fetch_cells as _fetch_cells_uncached,
     list_parameters as _list_parameters_uncached,
+    list_parameters_for_platforms as _list_parameters_for_platforms_uncached,
     list_platforms as _list_platforms_uncached,
 )
 
@@ -48,6 +51,9 @@ _platforms_lock = threading.Lock()
 
 _parameters_cache: TTLCache = TTLCache(maxsize=64, ttl=300)
 _parameters_lock = threading.Lock()
+
+_parameters_for_platforms_cache: TTLCache = TTLCache(maxsize=128, ttl=300)
+_parameters_for_platforms_lock = threading.Lock()
 
 _cells_cache: TTLCache = TTLCache(maxsize=256, ttl=60)
 _cells_lock = threading.Lock()
@@ -79,6 +85,28 @@ def list_platforms(db: DBAdapter, db_name: str = "") -> list[str]:
 def list_parameters(db: DBAdapter, db_name: str = "") -> list[dict]:
     """Return sorted distinct (InfoCategory, Item) rows (cached per db_name)."""
     return _list_parameters_uncached(db, db_name)
+
+
+@cached(
+    cache=_parameters_for_platforms_cache,
+    lock=_parameters_for_platforms_lock,
+    key=lambda db, platforms, db_name="": hashkey(platforms, db_name),
+)
+def list_parameters_for_platforms(
+    db: DBAdapter,
+    platforms: Tuple[str, ...],
+    db_name: str = "",
+) -> list[dict]:
+    """Return sorted distinct (InfoCategory, Item) rows for the given
+    platforms (cached per (platforms, db_name)).
+
+    Key: hashkey(platforms, db_name). The adapter is NOT hashed.
+
+    The caller MUST pass `platforms` as a tuple — list inputs are unhashable
+    and would raise TypeError at the cache-key step. This matches the
+    fetch_cells contract.
+    """
+    return _list_parameters_for_platforms_uncached(db, platforms, db_name)
 
 
 @cached(
@@ -142,6 +170,7 @@ def clear_all_caches() -> None:
     for cache, lock in (
         (_platforms_cache, _platforms_lock),
         (_parameters_cache, _parameters_lock),
+        (_parameters_for_platforms_cache, _parameters_for_platforms_lock),
         (_cells_cache, _cells_lock),
     ):
         with lock:

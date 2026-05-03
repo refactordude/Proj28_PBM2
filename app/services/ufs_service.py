@@ -8,6 +8,7 @@ FastAPI dependencies.
 Public API:
   list_platforms(db, db_name="") -> list[str]
   list_parameters(db, db_name="") -> list[dict]
+  list_parameters_for_platforms(db, platforms, db_name="") -> list[dict]
   fetch_cells(db, platforms, infocategories, items, row_cap=200, db_name="") -> tuple[pd.DataFrame, bool]
   pivot_to_wide(df_long, swap_axes=False, col_cap=30) -> tuple[pd.DataFrame, bool]
 
@@ -28,7 +29,7 @@ import sqlalchemy as sa
 
 from app.adapters.db.base import DBAdapter
 from app.core.config import load_settings
-from app.services.result_normalizer import normalize
+from app.services.result_normalizer import is_missing, normalize
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,39 @@ def list_parameters(db: DBAdapter, db_name: str = "") -> list[dict]:
             ),
             conn,
         )
+    return df.to_dict("records")
+
+
+def list_parameters_for_platforms(
+    db: DBAdapter,
+    platforms: tuple[str, ...],
+    db_name: str = "",
+) -> list[dict]:
+    """Return sorted distinct (InfoCategory, Item) rows that exist for ANY of
+    the given PLATFORM_IDs.
+
+    DATA-05 guard: empty platforms tuple returns [] without issuing SQL —
+    mirrors fetch_cells behavior. The Browse Parameters picker depends on this
+    so a "zero platforms selected" state never reaches the DB.
+
+    Security (T-03-01, T-03-02): same allowlist + parameterized-IN pattern as
+    fetch_cells. _safe_table() validates the table name; sa.bindparam(...,
+    expanding=True) binds the platforms list — no f-string interpolation of
+    user-controlled values.
+
+    The caller is responsible for passing platforms as a tuple (not a list) so
+    cachetools' hashkey can use it directly — same contract as fetch_cells.
+    """
+    if not platforms:
+        return []
+    tbl = _safe_table(_TABLE)
+    sql = sa.text(
+        f"SELECT DISTINCT InfoCategory, Item FROM {tbl} "
+        "WHERE PLATFORM_ID IN :platforms "
+        "ORDER BY InfoCategory, Item"
+    ).bindparams(sa.bindparam("platforms", expanding=True))
+    with db._get_engine().connect() as conn:
+        df = pd.read_sql_query(sql, conn, params={"platforms": list(platforms)})
     return df.to_dict("records")
 
 
@@ -224,6 +258,34 @@ def pivot_to_wide(
         index_col, columns_col = "Item", "PLATFORM_ID"
     else:
         index_col, columns_col = "PLATFORM_ID", "Item"
+
+    # 260430-browse-pivot-empty-row-labels: drop rows whose index_col value is
+    # "missing" (None, empty string, whitespace-only, or one of the documented
+    # MISSING_SENTINELS). These rows would otherwise survive the pivot and
+    # render as empty <td> in the row-label column — and CSS rule
+    # `.pivot-table td:empty::after { content: "\2014" }` would inject an
+    # em-dash, making the user think every row label is "-". Demo SQLite data
+    # is clean so the bug only surfaces on external DBs that contain rows with
+    # empty-string or whitespace PLATFORM_ID values. Filtering matches
+    # `list_platforms` (line 91 — `.dropna()`) and the `is_missing` contract
+    # used for the Result column. Logs a warning so operators can see the data
+    # quality issue.
+    missing_index_mask = df_long[index_col].apply(is_missing)
+    n_missing = int(missing_index_mask.sum())
+    if n_missing > 0:
+        logger.warning(
+            "pivot_to_wide: dropping %d row(s) with missing %s value "
+            "(empty/None/whitespace/sentinel) before pivoting",
+            n_missing,
+            index_col,
+        )
+        df_long = df_long[~missing_index_mask]
+        if df_long.empty:
+            # Every row had a missing index value — return an empty wide frame
+            # with the canonical column shape so downstream code (template,
+            # n_value_cols_shown, n_rows) handles it gracefully.
+            empty_cols = [index_col]
+            return pd.DataFrame(columns=empty_cols), False
 
     wide = df_long.pivot_table(
         index=index_col,

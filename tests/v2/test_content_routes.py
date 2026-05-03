@@ -46,17 +46,14 @@ def isolated_content(tmp_path, monkeypatch):
     cd.mkdir(parents=True)
 
     import app_v2.routers.platforms as platforms_mod
-    import app_v2.routers.overview as overview_mod
-    import app_v2.services.overview_store as overview_store_mod
 
     monkeypatch.setattr(platforms_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(overview_mod, "CONTENT_DIR", cd)
-    monkeypatch.setattr(overview_store_mod, "OVERVIEW_YAML", tmp_path / "overview.yaml")
-    monkeypatch.setattr(
-        overview_mod,
-        "list_platforms",
-        lambda db, db_name="": list(_FAKE_CATALOG),
-    )
+    # Phase 1 Plan 04: routers/overview.py rewritten for the Joint Validation
+    # listing — CONTENT_DIR + list_platforms aliases removed along with the
+    # curated-Platform helpers. The platforms detail tests under here read
+    # platforms_mod.CONTENT_DIR (above), not the legacy overview-side aliases.
+    # Phase 1 Plan 06: overview_store.py + OVERVIEW_YAML constant deleted
+    # along with config/overview.yaml — the curated-Platform list is gone.
 
     from app_v2.services.cache import clear_all_caches
     clear_all_caches()
@@ -349,7 +346,24 @@ def test_path_traversal_rejected_before_filesystem(
 # ---------------------------------------------------------------------------
 # Overview row AI Summary button — SUMMARY-01 wiring
 # ---------------------------------------------------------------------------
+#
+# Phase 1 Plan 04: the three tests below exercise the curated-Platform
+# Overview row markup and the legacy POST /overview/add affordance, both of
+# which are deleted by D-JV-07 + D-JV-09 (the Overview tab now shows
+# auto-discovered Joint Validations; new entries appear by drop-folder, not
+# by an in-app form). The new JV row markup ships in Plan 05; equivalent
+# Plan 06 tests will replace these three. Mark as skipped here — the
+# functionality is gone-by-design, not regressed.
 
+import pytest as _pytest
+_PLAN_04_REMOVED_AI_BUTTON_REASON = (
+    "Phase 1 Plan 04 deleted POST /overview/add and the curated-Platform "
+    "Overview row markup (D-JV-07 + D-JV-09 — drop-folder workflow only). "
+    "Plan 05 ships the JV-shaped row; Plan 06 ships the replacement tests."
+)
+
+
+@_pytest.mark.skip(reason=_PLAN_04_REMOVED_AI_BUTTON_REASON)
 def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
     """No content file → AI Summary button rendered with disabled + tooltip.
 
@@ -374,6 +388,7 @@ def test_overview_row_ai_button_disabled_when_no_content(isolated_content):
     assert "No content page to summarize yet" in body
 
 
+@_pytest.mark.skip(reason=_PLAN_04_REMOVED_AI_BUTTON_REASON)
 def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
     """Content file present → ✨ button enabled, hx-post to /summary.
 
@@ -404,6 +419,7 @@ def test_overview_row_ai_button_enabled_when_content_exists(isolated_content):
     assert "No content page to summarize yet" not in body
 
 
+@_pytest.mark.skip(reason=_PLAN_04_REMOVED_AI_BUTTON_REASON)
 def test_overview_has_global_summary_modal(isolated_content):
     """D-OV-15: overview index renders ONE global #summary-modal popup
     (replaces the per-row #summary-{pid} slot from D-OV-10).

@@ -50,6 +50,11 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.agent_registry = {}  # populated lazily by Phase 3/5
 
+    # Phase 3: per-turn registry (cancel_event + pending_question) — see app/core/agent/chat_session.py
+    app.state.chat_turns = {}
+    # Phase 3: per-session message_history store (D-CHAT-15 sliding window source) — same module
+    app.state.chat_sessions = {}
+
     # Initialize default DB adapter if configured. Phase 1 smoke tests can run
     # without a DB (no queries executed yet) — if settings.databases is empty or
     # the default database cannot be resolved, lifespan still succeeds.
@@ -75,6 +80,17 @@ async def lifespan(app: FastAPI):
         content_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:  # noqa: BLE001 — startup resilience
         _log.warning("Failed to create content/platforms/: %s", exc)
+
+    # Joint Validation drop-folder root (D-JV-13). Phase 1 Plan 04.
+    # Mirrors content/platforms mkdir above so the StaticFiles mount below
+    # has a guaranteed directory at startup (StaticFiles check_dir=True default
+    # raises if missing) AND so the drop-folder workflow (D-JV-09) works on
+    # cold-start without manual mkdir.
+    jv_dir = Path("content/joint_validation")
+    try:
+        jv_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:  # noqa: BLE001 — startup resilience
+        _log.warning("Failed to create content/joint_validation/: %s", exc)
 
     # NOTE on Pitfall 18 (Ollama cold-start) — DEVIATION from RESEARCH.md Q3:
     # RESEARCH.md recommended a lifespan-time Ollama warmup ping. We deviate
@@ -104,8 +120,35 @@ app = FastAPI(
     redoc_url=None,
 )
 
+# Joint Validation static mount (D-JV-13). Registered BEFORE /static so that
+# requests to /static/joint_validation/... match this mount instead of the
+# parent /static mount. See RESEARCH.md Pitfall 10: Starlette dispatches mounts
+# by registration order (longest-prefix-first is NOT automatic).
+app.mount(
+    "/static/joint_validation",
+    StaticFiles(
+        directory="content/joint_validation",
+        html=False,            # Do NOT auto-serve index.html for bare folder URLs
+        follow_symlink=False,  # Default; explicit for documentation
+    ),
+    name="joint_validation_static",
+)
+
 # Static mount BEFORE router registration so url_for('static', path=...) resolves
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+def _is_htmx_request(request: Request) -> bool:
+    """Return True when the request was issued by HTMX.
+
+    HTMX always sends `HX-Request: true` on its XHR calls. Used by the
+    exception handlers to pick a fragment template (no base.html shell)
+    over a full page — otherwise the htmx-error-handler.js swap would
+    inject an entire HTML document (navbar + body + ...) into
+    `#htmx-error-container`, producing a duplicate navbar beneath the
+    real one.
+    """
+    return request.headers.get("HX-Request") == "true"
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -113,12 +156,17 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Render Bootstrap-styled 404/500 pages (INFRA-02).
 
     For 404 and 500 return the custom template. Other status codes fall through
-    to the default response.
+    to the default response. HTMX requests get fragment templates so
+    htmx-error-handler.js can swap them into `#htmx-error-container` without
+    re-injecting the base.html shell.
     """
+    htmx = _is_htmx_request(request)
     if exc.status_code == 404:
-        return templates.TemplateResponse(request, "404.html", {"detail": exc.detail}, status_code=404)
+        tpl = "_404_fragment.html" if htmx else "404.html"
+        return templates.TemplateResponse(request, tpl, {"detail": exc.detail}, status_code=404)
     if exc.status_code == 500:
-        return templates.TemplateResponse(request, "500.html", {"detail": exc.detail}, status_code=500)
+        tpl = "_500_fragment.html" if htmx else "500.html"
+        return templates.TemplateResponse(request, tpl, {"detail": exc.detail}, status_code=500)
     # Fall through to FastAPI default for other codes.
     # exc.detail is escaped to prevent XSS — Jinja2 autoescape does not apply here.
     return HTMLResponse(
@@ -129,9 +177,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    """Catch-all: render 500.html for any unhandled exception."""
+    """Catch-all: render 500 for any unhandled exception. Fragment for HTMX,
+    full page for direct browser navigation."""
     _log.exception("Unhandled exception on %s: %s", request.url.path, exc)
-    return templates.TemplateResponse(request, "500.html", {"detail": f"{type(exc).__name__}: Internal server error"}, status_code=500)
+    detail = f"{type(exc).__name__}: Internal server error"
+    tpl = "_500_fragment.html" if _is_htmx_request(request) else "500.html"
+    return templates.TemplateResponse(request, tpl, {"detail": detail}, status_code=500)
 
 
 # Router registration — keep imports at the bottom to avoid circular deps
@@ -147,6 +198,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 from app_v2.routers import overview  # noqa: E402
 from app_v2.routers import platforms  # noqa: E402
 from app_v2.routers import summary  # noqa: E402
+from app_v2.routers import joint_validation  # noqa: E402  Phase 1 Plan 04
 from app_v2.routers import browse  # noqa: E402
 from app_v2.routers import ask  # noqa: E402
 from app_v2.routers import settings as settings_router  # noqa: E402 — alias to avoid collision with the Settings model
@@ -155,6 +207,7 @@ from app_v2.routers import root  # noqa: E402
 app.include_router(overview.router)
 app.include_router(platforms.router)
 app.include_router(summary.router)
+app.include_router(joint_validation.router)
 app.include_router(browse.router)
 app.include_router(ask.router)
 app.include_router(settings_router.router)

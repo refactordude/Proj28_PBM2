@@ -1,0 +1,49 @@
+{# Phase 3 — Inline error card (D-CHAT-04, UI-SPEC §G).
+
+   Rendered by chat_loop._render_error when the agent emits a terminal error
+   event, OR by app_v2/routers/ask._unconfigured_event_generator when no
+   LLM/DB/agent_cfg is wired (the unconfigured branch).
+
+   Two visual variants chosen by {{ severity }}:
+
+     - severity='hard':  hard failures (llm-error, still-rejected-after-5-attempts,
+                         stream-dropped, agent-no-final-result, unconfigured).
+                         Red border + ink (--red-soft bg).
+     - severity='soft':  user-mitigatable boundaries (timeout, step-budget-exhausted,
+                         stopped-by-user). Amber border + #8a5a00 heading
+                         (AA contrast on --amber-soft).
+
+   {{ severity }} arrives as the literal "hard" or "soft" string; the CSS class
+   is interpolated as .chat-error-card-{severity}.
+
+   Retry button (UI-SPEC §G) is conditional on {{ original_question }} being
+   non-empty — the unconfigured branch ships an empty question because no
+   user input was ever submitted; in that case we omit the Retry CTA.
+
+   Trailing OOB swap flips #input-zone back to idle (D-CHAT-14) so the user
+   can re-ask after an error.
+
+   AUTOESCAPE: every agent-supplied/route-supplied string uses | e. The
+   {{ original_question | tojson }} on the Retry button is a Jinja-native
+   serializer that produces a JSON string literal — also XSS-safe.
+   NO | safe filter anywhere.
+#}
+<div class="chat-error-card-{{ severity | e }}" data-reason="{{ reason | e }}">
+  <strong>{{ heading | e }}</strong>
+  <p>{{ body | e }}</p>
+  {% if original_question %}
+    <button type="button"
+            class="btn btn-primary btn-sm"
+            hx-post="/ask/chat"
+            hx-vals='{"question": {{ original_question | tojson }}}'
+            hx-target="#chat-transcript"
+            hx-swap="beforeend">
+      Retry this question
+    </button>
+  {% endif %}
+</div>
+
+{# OOB swap — D-CHAT-14: flip #input-zone back to idle on turn end. #}
+<div id="input-zone" hx-swap-oob="true">
+  {% include "ask/_input_zone.html" %}
+</div>

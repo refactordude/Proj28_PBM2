@@ -115,12 +115,31 @@ def _build_client(cfg: LLMConfig) -> OpenAI:
     )
 
 
-def _call_llm_single_shot(content: str, cfg: LLMConfig) -> str:
-    """Call ``chat.completions.create(stream=False)``; return stripped text.
+def _call_llm_with_text(
+    content: str,
+    cfg: LLMConfig,
+    system_prompt: str,
+    user_prompt_template: str,
+) -> str:
+    """Backend-agnostic single-shot LLM call (Plan 01-03 Task 1 refactor).
 
-    D-20: ``SYSTEM_PROMPT`` (untrusted-tag instruction) + ``USER_PROMPT_TEMPLATE``
-    (wraps content in ``<notes>...</notes>``).
-    D-21: ``stream=False`` (single-shot per SUMMARY-04 spec).
+    Used by:
+    - ``get_or_generate_summary`` (platform notes — passes ``SYSTEM_PROMPT``,
+      ``USER_PROMPT_TEMPLATE`` from ``app_v2.data.summary_prompt``).
+    - ``get_or_generate_jv_summary`` (Joint Validation pages — passes
+      ``JV_SYSTEM_PROMPT``, ``JV_USER_PROMPT_TEMPLATE`` from
+      ``app_v2.data.jv_summary_prompt``).
+
+    The ``user_prompt_template`` MUST contain a ``{markdown_content}``
+    placeholder that is ``.format()``-ed with the (already-sanitized) text.
+    Both prompt modules in ``app_v2/data/`` use this exact placeholder name
+    (verified at ``app_v2/data/summary_prompt.py:29``). The Phase 3
+    anti-injection wrap structure (``<notes>{markdown_content}</notes>``)
+    generalizes to ``<jv_page>{markdown_content}</jv_page>`` etc.
+
+    Same call shape as the original ``_call_llm_single_shot`` body
+    (lines 118-141 pre-refactor): default-model fallback per type,
+    ``stream=False``, returns ``.choices[0].message.content`` stripped.
     """
     client = _build_client(cfg)
     # Default model fallbacks per Research Pattern 5.
@@ -128,10 +147,10 @@ def _call_llm_single_shot(content: str, cfg: LLMConfig) -> str:
     resp = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {
                 "role": "user",
-                "content": USER_PROMPT_TEMPLATE.format(markdown_content=content),
+                "content": user_prompt_template.format(markdown_content=content),
             },
         ],
         temperature=cfg.temperature,
@@ -139,6 +158,20 @@ def _call_llm_single_shot(content: str, cfg: LLMConfig) -> str:
         stream=False,
     )
     return (resp.choices[0].message.content or "").strip()
+
+
+def _call_llm_single_shot(content: str, cfg: LLMConfig) -> str:
+    """Call ``chat.completions.create(stream=False)``; return stripped text.
+
+    D-20: ``SYSTEM_PROMPT`` (untrusted-tag instruction) + ``USER_PROMPT_TEMPLATE``
+    (wraps content in ``<notes>...</notes>``).
+    D-21: ``stream=False`` (single-shot per SUMMARY-04 spec).
+
+    Plan 01-03 Task 1: delegates to :func:`_call_llm_with_text` with the
+    platform-notes prompt pair. Kept as the named entry for Phase 3 callers
+    and any test that patches it directly.
+    """
+    return _call_llm_with_text(content, cfg, SYSTEM_PROMPT, USER_PROMPT_TEMPLATE)
 
 
 def _classify_error(exc: Exception, backend_name: str) -> str:

@@ -44,10 +44,27 @@ def test_no_banned_export_or_chart_libraries_imported_in_app_v2(library, regex):
 
     Anchored to start-of-line + word boundary so docstrings and
     comments cannot trigger a false positive.
+
+    Phase 03 narrowing (plan 03-05): the ``plotly`` rule whitelists
+    ``app_v2/routers/ask.py``. D-CHAT-05 + T-03-04-09 require the chat
+    final-card chart to be constructed server-side via Plotly — the
+    bundle is vendored under ``app_v2/static/vendor/plotly/`` and loaded
+    only on /ask via the ``extra_head`` Jinja block (RESEARCH Pitfall 5).
+    The import is lazy (inside ``_build_plotly_chart_html``) so non-/ask
+    requests do not pay the import cost. A Phase 03 invariant
+    (``test_phase03_chat_invariants.py::test_plotly_only_loaded_on_ask_page``)
+    asserts the bundle stays out of every other page template; this rule
+    still guards every other ``app_v2/`` Python module.
     """
+    # Phase 03 narrowing — D-CHAT-05 / T-03-04-09: server-side Plotly chart
+    # construction is REQUIRED inside the Ask router; whitelist that one file.
+    PLOTLY_WHITELIST = {APP_V2_ROOT / "routers" / "ask.py"}
+
     violations = []
     pattern = re.compile(regex)
     for path in APP_V2_ROOT.rglob("*.py"):
+        if library == "plotly" and path in PLOTLY_WHITELIST:
+            continue
         for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if pattern.search(line):
                 violations.append(f"{path.relative_to(REPO_ROOT)}:{line_no}: {line.strip()}")

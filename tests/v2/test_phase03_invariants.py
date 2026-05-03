@@ -18,8 +18,9 @@ Each test maps to a specific D-number or pitfall it guards:
 - D-17: ``TTLCache(maxsize=128, ttl=3600)`` verbatim.
 - Pitfall 13: cache key uses ``mtime_ns`` (integer ns), not float ``st_mtime``.
 - D-30: ``atomic_write_bytes`` is the single shared helper — defined in
-  ``app_v2/data/atomic_write.py`` and consumed via import by both
-  ``overview_store`` and ``content_store``.
+  ``app_v2/data/atomic_write.py`` and consumed via import by
+  ``content_store``. (The historical second consumer ``overview_store``
+  was deleted by Phase 1 Plan 06 alongside ``config/overview.yaml``.)
 """
 from __future__ import annotations
 
@@ -202,8 +203,10 @@ def test_summary_cache_key_uses_mtime_ns():
 def test_atomic_write_bytes_is_single_source_of_truth():
     """D-30: only ONE definition of ``atomic_write_bytes`` in the codebase.
 
-    The helper lives in ``app_v2/data/atomic_write.py``; both
-    ``overview_store`` and ``content_store`` import it (no copy-paste).
+    The helper lives in ``app_v2/data/atomic_write.py``; ``content_store``
+    imports it (no copy-paste). The historical second consumer
+    ``overview_store`` was deleted by Phase 1 Plan 06 (Joint Validation
+    cleanup) along with ``config/overview.yaml``.
     """
     defs = []
     for path in APP_V2_ROOT.rglob("*.py"):
@@ -215,15 +218,9 @@ def test_atomic_write_bytes_is_single_source_of_truth():
         f"app_v2/data/atomic_write.py; found in: {defs}"
     )
 
-    # Also assert overview_store and content_store IMPORT it (don't reimplement).
-    overview_src = _read("services/overview_store.py")
+    # Assert content_store IMPORTS it (does not reimplement). The historical
+    # overview_store consumer is gone (Phase 1 Plan 06).
     content_src = _read("services/content_store.py")
-    assert (
-        "from app_v2.data.atomic_write import atomic_write_bytes" in overview_src
-    ), (
-        "overview_store must import atomic_write_bytes "
-        "(D-30 single source of truth)"
-    )
     assert (
         "from app_v2.data.atomic_write import atomic_write_bytes" in content_src
     ), (
