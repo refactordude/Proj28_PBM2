@@ -463,6 +463,21 @@ main.container-fluid {
 }
 .chat-plotly { margin-top: 18px; min-height: 320px; }
 
+/* Click-to-fill: first cell of every row in a chat final-card pivot
+   table acts as a drill-in handle — populates the question textarea
+   with "show me data for <cell text>" so users can pivot from the
+   agent's "did you mean X?" suggestion (or any pivot row) into a
+   follow-up question without retyping. JS handler in ask/index.html. */
+.chat-final-card tbody tr td:first-child {
+  cursor: pointer;
+  text-decoration: underline dotted var(--line-2);
+  text-underline-offset: 3px;
+}
+.chat-final-card tbody tr td:first-child:hover {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
 /* Error card hard / soft (D-CHAT-04; UI-SPEC §G) */
 .chat-error-card-hard,
 .chat-error-card-soft {

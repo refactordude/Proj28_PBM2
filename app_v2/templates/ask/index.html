@@ -37,6 +37,35 @@
   {# htmx-ext-sse must load AFTER htmx.min.js so the extension can register
      on the htmx global. Vendored in plan 03-01. #}
   <script src="{{ url_for('static', path='vendor/htmx/htmx-ext-sse.js') }}" defer></script>
+
+  {# Drill-into-row handler — clicking the first cell of any row inside
+     a chat final-card copies that cell's text into the question textarea
+     and focuses it. Lets the user pivot from the agent's "did you mean
+     X?" suggestion (or any pivot-table row) into a follow-up question
+     without retyping the value.
+
+     Event delegation on document.body so it survives every HTMX swap of
+     the chat transcript. Single registration: the IIFE checks a guard
+     flag so re-renders don't double-bind. #}
+  <script>
+    (function () {
+      if (window.__pbm2ChatRowHandlerBound) return;
+      window.__pbm2ChatRowHandlerBound = true;
+      document.body.addEventListener("click", function (evt) {
+        var cell = evt.target.closest(
+          ".chat-final-card tbody tr td:first-child"
+        );
+        if (!cell) return;
+        var input = document.getElementById("ask-question");
+        if (!input) return;
+        var text = (cell.textContent || "").trim();
+        if (!text) return;
+        input.value = "show me data for " + text;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      });
+    })();
+  </script>
 {% endblock %}
 
 {% block content %}
