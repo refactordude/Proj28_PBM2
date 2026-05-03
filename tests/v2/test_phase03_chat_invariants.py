@@ -267,6 +267,42 @@ def test_user_message_template_uses_close_event_for_sse_close():
 
 
 # -----------------------------------------------------------------------
+# Click-to-fill — chat final-card first cell populates the question input
+# -----------------------------------------------------------------------
+
+
+def test_ask_index_wires_chat_final_card_row_click_handler():
+    """Clicking the first cell in a chat final-card pivot table should
+    populate the question textarea with "show me data for <cell text>" so
+    users can drill into the agent's "did you mean X?" suggestion (or any
+    pivot row) without retyping. The handler lives in ask/index.html and
+    uses event delegation on document.body so it survives HTMX swaps.
+    """
+    src = (REPO / "app_v2" / "templates" / "ask" / "index.html").read_text()
+    # Selector must target only the first cell of body rows in chat-final-card.
+    assert ".chat-final-card tbody tr td:first-child" in src, (
+        "click handler missing or selector drifted from .chat-final-card "
+        "tbody tr td:first-child"
+    )
+    # Must populate the question textarea, not auto-submit.
+    assert 'getElementById("ask-question")' in src
+    assert 'show me data for ' in src, (
+        "click handler should populate textarea with 'show me data for <text>'"
+    )
+    # Single registration guard so HTMX swaps don't double-bind.
+    assert "__pbm2ChatRowHandlerBound" in src, (
+        "handler must guard against double-binding across HTMX swaps"
+    )
+
+    # CSS visual cue — first cell shows a pointer cursor + dotted underline.
+    css = (REPO / "app_v2" / "static" / "css" / "app.css").read_text()
+    assert ".chat-final-card tbody tr td:first-child" in css, (
+        "CSS rule for clickable first cell missing"
+    )
+    assert "cursor: pointer" in css
+
+
+# -----------------------------------------------------------------------
 # CLAUDE.md banned libs — chat module guard
 # -----------------------------------------------------------------------
 

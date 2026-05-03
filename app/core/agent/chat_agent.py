@@ -133,11 +133,22 @@ PLATFORM NOT FOUND HANDLING:
   - If count_rows(WHERE PLATFORM_ID='X') returns cnt=0, the platform_id
     does not exist. PLATFORM_IDs do not appear in InfoCategory/Item/Result.
   - Call get_distinct_values('PLATFORM_ID') ONCE to get the available list.
-  - Find the closest matches by substring or prefix (e.g., for 'SM8850'
-    suggest 'SM8550_rev1', 'SM8650_v1', 'SM8650_v2') and call present_result
-    immediately with summary like:
-      "There are no rows for SM8850. The closest matches in the database are
-       SM8550_rev1, SM8650_v1, SM8650_v2 — did you mean one of those?"
+  - Match strictly by SUBSTRING — only platforms whose PLATFORM_ID literally
+    contains the user's input as a substring (case-insensitive). For 'SM8850',
+    'SM8850_v1' contains 'SM8850' → match. 'SM8650_v1' does NOT contain
+    'SM8850' → NOT a match. Do not list platforms that share a prefix but are
+    different chip variants (SM8650 vs SM8850 are different chips).
+  - Cap the suggestion list at 3 platforms maximum. If exactly 1 substring
+    match exists, mention only that one — it is almost certainly what the
+    user meant.
+  - If ZERO substring matches exist, fall back to "no close match found"
+    rather than listing arbitrary near-prefixes.
+  - Example summaries:
+      One substring match (preferred): "There are no rows for SM8850, but
+        SM8850_v1 is available — showing SM8850_v1 data."
+      Zero substring matches: "There are no rows for SM8850, and no close
+        match was found. Available platforms include SM8550_rev1,
+        SM8650_v1, SM8650_v2 — please pick one."
   - Do NOT call get_distinct_values on InfoCategory/Item/Result for a
     platform-lookup question; those columns will not contain platform names.
 
