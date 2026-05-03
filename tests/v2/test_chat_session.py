@@ -122,6 +122,70 @@ def test_session_history_default_limit_is_12():
     assert len(hist) == 12
 
 
+def test_session_history_reanchors_to_user_prompt_to_avoid_orphan_tool():
+    """OPENAI BOUNDARY FIX — slicing [-limit:] can land mid-turn at an
+    orphaned ToolReturnPart (a tool reply without its preceding assistant
+    tool_calls message). OpenAI rejects that with:
+      400 — "messages with role 'tool' must be a response to a preceeding
+      message with 'tool_calls'."
+    get_session_history walks the slice forward until it finds a
+    ModelRequest containing a UserPromptPart and starts there.
+    """
+    from pydantic_ai.messages import (
+        ModelResponse,
+        TextPart,
+        ToolCallPart,
+        ToolReturnPart,
+    )
+
+    sid = "s_reanchor"
+    # Build a 4-message conversation:
+    #   0: ModelRequest [UserPromptPart "u0"]
+    #   1: ModelResponse [ToolCallPart]
+    #   2: ModelRequest [ToolReturnPart]                   ← orphan if sliced from here
+    #   3: ModelRequest [UserPromptPart "u3"]              ← safe anchor
+    msgs = [
+        ModelRequest(parts=[UserPromptPart(content="u0")]),
+        ModelResponse(parts=[ToolCallPart(tool_name="t", args={}, tool_call_id="c1")]),
+        ModelRequest(parts=[ToolReturnPart(tool_name="t", content="r", tool_call_id="c1")]),
+        ModelRequest(parts=[UserPromptPart(content="u3")]),
+    ]
+    append_session_history(sid, msgs, active_llm_type="ollama")
+
+    # limit=2 would naively grab indices [2, 3] — leading with the orphan tool.
+    # The re-anchor should drop the tool message and start at index 3.
+    hist = get_session_history(sid, limit=2)
+    assert len(hist) == 1, f"expected re-anchored slice of length 1; got {len(hist)}"
+    assert isinstance(hist[0], ModelRequest)
+    assert any(isinstance(p, UserPromptPart) for p in hist[0].parts)
+
+
+def test_session_history_returns_empty_when_no_user_anchor_in_window():
+    """If the slice window contains NO ModelRequest with a UserPromptPart,
+    return an empty history rather than risk an OpenAI 400 on the next turn.
+    The agent loses context but doesn't error.
+    """
+    from pydantic_ai.messages import (
+        ModelResponse,
+        ToolCallPart,
+        ToolReturnPart,
+    )
+
+    sid = "s_no_anchor"
+    msgs = [
+        ModelRequest(parts=[UserPromptPart(content="u")]),
+        ModelResponse(parts=[ToolCallPart(tool_name="t", args={}, tool_call_id="c1")]),
+        ModelRequest(parts=[ToolReturnPart(tool_name="t", content="r", tool_call_id="c1")]),
+        ModelResponse(parts=[ToolCallPart(tool_name="t", args={}, tool_call_id="c2")]),
+        ModelRequest(parts=[ToolReturnPart(tool_name="t", content="r", tool_call_id="c2")]),
+    ]
+    append_session_history(sid, msgs, active_llm_type="ollama")
+
+    # limit=3 grabs the last 3 (indices 2,3,4) — none is a UserPromptPart.
+    hist = get_session_history(sid, limit=3)
+    assert hist == [], f"expected empty history when no UserPromptPart in window; got {len(hist)} messages"
+
+
 def test_session_history_short_returns_all():
     sid = "s1"
     msgs = [

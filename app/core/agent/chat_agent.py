@@ -121,7 +121,18 @@ STRATEGY:
       WHERE PLATFORM_ID IN ('SM8850_v1','SM8650_v1')
     The user will see one column per platform and one row per parameter —
     do NOT build a JOIN, do NOT issue multiple run_sql calls, and do NOT
-    UNION. One IN-clause is enough.
+    UNION. One IN-clause is enough. Always DEDUPE the platform list before
+    composing the IN-clause: never emit IN('A','A') or IN('A','A','B') —
+    each platform appears at most once.
+  - For LISTING questions like "show me 4 different platforms" or "list
+    all SM8650 variants" or "what platforms exist":
+    Use `SELECT DISTINCT PLATFORM_ID FROM ufs_data` (with `LIMIT N` or
+    `WHERE PLATFORM_ID LIKE 'SM8650%'` as appropriate). Do NOT issue a
+    plain `SELECT PLATFORM_ID FROM ufs_data LIMIT N` — that returns N
+    EAV rows that almost all share the same platform_id (the table has
+    many rows per platform), making the result look like duplicates. The
+    DISTINCT keyword is mandatory whenever the user asks for "different",
+    "distinct", "variants", or any count/listing of platforms.
   - End EVERY turn with a present_result call — the UI requires it.
 
 BUDGET DISCIPLINE:

@@ -186,7 +186,8 @@ def get_or_create_session(session_id: str) -> SessionState:
 
 
 def get_session_history(session_id: str, limit: int = 12) -> list[ModelMessage]:
-    """Return the last ``limit`` ModelMessage entries (D-CHAT-15 sliding window).
+    """Return the last ``limit`` ModelMessage entries (D-CHAT-15 sliding window),
+    re-anchored to the nearest UserPromptPart boundary.
 
     Default limit=12 = 6 user/agent pairs (one user ModelRequest + one agent
     ModelResponse per turn typically).
@@ -194,11 +195,29 @@ def get_session_history(session_id: str, limit: int = 12) -> list[ModelMessage]:
     The LLM context is what gets truncated; the user-visible transcript shows
     everything (rendered by the SSE event swap engine in plan 03-04).
 
-    Pitfall 4 of RESEARCH: slice [-12:] is acceptable; PydanticAI tolerates
-    leading ModelResponse entries and re-anchors on the next user prompt.
+    OPENAI BOUNDARY FIX: a naive ``state.messages[-limit:]`` can land mid-turn
+    on a ``ModelRequest`` whose first part is a ``ToolReturnPart`` (tool reply)
+    without the preceding ``ModelResponse`` containing the matching
+    ``ToolCallPart``. OpenAI's chat-completions API rejects this with:
+       400 — "messages with role 'tool' must be a response to a preceeding
+       message with 'tool_calls'."
+    To prevent that, we walk forward from the slice start until we find a
+    ``ModelRequest`` that contains a ``UserPromptPart`` (a fresh user-initiated
+    exchange) and slice from there. If no such anchor exists in the window,
+    start with an empty history — the agent loses context but doesn't error.
     """
+    from pydantic_ai.messages import ModelRequest, UserPromptPart
+
     state = get_or_create_session(session_id)
-    return list(state.messages[-limit:])
+    window = list(state.messages[-limit:])
+
+    for idx, msg in enumerate(window):
+        if isinstance(msg, ModelRequest) and any(
+            isinstance(part, UserPromptPart) for part in msg.parts
+        ):
+            return window[idx:]
+
+    return []
 
 
 def append_session_history(
