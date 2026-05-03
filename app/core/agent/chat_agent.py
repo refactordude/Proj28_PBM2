@@ -172,6 +172,11 @@ def build_chat_agent(model) -> Agent:
         so a malicious where_clause containing UNION / a second statement / comments
         is rejected with the same backstop as run_sql (T-03-02-02).
         """
+        if not where_clause.strip():
+            return (
+                "REJECTED: where_clause must be a non-empty SQL boolean expression "
+                "(e.g., \"PLATFORM_ID='SM8850'\" or \"1=1\" to count all rows)."
+            )
         sql = f"SELECT COUNT(*) AS cnt FROM ufs_data WHERE {where_clause}"
         return _execute_and_wrap(ctx, sql, prefix_rejection=True)
 
@@ -185,6 +190,11 @@ def build_chat_agent(model) -> Agent:
         passes through inject_limit so the user-supplied limit can never exceed
         row_cap even if validate_sql would otherwise let it.
         """
+        if not where_clause.strip():
+            return (
+                "REJECTED: where_clause must be a non-empty SQL boolean expression "
+                "(e.g., \"PLATFORM_ID='SM8850'\" or \"1=1\" to peek at any rows)."
+            )
         limit = min(max(int(limit), 1), ctx.deps.agent_cfg.row_cap)
         sql = f"SELECT * FROM ufs_data WHERE {where_clause} LIMIT {limit}"
         return _execute_and_wrap(ctx, sql, prefix_rejection=True)
@@ -264,7 +274,14 @@ def _execute_and_wrap(
             type(exc).__name__,
             exc,
         )
-        return f"SQL execution error: {type(exc).__name__}"
+        # DB-side execution errors (syntax, missing columns, runtime) are fed back
+        # to the agent through the standard rejection path (D-CHAT-02 retry counter)
+        # so the agent receives a uniform "this didn't work, try again" signal and
+        # the per-turn rejection cap (5) applies. Without the REJECTED: prefix the
+        # agent receives plain prose, doesn't recognize it as retryable, and may
+        # spend its step budget producing degenerate variants.
+        msg = f"SQL execution error: {type(exc).__name__}: {exc}"
+        return f"REJECTED: {msg}" if prefix_rejection else msg
 
     if df.empty:
         rows_text = "(no rows returned)"
