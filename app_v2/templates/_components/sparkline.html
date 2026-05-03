@@ -1,0 +1,44 @@
+{# Phase 4 — UI Foundation: Sparkline primitive (D-UIF-09).
+
+   Server-rendered inline SVG polyline. Pure Jinja — no JS, no extra
+   library. Edge cases handled per RESEARCH Pitfall 4:
+     - data is None or empty -> bare <svg/> (no path)
+     - data has 1 element     -> degenerate horizontal line at mid-height
+     - all elements equal     -> flat line at mid-height (rng = 1 fallback)
+
+   The polyline algorithm normalizes to viewBox using min/max + 2px
+   vertical padding; emits two <path> elements (filled area at 12%
+   opacity + line stroke at `color`).
+
+   Caller: `{% from "_components/sparkline.html" import sparkline %}`
+           `{{ sparkline([10, 14, 18, 22, 30], width=90, height=26) }}` #}
+{% macro sparkline(data, width=90, height=26, color="var(--accent)") -%}
+  {%- if not data -%}
+<svg width="{{ width }}" height="{{ height }}" aria-hidden="true"></svg>
+  {%- else -%}
+    {%- set lo = data | min -%}
+    {%- set hi = data | max -%}
+    {%- set rng = (hi - lo) if hi != lo else 1 -%}
+    {%- set pad = 2 -%}
+    {%- set inner_h = height - 2 * pad -%}
+    {%- set step = (width / (data|length - 1)) if data|length > 1 else 0 -%}
+    {%- set ns = namespace(d_line='', d_area='') -%}
+    {%- for v in data -%}
+      {%- set x = (loop.index0 * step) | round(2) -%}
+      {%- if hi == lo -%}
+        {%- set y = (height / 2) | round(2) -%}
+      {%- else -%}
+        {%- set y = (pad + inner_h * (1 - ((v - lo) / rng))) | round(2) -%}
+      {%- endif -%}
+      {%- if loop.first -%}
+        {%- set ns.d_line = 'M' ~ x ~ ' ' ~ y -%}
+        {%- set ns.d_area = 'M' ~ x ~ ' ' ~ y -%}
+      {%- else -%}
+        {%- set ns.d_line = ns.d_line ~ ' L ' ~ x ~ ' ' ~ y -%}
+        {%- set ns.d_area = ns.d_area ~ ' L ' ~ x ~ ' ' ~ y -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- set ns.d_area = ns.d_area ~ ' L ' ~ width ~ ' ' ~ height ~ ' L 0 ' ~ height ~ ' Z' -%}
+<svg width="{{ width }}" height="{{ height }}" viewBox="0 0 {{ width }} {{ height }}" aria-hidden="true"><path d="{{ ns.d_area }}" fill="{{ color }}" opacity="0.12"/><path d="{{ ns.d_line }}" fill="none" stroke="{{ color }}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  {%- endif -%}
+{%- endmacro %}

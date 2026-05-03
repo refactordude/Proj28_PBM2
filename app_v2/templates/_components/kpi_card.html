@@ -1,0 +1,25 @@
+{# Phase 4 — UI Foundation: KPI card primitive (D-UIF-08).
+
+   Spec divergence: variant arg dropped per UI-SPEC §kpi_card line 280 —
+   caller sets the `.kpis` or `.kpis.five` container class instead. ONE
+   macro renders ONE card. The variant ("4-up" vs "5-up") is the
+   caller's responsibility — caller emits `<div class="kpis">` or
+   `<div class="kpis five">` and stuffs N cards inside. UI-SPEC §New
+   Jinja Macros §kpi_card pins this contract.
+
+   delta_tone values: "up" (accent), "down" (red), "flat" (mute), "ok" (green).
+   When spark_data is None or [], no sparkline renders.
+
+   Caller: `{% from "_components/kpi_card.html" import kpi_card %}`
+           `{{ kpi_card("Open", 128, delta="+12", delta_tone="up", spark_data=[10,14,18,22,30]) }}` #}
+{% from "_components/sparkline.html" import sparkline %}
+{% macro kpi_card(label, value, unit="", delta="", delta_tone="flat", spark_data=None) %}
+<div class="kpi">
+  <div class="l">{{ label | e }}</div>
+  <div class="v">
+    {{ value | e }}{% if unit %}<span class="u">{{ unit | e }}</span>{% endif %}
+  </div>
+  {% if delta %}<div class="d {{ delta_tone | e }}">{{ delta | e }}</div>{% endif %}
+  {% if spark_data %}<div class="spark">{{ sparkline(spark_data) }}</div>{% endif %}
+</div>
+{% endmacro %}

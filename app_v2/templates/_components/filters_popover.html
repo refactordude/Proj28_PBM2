@@ -1,0 +1,63 @@
+{# Phase 4 — UI Foundation: Filters popover (chip-group multi-category) (D-UIF-04).
+
+   Distinct from browse/_picker_popover.html (checkbox list, single
+   attribute) — the two primitives coexist. NOT a fork of
+   _picker_popover.html. _picker_popover.html stays byte-stable per
+   D-UIF-05 / D-UI2-09.
+
+   `groups` is a list of FilterGroup instances. Each option emits:
+     - A <button class="opt {% if on %}on{% endif %}"> chip
+     - A sibling <input type="hidden" form="<form_id>" data-opt="<value>">
+   chip-toggle.js (Wave 1 ships the JS; Wave 3 loads it in base.html)
+   toggles the .on class and syncs the hidden input value on click.
+   Apply submits the form via the form= attribute on the submit button.
+
+   Hidden input `name` is `<group_label_lower_with_underscores>` so the
+   server receives multiple values for the same group (one input per
+   option, only `on` ones carry a value). Apply Filters CTA strengthened
+   per UI-SPEC §Copywriting (300px pop width accommodates).
+
+   Caller: `{% from "_components/filters_popover.html" import filters_popover %}`
+           `{{ filters_popover("jv-form", groups=my_filter_groups) }}` #}
+{% macro filters_popover(form_id, groups, button_label="Filters") %}
+<div class="dropdown pop-wrap">
+  <button class="btn btn-helix sm dropdown-toggle"
+          type="button"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false">
+    {{ button_label | e }}
+  </button>
+  <div class="dropdown-menu pop">
+    <div class="pop-head">
+      <span>Filters</span>
+      <a href="#" data-action="reset">Reset Filters</a>
+    </div>
+    {% for grp in groups %}
+      {# D-UIF-04: hyphen-safe group_name (UFS-eMMC -> ufs_emmc; downstream consumers can use Python attr access). #}
+      {% set group_name = grp.label | lower | replace(' ', '_') | replace('-', '_') %}
+      <div class="grp">
+        <div class="grp-l">{{ grp.label | e }}</div>
+        <div class="opts">
+          {% for opt in grp.options %}
+            <button type="button"
+                    class="opt {% if opt.on %}on{% endif %}"
+                    data-value="{{ opt.value | e }}">
+              {{ opt.label | e }}
+            </button>
+            <input type="hidden"
+                   name="{{ group_name | e }}"
+                   value="{% if opt.on %}{{ opt.value | e }}{% endif %}"
+                   data-opt="{{ opt.value | e }}"
+                   form="{{ form_id }}">
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+    <div class="foot">
+      <button type="button" class="btn-helix ghost sm" data-action="reset">Reset</button>
+      <button type="submit" form="{{ form_id }}" class="btn-helix sm">Apply Filters</button>
+    </div>
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,21 @@
+{# Phase 4 — UI Foundation: Page-head primitive (D-UIF-08).
+
+   Renders the .page-head row used at the top of detail pages.
+   Existing CSS rules in app.css (lines 43-46) provide the visual.
+   `actions_html` is RAW HTML passed by the caller (typically a
+   short snippet of <button> markup). The caller is responsible
+   for escaping any user-facing strings inside actions_html — the
+   macro applies `| safe` so the snippet renders as HTML rather
+   than escaped text. Title and subtitle are escaped via `| e`.
+
+   Caller: `{% from "_components/page_head.html" import page_head %}`
+           `{{ page_head("Component Showcase", subtitle="...", actions_html="<button class=\"btn-helix sm\">Export</button>") }}` #}
+{% macro page_head(title, subtitle="", actions_html="") %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">{{ title | e }}</h1>
+    {% if subtitle %}<div class="page-sub">{{ subtitle | e }}</div>{% endif %}
+  </div>
+  {% if actions_html %}<div class="page-actions">{{ actions_html | safe }}</div>{% endif %}
+</div>
+{% endmacro %}

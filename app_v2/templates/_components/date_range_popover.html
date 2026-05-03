@@ -1,0 +1,63 @@
+{# Phase 4 — UI Foundation: Date-range popover (D-UIF-03).
+
+   Bootstrap 5 dropdown anchoring; .pop content inside .dropdown-menu.
+   Apply submits the enclosing form via the `form="<form_id>"` attr
+   on the submit button (form-association — same trick as
+   browse/_picker_popover.html line 113). Date inputs also carry the
+   `form=` attribute so they POST with the form even though they live
+   inside the dropdown DOM.
+
+   data-bs-auto-close="outside" keeps the popover open while the user
+   interacts with date inputs / quick chips; click-outside dismisses.
+
+   Quick-chip "active" state is purely visual at the moment (no JS to
+   compute current selection vs quick_days; can be enhanced in a
+   follow-up by passing in the matched quick-day or computing it
+   server-side from start_val/end_val).
+
+   Caller: `{% from "_components/date_range_popover.html" import date_range_popover %}`
+           `{{ date_range_popover("my-form", start_val=request.query_params.get("date_start", "")) }}` #}
+{% macro date_range_popover(form_id, field_prefix="date", quick_days=[7,14,30,60], start_val="", end_val="") %}
+<div class="dropdown pop-wrap">
+  <button class="btn btn-helix sm dropdown-toggle"
+          type="button"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false">
+    Date range
+  </button>
+  <div class="dropdown-menu pop">
+    <div class="pop-head">
+      <span>Date range</span>
+      <a href="#" data-action="reset">Reset</a>
+    </div>
+    <div class="qrow" role="group" aria-label="Quick ranges">
+      {% for d in quick_days %}
+        <button type="button" data-quick-days="{{ d | e }}">{{ d | e }}d</button>
+      {% endfor %}
+    </div>
+    <div class="dates">
+      <div>
+        <label for="{{ form_id }}-{{ field_prefix }}-start">Start</label>
+        <input type="date"
+               id="{{ form_id }}-{{ field_prefix }}-start"
+               name="{{ field_prefix }}_start"
+               value="{{ start_val | e }}"
+               form="{{ form_id }}">
+      </div>
+      <div>
+        <label for="{{ form_id }}-{{ field_prefix }}-end">End</label>
+        <input type="date"
+               id="{{ form_id }}-{{ field_prefix }}-end"
+               name="{{ field_prefix }}_end"
+               value="{{ end_val | e }}"
+               form="{{ form_id }}">
+      </div>
+    </div>
+    <div class="foot">
+      <button type="button" class="btn-helix ghost sm" data-action="reset">Reset</button>
+      <button type="submit" form="{{ form_id }}" class="btn-helix sm">Apply</button>
+    </div>
+  </div>
+</div>
+{% endmacro %}

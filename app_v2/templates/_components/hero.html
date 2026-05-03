@@ -1,0 +1,41 @@
+{# Phase 4 — UI Foundation: Hero primitive (D-UIF-11).
+
+   Takes a HeroSpec instance (app_v2/services/hero_spec.py). Renders:
+     - Always: label, big_number (+ optional unit + delta_text)
+     - If spec.segments non-empty: segmented bar (.hero-bar)
+     - If spec.side_stats non-empty: side panel (.hero .side)
+     - If spec.side_stats empty: single-column layout (no side panel)
+
+   Empty/minimal hero is supported by passing
+   `HeroSpec(label="x", big_number=42)` with default empty lists.
+
+   Caller: `{% from "_components/hero.html" import hero %}`
+           `{{ hero(my_hero_spec) }}` #}
+{% macro hero(spec) %}
+<div class="hero" {% if not spec.side_stats %}style="grid-template-columns: 1fr;"{% endif %}>
+  <div>
+    <div class="label">{{ spec.label | e }}</div>
+    <div class="num">
+      {{ spec.big_number | e }}{% if spec.big_number_unit %}<span class="u">{{ spec.big_number_unit | e }}</span>{% endif %}
+    </div>
+    {% if spec.delta_text %}<div class="delta">{{ spec.delta_text | e }}</div>{% endif %}
+    {% if spec.segments %}
+      <div class="hero-bar">
+        {% for seg in spec.segments %}
+          <span style="width: {{ seg.value | e }}%; background: {{ seg.color | e }};" title="{{ seg.label | e }}: {{ seg.value | e }}%"></span>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  {% if spec.side_stats %}
+    <div class="side">
+      {% for stat in spec.side_stats %}
+        <div class="r">
+          <span class="k">{{ stat.key | e }}</span>
+          <span class="v {% if stat.tone != 'default' %}{{ stat.tone | e }}{% endif %}">{{ stat.value | e }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endmacro %}
