@@ -19,8 +19,13 @@
        No animation in Phase 3 (motion is a Phase 4+ enhancement).
 #}
 <div class="chat-user-message">
-  <p class="chat-user-question">{{ question | e }}</p>
-  <p class="chat-thinking">Thinking…</p>
+  <div class="chat-user-bubble">
+    <p class="chat-user-question">{{ question | e }}</p>
+  </div>
+  <p class="chat-thinking" aria-live="polite" aria-label="Agent is thinking">
+    <span class="chat-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    <span class="chat-thinking-label">Thinking…</span>
+  </p>
 </div>
 
 {# SSE consumer — opens EventSource against the per-turn stream and appends

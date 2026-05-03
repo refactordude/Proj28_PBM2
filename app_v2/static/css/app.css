@@ -357,10 +357,78 @@ main.container-fluid {
    per RESEARCH Gap 15 (one-off pill measurements bake into rules).
    ================================================================ */
 
-/* User message + thinking placeholder (UI-SPEC §B) */
-.chat-user-message { margin-bottom: 12px; }
-.chat-user-question { font-size: 15px; font-weight: 600; color: var(--ink); margin: 0 0 8px; }
-.chat-thinking { font-size: 13px; font-style: italic; color: var(--mute); margin: 0 0 16px; }
+/* User message row — right-aligned bubble. Assistant content (thoughts,
+   tool pills, final card, errors) stays left-aligned with no bubble; the
+   contrast is intentional and matches the visual language of modern chat
+   surfaces. (Quick task 260504-114) */
+.chat-user-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;            /* push bubble + thinking-row to the right */
+  margin-bottom: 12px;
+}
+.chat-user-bubble {
+  background: var(--accent-soft);
+  color: var(--ink);
+  padding: 10px 14px;
+  border-radius: var(--radius-card);
+  border-top-right-radius: 6px;     /* tail-toward-the-user "speech-bubble" cue */
+  max-width: 75%;
+  margin: 0 0 6px;
+}
+.chat-user-question {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  white-space: pre-wrap;            /* preserve newlines from the textarea */
+  word-break: break-word;           /* long unbroken tokens (URLs, IDs) wrap */
+}
+.chat-thinking {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--mute);
+  margin: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-thinking-label { display: inline; }
+
+/* CSS-only bouncing-dots animation. Three small circles step out of phase
+   so the eye reads them as a continuous wave. ~1.4s loop matches typical
+   chat-app cadence (visible activity, not distracting). */
+.chat-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-thinking-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mute);
+  display: inline-block;
+  animation: pbm2-thinking-bounce 1.4s ease-in-out infinite both;
+}
+.chat-thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.chat-thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+.chat-thinking-dots span:nth-child(3) { animation-delay:  0s;    }
+
+@keyframes pbm2-thinking-bounce {
+  0%, 80%, 100% { transform: translateY(0);     opacity: 0.4; }
+  40%           { transform: translateY(-4px);  opacity: 1.0; }
+}
+
+/* Reduced-motion: collapse to static dots at the "lit" state — still visible
+   as a 3-dot indicator, just no movement. (UI-SPEC §Accessibility — same
+   policy as .btn-stop transition.) */
+@media (prefers-reduced-motion: reduce) {
+  .chat-thinking-dots span {
+    animation: none;
+    opacity: 1;
+  }
+}
 
 /* Thought event (D-CHAT-12; UI-SPEC §C) */
 .chat-thought {
