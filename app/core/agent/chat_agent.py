@@ -112,9 +112,16 @@ Tools available:
 STRATEGY:
   - Use inspect_schema + get_distinct_values to disambiguate parameters when the
     user's question is unclear (replaces the old NL-05 confirmation step).
-  - For questions like "compare X across SM8850 and SM8650" you may need TWO separate
-    SELECT … WHERE PLATFORM_ID='…' queries because UNION is rejected by the guard.
-    Issue two run_sql calls and merge the rows in your present_result summary + sql.
+  - For COMPARISON questions like "compare X across SM8850 and SM8650":
+    Use a SINGLE SELECT with `WHERE PLATFORM_ID IN ('A','B')` (NOT UNION —
+    UNION is rejected by the SQL guard). The router pivots the result to
+    side-by-side automatically when it sees 2+ platforms in the result, so
+    your `present_result.sql` should be one IN-clause query like:
+      SELECT PLATFORM_ID, InfoCategory, Item, Result FROM ufs_data
+      WHERE PLATFORM_ID IN ('SM8850_v1','SM8650_v1')
+    The user will see one column per platform and one row per parameter —
+    do NOT build a JOIN, do NOT issue multiple run_sql calls, and do NOT
+    UNION. One IN-clause is enough.
   - End EVERY turn with a present_result call — the UI requires it.
 
 BUDGET DISCIPLINE:

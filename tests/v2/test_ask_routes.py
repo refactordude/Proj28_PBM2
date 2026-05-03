@@ -227,6 +227,107 @@ def test_get_ask_stream_with_unknown_turn_returns_404(client):
 # --- Legacy Phase 6 route deletion (D-CHAT-09) ----------------------------
 
 
+# --- Side-by-side comparison pivot ----------------------------------------
+
+
+def test_maybe_pivot_eav_for_comparison_with_two_platforms_pivots_to_wide():
+    """When the agent returns long-form EAV data spanning 2+ platforms, the
+    router pivots to wide form so each PLATFORM_ID becomes a column and each
+    "InfoCategory · Item" becomes a single row.
+    """
+    from app_v2.routers.ask import _maybe_pivot_eav_for_comparison
+
+    df_long = pd.DataFrame(
+        [
+            ("SM8550_rev1", "VendorInfo", "ManufacturerName", "Samsung"),
+            ("SM8550_rev1", "GeometryDescriptor", "RawDeviceCapacity", "256GB"),
+            ("SM8650_v1", "VendorInfo", "ManufacturerName", "Micron"),
+            ("SM8650_v1", "GeometryDescriptor", "RawDeviceCapacity", "1024GB"),
+        ],
+        columns=["PLATFORM_ID", "InfoCategory", "Item", "Result"],
+    )
+
+    df_wide, index_col = _maybe_pivot_eav_for_comparison(df_long)
+    assert index_col == "Parameter"
+    assert "Parameter" in df_wide.columns
+    assert "SM8550_rev1" in df_wide.columns
+    assert "SM8650_v1" in df_wide.columns
+    # Two parameters → two rows after pivot.
+    assert len(df_wide) == 2
+    # Spot-check a value lands in the right cell.
+    cap_row = df_wide[df_wide["Parameter"] == "GeometryDescriptor · RawDeviceCapacity"]
+    assert cap_row["SM8550_rev1"].iloc[0] == "256GB"
+    assert cap_row["SM8650_v1"].iloc[0] == "1024GB"
+
+
+def test_maybe_pivot_eav_for_comparison_replaces_nan_with_empty_string_for_em_dash():
+    """When one platform has a parameter the other doesn't, the pivot leaves
+    NaN in the missing cell. The helper replaces NaN with empty string so
+    the Browse macro renders ``"" | string | e`` → empty <td>, and the
+    ``:empty::after { content: "—" }`` CSS rule fills with an em-dash.
+    Without this, NaN would render as literal "nan" because
+    ``float('nan') is not None`` is True.
+    """
+    from app_v2.routers.ask import _maybe_pivot_eav_for_comparison
+
+    df_long = pd.DataFrame(
+        [
+            ("SM8550_rev1", "VendorInfo", "ManufacturerName", "Samsung"),
+            ("SM8650_v1", "GeometryDescriptor", "RawDeviceCapacity", "1024GB"),
+            # No GeometryDescriptor on SM8550, no VendorInfo on SM8650 →
+            # both rows have NaN in one column post-pivot.
+        ],
+        columns=["PLATFORM_ID", "InfoCategory", "Item", "Result"],
+    )
+
+    df_wide, _ = _maybe_pivot_eav_for_comparison(df_long)
+    # Find the cell that should be missing.
+    capacity_row = df_wide[
+        df_wide["Parameter"] == "GeometryDescriptor · RawDeviceCapacity"
+    ]
+    missing_cell = capacity_row["SM8550_rev1"].iloc[0]
+    assert missing_cell == "", (
+        f"missing pivot cell should be empty string (so the macro renders "
+        f"empty <td> and CSS injects the em-dash); got {missing_cell!r}"
+    )
+
+
+def test_maybe_pivot_eav_for_comparison_with_one_platform_leaves_long_form():
+    """Single-platform results pass through unchanged — already readable as
+    a 4-column listing, no point pivoting to a single-column wide table.
+    """
+    from app_v2.routers.ask import _maybe_pivot_eav_for_comparison
+
+    df_long = pd.DataFrame(
+        [
+            ("SM8550_rev1", "VendorInfo", "ManufacturerName", "Samsung"),
+            ("SM8550_rev1", "GeometryDescriptor", "RawDeviceCapacity", "256GB"),
+        ],
+        columns=["PLATFORM_ID", "InfoCategory", "Item", "Result"],
+    )
+
+    df_render, index_col = _maybe_pivot_eav_for_comparison(df_long)
+    assert index_col == "PLATFORM_ID"
+    assert list(df_render.columns) == [
+        "PLATFORM_ID",
+        "InfoCategory",
+        "Item",
+        "Result",
+    ], "single-platform result should not be pivoted"
+
+
+def test_maybe_pivot_eav_for_comparison_non_eav_shape_passes_through():
+    """Result without the 4 EAV columns (e.g., the agent ran an aggregate
+    query like SELECT COUNT(*)) should render as-is without any pivot.
+    """
+    from app_v2.routers.ask import _maybe_pivot_eav_for_comparison
+
+    df = pd.DataFrame({"cnt": [42]})
+    df_render, index_col = _maybe_pivot_eav_for_comparison(df)
+    assert index_col == "cnt"
+    assert list(df_render.columns) == ["cnt"]
+
+
 def test_post_ask_query_route_no_longer_exists(client):
     """D-CHAT-09: legacy one-shot /ask/query route deleted in plan 03-04."""
     r = client.post("/ask/query", data={"question": "q"})
