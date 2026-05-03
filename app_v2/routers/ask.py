@@ -350,6 +350,71 @@ class _GridVM:
         self.index_col_name = index_col_name
 
 
+def _maybe_pivot_eav_for_comparison(
+    df: pd.DataFrame,
+) -> tuple[pd.DataFrame, str]:
+    """When the agent returns long-form EAV data spanning 2+ platforms,
+    pivot to wide form so each PLATFORM_ID becomes a column and each
+    "InfoCategory · Item" becomes a row. Side-by-side comparison reads
+    more naturally than a long EAV listing where the same parameter
+    appears N times across rows.
+
+    Returns ``(df_render, index_col_name)``. Falls back to the original
+    long-form df on any pivot error (defensive: never break the SSE
+    stream on a render hiccup).
+
+    Trigger conditions (both must be true):
+      - The 4 canonical ufs_data columns are all present.
+      - The result covers 2+ distinct PLATFORM_IDs.
+
+    Single-platform results pass through unchanged — they are already
+    readable as a 4-column listing.
+    """
+    if df.empty or len(df.columns) == 0:
+        return df, ""
+
+    eav_cols = {"PLATFORM_ID", "InfoCategory", "Item", "Result"}
+    default_index = str(df.columns[0])
+
+    if not eav_cols.issubset(df.columns):
+        return df, default_index
+    if df["PLATFORM_ID"].nunique() < 2:
+        return df, default_index
+
+    try:
+        df_pivot = df.copy()
+        df_pivot["Parameter"] = (
+            df_pivot["InfoCategory"].astype(str)
+            + " · "
+            + df_pivot["Item"].astype(str)
+        )
+        df_render = (
+            df_pivot.pivot_table(
+                index="Parameter",
+                columns="PLATFORM_ID",
+                values="Result",
+                aggfunc="first",
+            )
+            .reset_index()
+        )
+        df_render.columns.name = None
+        # pivot_table puts NaN in cells where one platform has the param and
+        # the other doesn't. The Browse macro renders ``"" | string | e`` →
+        # an empty <td>, which the ``.pivot-table td:empty::after { content:
+        # "\2014" }`` CSS rule fills with an em-dash. NaN would render as
+        # literal "nan" because ``float('nan') is not None`` is True; the
+        # macro's None-check doesn't catch it. fillna("") works whether the
+        # underlying dtype is object or float-coerced.
+        df_render = df_render.fillna("")
+        return df_render, "Parameter"
+    except Exception as exc:  # noqa: BLE001 — defensive
+        _log.warning(
+            "final-card pivot to wide failed (%s); rendering long form",
+            type(exc).__name__,
+        )
+        return df, default_index
+
+
 def _hydrate_final_card(
     *,
     payload: dict[str, Any],
@@ -440,11 +505,11 @@ def _hydrate_final_card(
 
     # Step 2 — Browse macro reuse for the table portion (RESEARCH Gap 9).
     if not df.empty:
-        index_col_name = str(df.columns[0]) if len(df.columns) else ""
-        vm = _GridVM(df_wide=df, index_col_name=index_col_name)
+        df_render, index_col_name = _maybe_pivot_eav_for_comparison(df)
+        vm = _GridVM(df_wide=df_render, index_col_name=index_col_name)
         try:
             table_html = templates.get_template("browse/_grid.html").render(vm=vm)
-            row_count = int(len(df))
+            row_count = int(len(df_render))
         except Exception as exc:  # noqa: BLE001 — defensive: never break the SSE stream on a render hiccup
             _log.warning("final-card table render failed (%s)", type(exc).__name__)
             table_html = ""
