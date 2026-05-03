@@ -66,6 +66,34 @@
       });
     })();
   </script>
+
+  <script>
+    // Quick task 260504-114 — hide a turn's "Thinking…" indicator the moment
+    // the first SSE event mounts in its .chat-events sibling. htmx-ext-sse fires
+    // htmx:sseMessage on the element that received the message; we walk back
+    // through preceding siblings to find the matching .chat-user-message for
+    // THIS turn and hide its .chat-thinking. Idempotent: already-hidden
+    // indicators stay hidden because we add a class once and check for it.
+    (function () {
+      if (window.__pbm2HideThinkingBound) return;
+      window.__pbm2HideThinkingBound = true;
+      document.body.addEventListener("htmx:sseMessage", function (evt) {
+        var eventsDiv = evt.target.closest(".chat-events");
+        if (!eventsDiv) return;
+        // The .chat-user-message is the immediately-preceding sibling within
+        // the same per-turn block (see _user_message.html structure).
+        var userMsg = eventsDiv.previousElementSibling;
+        while (userMsg && !userMsg.classList.contains("chat-user-message")) {
+          userMsg = userMsg.previousElementSibling;
+        }
+        if (!userMsg) return;
+        var thinking = userMsg.querySelector(".chat-thinking");
+        if (thinking && !thinking.classList.contains("d-none")) {
+          thinking.classList.add("d-none");   // Bootstrap utility — display:none
+        }
+      });
+    })();
+  </script>
 {% endblock %}
 
 {% block content %}

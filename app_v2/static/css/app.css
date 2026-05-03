@@ -430,6 +430,16 @@ main.container-fluid {
   }
 }
 
+/* Streaming text deltas — rendered inline inside .chat-events so consecutive
+   spans concatenate visually as one paragraph. (Quick task 260504-114) */
+.chat-text-delta {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
 /* Thought event (D-CHAT-12; UI-SPEC §C) */
 .chat-thought {
   font-style: italic;

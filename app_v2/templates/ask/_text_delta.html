@@ -1,0 +1,13 @@
+{# Quick task 260504-114 — assistant text-delta fragment.
+
+   Emitted by chat_loop when PydanticAI yields PartStartEvent(TextPart) or
+   PartDeltaEvent(TextPartDelta) outside the structured-output (PresentResult)
+   path. Each delta is appended into the .chat-events rolling buffer for the
+   current turn so consecutive spans concatenate visually as one paragraph.
+
+   Autoescape: agent-supplied text — uses | e. NO | safe. No markdown
+   rendering: the agent uses present_result for the final formatted summary;
+   text deltas are raw streaming prose, rendered as plain text with
+   white-space: pre-wrap so newlines survive.
+#}
+<span class="chat-text-delta">{{ delta | e }}</span>

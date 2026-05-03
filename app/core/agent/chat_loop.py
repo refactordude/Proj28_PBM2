@@ -44,11 +44,12 @@ from pydantic_ai.messages import (
     FunctionToolCallEvent,
     FunctionToolResultEvent,
     ModelMessage,
-    PartDeltaEvent,  # noqa: F401 — reserved for future per-event introspection
+    PartDeltaEvent,        # was: noqa: F401 — now actively used in _event_to_payload
     PartEndEvent,  # noqa: F401 — reserved for future per-event introspection
     PartStartEvent,
     RetryPromptPart,
-    TextPart,  # noqa: F401 — reserved for future per-event introspection
+    TextPart,              # was: noqa: F401 — now actively used in _event_to_payload
+    TextPartDelta,         # NEW — used to discriminate PartDeltaEvent contents
     ThinkingPart,
     ToolCallPart,  # noqa: F401 — used by isinstance checks in PartStartEvent payload
     ToolReturnPart,
@@ -242,9 +243,14 @@ def _event_to_payload(ev: AgentStreamEvent) -> dict[str, Any] | None:
     UI-SPEC §C: thoughts render as <details> with truncated summary (140 chars).
     UI-SPEC §D/§E: tool_call/tool_result render as compact pills with click-to-expand.
 
-    PartDeltaEvent, PartEndEvent, FinalResultEvent: skipped in Phase 3 default
-    (output_type=PresentResult forces structured output, so streaming TextPart
-    deltas would be partial JSON the user does not need to see).
+    Quick task 260504-114: PartStartEvent(TextPart) and PartDeltaEvent(TextPartDelta)
+    now stream as 'text_delta' SSE events so the chat surface feels live. The agent
+    uses ToolOutput(PresentResult) so the FINAL summary is delivered atomically
+    via the 'final' event — text deltas cover the agent's free-text preamble
+    (reasoning narration before it picks a tool), which improves perceived
+    responsiveness without changing the structured-output contract.
+
+    PartEndEvent / FinalResultEvent: still skipped (purely terminal markers).
     """
     if isinstance(ev, PartStartEvent):
         if isinstance(ev.part, ThinkingPart):
@@ -252,8 +258,31 @@ def _event_to_payload(ev: AgentStreamEvent) -> dict[str, Any] | None:
                 "event": "thought",
                 "html": _render_thought(ev.part.content),
             }
-        # TextPart starts mean the agent is preparing the structured output —
-        # skipped per output_type=PresentResult (no plain text in chat output).
+        if isinstance(ev.part, TextPart):
+            # Some PydanticAI providers emit the initial TextPart with non-empty
+            # content (the first chunk lives on PartStartEvent, not on the first
+            # PartDeltaEvent). Surface it via the same text_delta path so we
+            # don't drop the first chunk.
+            content = getattr(ev.part, "content", "") or ""
+            if content:
+                return {
+                    "event": "text_delta",
+                    "html": _render_text_delta(content),
+                }
+            return None
+        # ToolCallPart starts: no per-start fragment — the FunctionToolCallEvent
+        # below carries the visible pill.
+        return None
+
+    if isinstance(ev, PartDeltaEvent):
+        delta = getattr(ev, "delta", None)
+        if isinstance(delta, TextPartDelta):
+            content = getattr(delta, "content_delta", "") or ""
+            if content:
+                return {
+                    "event": "text_delta",
+                    "html": _render_text_delta(content),
+                }
         return None
 
     if isinstance(ev, FunctionToolCallEvent):
@@ -286,6 +315,15 @@ def _render_thought(content: str) -> str:
         truncated=truncated,
         full_content=content,
     )
+
+
+def _render_text_delta(content: str) -> str:
+    """Render a single text-delta fragment for the SSE stream.
+
+    Inline span so consecutive deltas concatenate naturally in the rolling
+    buffer (.chat-events). Autoescape via Jinja's | e filter.
+    """
+    return templates.get_template("ask/_text_delta.html").render(delta=content)
 
 
 def _render_tool_call_pill(tool_name: str, args: Any) -> str:
