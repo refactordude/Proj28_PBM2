@@ -1,0 +1,211 @@
+{# Phase 4 — UI Foundation: Components showcase (D-UIF-02).
+
+   Renders every Phase 4 primitive with realistic sample data. Sectioned
+   layout: each primitive gets a labelled .panel so visitors can locate
+   the right one quickly. Data is passed by routers/components.py.
+
+   NOT a macro — uses {% include %} pattern per D-UIF-08 (static
+   partials). Imports its macros at the top via {% from %}. #}
+{% extends "base.html" %}
+
+{% from "_components/page_head.html" import page_head %}
+{% from "_components/hero.html" import hero %}
+{% from "_components/kpi_card.html" import kpi_card %}
+{% from "_components/sparkline.html" import sparkline %}
+{% from "_components/date_range_popover.html" import date_range_popover %}
+{% from "_components/filters_popover.html" import filters_popover %}
+
+{% block content %}
+<div class="shell">
+
+  {{ page_head("Component Showcase", subtitle="All Phase 4 UI primitives with sample data") }}
+
+  {# === Section: Topbar === #}
+  {# The topbar itself is rendered by base.html's {{ topbar(...) }} call.
+     Showcase doesn't re-render it; instead a panel describes the slot. #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Topbar</b><span class="tag">D-UIF-06 / D-UIF-07</span></div>
+    <div class="panel-body">
+      <p>The Helix topbar is rendered by <code>base.html</code> via the
+        <code>{% raw %}{{ topbar(active_tab=...) }}{% endraw %}</code> macro call.
+        On this page <code>active_tab="showcase"</code>, so all three tabs
+        (Joint Validation, Browse, Ask) render in their default unselected state.</p>
+    </div>
+  </div>
+
+  {# === Section: Page-head === #}
+  {# Already shown at the top of this page — describe it here. #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Page-head</b><span class="tag">D-UIF-08</span></div>
+    <div class="panel-body">
+      <p>The bold "Component Showcase" title + grey subtitle above is the
+        <code>page_head</code> macro. Pass <code>actions_html</code> to
+        inject right-aligned buttons.</p>
+      {{ page_head("With actions", subtitle="Renders <code>actions_html</code> on the right",
+                   actions_html='<button class="btn-helix sm">Export</button> <button class="btn-helix sm ghost">Share</button>') }}
+    </div>
+  </div>
+
+  {# === Section: Hero (full + minimal) === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Hero</b><span class="tag">D-UIF-11</span></div>
+    <div class="panel-body">
+      <p style="margin-bottom: 16px;">Full hero — segments + side stats.</p>
+      {{ hero(hero_full) }}
+      <p style="margin: 24px 0 16px;">Minimal hero — no segments, no side stats (single-column).</p>
+      {{ hero(hero_minimal) }}
+    </div>
+  </div>
+
+  {# === Section: KPI 4-up === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>KPI 4-up</b><span class="tag">D-UIF-08</span></div>
+    <div class="panel-body">
+      <div class="kpis">
+        {% for k in kpi_4up %}
+          {{ kpi_card(k.label, k.value, unit=k.unit, delta=k.delta, delta_tone=k.delta_tone, spark_data=k.spark_data) }}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# === Section: KPI 5-up === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>KPI 5-up</b><span class="tag">D-UIF-08 + D-UIF-09 edge cases</span></div>
+    <div class="panel-body">
+      <div class="kpis five">
+        {% for k in kpi_5up %}
+          {{ kpi_card(k.label, k.value, unit=k.unit, delta=k.delta, delta_tone=k.delta_tone, spark_data=k.spark_data) }}
+        {% endfor %}
+      </div>
+      <p style="margin-top: 12px; color: var(--mute); font-size: 12px;">
+        5-up exercises sparkline edge cases: constant data (SM8650), single
+        point (SM8450), empty list (SM7475).
+      </p>
+    </div>
+  </div>
+
+  {# === Section: Sparklines (standalone, varying widths) === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Sparklines (standalone)</b><span class="tag">D-UIF-09</span></div>
+    <div class="panel-body" style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+      <div>
+        <div style="font-size: 11px; color: var(--mute);">Default</div>
+        {{ sparkline([10, 14, 18, 22, 30, 28, 36]) }}
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--mute);">Wide</div>
+        {{ sparkline([10, 14, 18, 22, 30, 28, 36], width=180, height=40) }}
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--mute);">Custom color</div>
+        {{ sparkline([10, 14, 18, 22, 30, 28, 36], color="var(--green)") }}
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--mute);">Empty (svg)</div>
+        {{ sparkline([]) }}
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--mute);">Constant (flat)</div>
+        {{ sparkline([5, 5, 5, 5, 5]) }}
+      </div>
+    </div>
+  </div>
+
+  {# === Section: Pills, chips, tiny-chips (CSS-only, per D-UIF-08 + Discretion) === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Pills / Chips / Tiny-chips</b><span class="tag">CSS only</span></div>
+    <div class="panel-body">
+      <p style="margin-bottom: 8px; font-size: 12px; color: var(--mute);">.st / .pill (status pills with dot)</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+        <span class="st open">Open</span>
+        <span class="st closed">Closed</span>
+        <span class="st over">Overdue</span>
+        <span class="pill open">Open (.pill)</span>
+        <span class="pill closed">Closed (.pill)</span>
+        <span class="pill over">Overdue (.pill)</span>
+      </div>
+
+      <p style="margin-bottom: 8px; font-size: 12px; color: var(--mute);">.chip + .chip.on + .chip .n</p>
+      <div class="chips" style="margin-bottom: 16px;">
+        <button type="button" class="chip">All</button>
+        <button type="button" class="chip on">Open <span class="n">128</span></button>
+        <button type="button" class="chip">Closed <span class="n">218</span></button>
+        <button type="button" class="chip">Overdue <span class="n">7</span></button>
+      </div>
+
+      <p style="margin-bottom: 8px; font-size: 12px; color: var(--mute);">.tiny-chip variants</p>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+        <span class="tiny-chip ok">OK</span>
+        <span class="tiny-chip info">Info</span>
+        <span class="tiny-chip warn">Warn</span>
+        <span class="tiny-chip neutral">Neutral</span>
+        <span class="tiny-chip err">Error</span>
+      </div>
+
+      <p style="margin-bottom: 8px; font-size: 12px; color: var(--mute);">.oemchip / .ufschip / .typ / .lnk</p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <span class="oemchip">Samsung</span>
+        <span class="ufschip">UFS 3.1</span>
+        <span class="typ"><span class="typ-ic">JV</span> Joint validation</span>
+        <a class="lnk" href="#"><i class="bi bi-link-45deg"></i> Link</a>
+      </div>
+    </div>
+  </div>
+
+  {# === Section: Date-range popover === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Date-range popover</b><span class="tag">D-UIF-03</span></div>
+    <div class="panel-body">
+      <form id="showcase-form" method="get" action="/_components" class="visually-hidden" aria-hidden="true"></form>
+      <p style="margin-bottom: 12px;">Click "Date range" below to open the popover.</p>
+      {{ date_range_popover("showcase-form", start_val="2026-01-01", end_val="2026-04-30") }}
+    </div>
+  </div>
+
+  {# === Section: Filters popover (chip groups) === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Filters popover (chip groups)</b><span class="tag">D-UIF-04</span></div>
+    <div class="panel-body">
+      <p style="margin-bottom: 12px;">Click "Filters" — chip-toggle.js syncs hidden inputs.</p>
+      {{ filters_popover("showcase-form", groups=filter_groups) }}
+    </div>
+  </div>
+
+  {# === Section: Sticky-corner table === #}
+  <div class="panel" style="margin-bottom: 24px;">
+    <div class="ph"><b>Sticky-corner table</b><span class="tag">D-UIF-10</span></div>
+    <div class="panel-body">
+      <p style="margin-bottom: 12px; font-size: 12px; color: var(--mute);">
+        Both <code>&lt;thead&gt;</code> and the first column are sticky;
+        top-left corner has highest z-index. Wrap with <code>.table-sticky-corner-wrap</code>
+        for scroll behavior.
+      </p>
+      <div class="table-sticky-corner-wrap" style="max-height: 240px;">
+        <table class="table-sticky-corner">
+          <thead>
+            <tr>
+              <th>Platform</th>
+              {% for col in sticky_table_columns %}
+                <th>{{ col | e }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in sticky_table_rows %}
+              <tr>
+                <td>{{ row.label | e }}</td>
+                {# Use bracket access ['values'] — `.values` resolves to dict.values method, not the list. Rule 1 auto-fix. #}
+                {% for v in row['values'] %}
+                  <td>{{ v | e }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

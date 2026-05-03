@@ -201,6 +201,7 @@ from app_v2.routers import summary  # noqa: E402
 from app_v2.routers import joint_validation  # noqa: E402  Phase 1 Plan 04
 from app_v2.routers import browse  # noqa: E402
 from app_v2.routers import ask  # noqa: E402
+from app_v2.routers import components  # noqa: E402  Phase 4 Plan 04 — GET /_components
 from app_v2.routers import settings as settings_router  # noqa: E402 — alias to avoid collision with the Settings model
 from app_v2.routers import root  # noqa: E402
 
@@ -211,4 +212,5 @@ app.include_router(joint_validation.router)
 app.include_router(browse.router)
 app.include_router(ask.router)
 app.include_router(settings_router.router)
+app.include_router(components.router)  # Phase 4 Plan 04 — GET /_components showcase. Mounted before root per main.py:189-197 docstring (root last).
 app.include_router(root.router)
