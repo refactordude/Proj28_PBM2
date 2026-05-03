@@ -1,5 +1,36 @@
 # Milestones
 
+## v2.2 — JV+UI+Chat+UI-Foundation cycle (Shipped: 2026-05-03)
+
+_Internal gsd-tools name: "v1.0" — this is the post-v2.1 cycle, not the original v1.0 MVP shipped 2026-04-24._
+
+**Phases completed:** 4 phases, 20 plans, 44 tasks
+
+**Key accomplishments:**
+
+- BS4 4.14.3 + lxml 6.1.0 added to requirements.txt; summary/_success.html + _error.html rebound from hardcoded platform_id to generic entity_id + summary_url so Plan 04's /joint_validation/{cid}/summary route can reuse the same partials with no fork.
+- Three-module data-extraction core for the Joint Validation tab: BS4 parser handling both Page Properties macro and `<p><strong>Field</strong>: value</p>` shapes (10 tests), mtime-keyed discovery store (8 tests), and 12-column-sort + 6-filter grid view-model builder (12 tests) — 30 tests green; downstream Plans 03/04/05 unblocked.
+- `_call_llm_with_text` extracted from `_call_llm_single_shot` as a backend-agnostic helper; new `joint_validation_summary` service implements the D-JV-16 BS4 decompose pipeline (`<script>`/`<style>`/`<img>` removed before `get_text(separator='\n')` so base64 image src never reaches the LLM) and a `get_or_generate_jv_summary` shim that reuses Phase 3's TTLCache + Lock with a `'jv'`-discriminated cache key — 14 new tests green; Phase 3 platform-summary path still passes 50/50 with zero regressions.
+- Found during:
+- Five templates rewired for Joint Validation: nav-label flipped (D-JV-01), three overview/ templates fully rewritten (12 sortable column headers, 6 popover-checklist filters, AI Summary modal), and a new joint_validation/detail.html with the locked 3-flag iframe sandbox attribute. Three atomic commits, 109 tests green across the direct-impact suites + 331 passed in the wider regression run; zero regressions.
+- 9 files deleted (-2131 LOC) + 2 test files added (+588 LOC, 30 new tests) + 6 sibling files Rule-3-auto-fixed for orphan refs; full v2 test suite green at 360 passed / 5 skipped / 24s — Phase 5 curated-Platform Overview machinery is gone, the JV listing/detail/summary surface is route-tested + byte-pinned at the source level, and Browse/Ask/Platforms/Summary tabs are regression-safe.
+- One-liner:
+- One-liner:
+- One-liner:
+- One-liner:
+- Foundation primitives for the multi-step Ask-chat overhaul: sse-starlette pin, AgentConfig.chat_max_steps (default=12), per-page extra_head Jinja block, and vendored htmx-ext-sse@2.2.4 + Plotly 2.35.2 bundles.
+- Multi-step PydanticAI chat agent factory at `app/core/agent/chat_agent.py`: Pydantic schemas (ChartSpec, PresentResult, ChatAgentDeps), build_chat_agent factory, all 6 tools (inspect_schema, get_distinct_values, count_rows, sample_rows, run_sql, present_result), and `_execute_and_wrap` — the verbatim port of nl_agent.run_sql's SAFE-02..06 harness with the rejection prefix flipped to "REJECTED:" per D-CHAT-02.
+- Wave 2 plumbing wrapping plan 02's chat agent: per-turn registry (asyncio.Event cancel + uuid4 turn_id) + per-session message_history store with D-CHAT-15 sliding window + D-CHAT-11 'both' path scrub on write; stream_chat_turn async generator driving agent.run_stream_events with all 4 stop boundaries (D-CHAT-01/02/03/04) and the WARNING-3 STRUCTURED-payload final contract; minimal app.state.chat_turns + chat_sessions documentation hooks on the v2.0 lifespan.
+- Wave 3 atomic commit boundary (D-CHAT-09): rewrite app_v2/routers/ask.py end-to-end, atomically delete the 3 NL-05 templates and the Phase 6 invariants test file in the same commit, ship 8 new chat templates covering UI-SPEC §A–§I, append the Phase 3 chat-surface CSS block to app.css. The user-visible payload of Phase 3: navigating to /ask now shows the new chat shell.
+- Final wave of Phase 03. Five new test files (62 tests total) lock the contracts of the multi-step agentic chat surface: D-CHAT-08 router shape, D-CHAT-09 atomic NL-05 cleanup, D-CHAT-10 starter chips removal, D-CHAT-11 LLM dropdown preservation, D-CHAT-01..04 stop-boundary classifications in chat_loop, D-CHAT-15 sliding-window in chat_session, the SM8850 vs SM8650 UNION-rejection motivating example, T-03-04-01/02 session-cookie ownership gates, and T-03-04-07 Plotly-only-on-/ask isolation. Phase 4 plotly invariant narrowed to whitelist `app_v2/routers/ask.py`. Three Rule-1/Rule-2 auto-fixes shipped along the way (TemplateResponse cookie propagation, AgentRunResultEvent discriminator, data-reason attribute on error card).
+- Helix primitive CSS foundation appended to app.css (.topbar / .brand-mark / .ph / .hero / .kpis / .pop / .tiny-chip / .table-sticky-corner / .btn-helix and 35+ supporting selectors) plus Google Fonts loaded for Inter Tight 400-800 + JetBrains Mono 400-600
+- 7 Jinja macro partials (topbar / page_head / hero / kpi_card / sparkline / date_range_popover / filters_popover) + 2 Pydantic v2 submodules (HeroSpec / FilterGroup) + chip-toggle.js sibling helper — every Phase 4 stateful primitive declared in UI-SPEC §New Jinja Macros + §Pydantic View-Models now ships under app_v2/templates/_components/ + app_v2/services/, all driven by the CSS foundation Wave 1 already laid down
+- Atomic shell integration: replaced the legacy `<nav class="navbar">` block in base.html (~30 lines) with a single `{{ topbar(active_tab=...) }}` macro call, loaded chip-toggle.js with defer after popover-search.js, removed the dead `.navbar { padding: 16px 0 }` CSS rule, and rewrote the four test assertions that pinned legacy `nav-tabs` / `navbar-brand` literals onto the new `.topbar` / `.brand` / `.brand-mark` / `aria-selected="true"` shape — all in a single commit so the working tree was never half-broken.
+- Mounted always-on `/_components` showcase route exercising every Helix primitive, plus 50 invariant tests pinning class names, dimensions, sparkline edge cases, and the BLOCKER 2 hyphen-safe filter-group assertion.
+- Wave 5 of Phase 04 — D-UIF-01 LOCKED rename path completion.
+
+---
+
 ## v2.0 Bootstrap Shell (Shipped: 2026-04-29)
 
 **Delivered:** Complete UX rewrite from Streamlit to FastAPI + Bootstrap 5 + HTMX with horizontal-tab shell, curated Overview, per-platform markdown content pages with in-place AI Summary, pivot-grid Browse, and NL-agent Ask — all backed by the v1.0 safety harness. v1.0 Streamlit Ask page deleted.
@@ -7,6 +38,7 @@
 **Phases completed:** 6 phases, 30 plans, 65 tasks
 
 **Stats:**
+
 - Git range: `5adc133` (2026-04-24) → `bb584c7` (2026-04-29) over 6 days
 - ~3,300 LOC Python in `app_v2/` + ~1,500 LOC Jinja templates + ~6,600 LOC tests
 - Tests: 506 passing, 2 skipped (was 171 in v1.0 — 335 net new tests for v2.0)
