@@ -244,6 +244,46 @@ async def test_d_chat_03_step_budget_exhausted_emits_correct_error():
     ), f"step-budget error not emitted; events: {events}"
 
 
+@pytest.mark.anyio
+async def test_close_event_is_always_emitted_last():
+    """htmx-ext-sse 2.x's sse-close attribute accepts ONE event name.
+
+    The chat-loop generator MUST yield a synthetic 'close' event last after
+    every termination path so the consumer can sse-close="close" cleanly.
+    Without it, the browser EventSource auto-reconnects after 'final' or
+    'error' and the server logs a 404 storm per turn.
+    """
+    from pydantic_ai.exceptions import UsageLimitExceeded
+
+    cancel_event = asyncio.Event()
+    fake_agent = MagicMock()
+
+    async def fake_stream(*a, **kw):
+        if False:  # pragma: no cover — make this a generator
+            yield None
+        raise UsageLimitExceeded("limit reached")
+
+    fake_agent.run_stream_events = fake_stream
+
+    events = []
+    async for ev in stream_chat_turn(
+        agent=fake_agent,
+        deps=_make_deps(),
+        question="q",
+        message_history=[],
+        cancel_event=cancel_event,
+        chat_max_steps=2,
+        rejection_cap=5,
+    ):
+        events.append(ev)
+
+    assert events, "expected at least one event"
+    assert events[-1]["event"] == "close", (
+        f"last event must be 'close' so htmx-ext-sse closes the EventSource; "
+        f"got {events[-1]!r}"
+    )
+
+
 # --- D-CHAT-04 unclassified exception classification ----------------------
 
 
