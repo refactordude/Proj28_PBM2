@@ -217,6 +217,13 @@ async def stream_chat_turn(
     if on_run_complete is not None and new_messages:
         on_run_complete(new_messages)
 
+    # Synthetic close event so htmx-ext-sse closes the EventSource cleanly.
+    # htmx-ext-sse 2.x's sse-close attribute accepts ONE event name only — so
+    # we cannot listen for both "final" and "error". Always emitting "close"
+    # last lets the consumer use sse-close="close" and avoids the auto-reconnect
+    # storm that otherwise spams 404s after every terminated turn.
+    yield {"event": "close", "html": ""}
+
 
 # --- Event-to-payload classifier -----------------------------------------
 

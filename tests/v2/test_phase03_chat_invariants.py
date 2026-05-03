@@ -237,6 +237,36 @@ def test_htmx_ext_sse_loads_after_htmx_core_in_rendered_ask_page():
 
 
 # -----------------------------------------------------------------------
+# htmx-ext-sse: sse-close attribute takes ONE event name (single
+# addEventListener) — must match the synthetic "close" event the
+# chat-loop emits last
+# -----------------------------------------------------------------------
+
+
+def test_user_message_template_uses_close_event_for_sse_close():
+    """htmx-ext-sse 2.x's sse-close attribute is registered as a single
+    event listener; multi-value strings like "final error" register a
+    listener for the literal name "final error" (with space) which never
+    fires.
+
+    The chat-loop generator yields a synthetic 'close' event last after
+    every termination path. The consumer template MUST use sse-close="close"
+    to match it — otherwise the EventSource auto-reconnects and the server
+    logs a 404 storm after every completed turn.
+    """
+    src = (REPO / "app_v2" / "templates" / "ask" / "_user_message.html").read_text()
+    assert 'sse-close="close"' in src, (
+        '_user_message.html must use sse-close="close" (single event name) — '
+        'multi-value strings like "final error" register a literal listener '
+        'and never fire'
+    )
+    assert 'sse-close="final error"' not in src, (
+        "obsolete multi-event sse-close attribute — htmx-ext-sse only listens "
+        "for a single event name"
+    )
+
+
+# -----------------------------------------------------------------------
 # CLAUDE.md banned libs — chat module guard
 # -----------------------------------------------------------------------
 
