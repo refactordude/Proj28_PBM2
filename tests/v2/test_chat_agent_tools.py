@@ -100,6 +100,81 @@ def test_execute_and_wrap_empty_df_returns_no_rows_marker():
     assert "(no rows returned)" in result
 
 
+# --- Empty-where guard + DB-error → REJECTED rerouting ------------------
+
+
+def test_count_rows_with_empty_where_clause_returns_rejected_without_db_call():
+    """count_rows MUST short-circuit on empty where_clause and return REJECTED:
+    so the agent sees actionable guidance and the rejection counter increments.
+
+    Without this guard, the assembled SQL is `SELECT … WHERE LIMIT 200` which
+    SQLite/MySQL parse as a syntax error — wasting a DB roundtrip and producing
+    a generic exception message.
+    """
+    from pydantic_ai.models.test import TestModel
+
+    agent = build_chat_agent(TestModel())
+    # Find the registered count_rows tool function and call it directly.
+    count_rows = agent._function_toolset.tools["count_rows"].function
+    ctx = _make_ctx()
+    out = count_rows(ctx, where_clause="")
+    assert out.startswith("REJECTED:"), f"empty where_clause must be REJECTED: ; got {out!r}"
+    assert "1=1" in out, "guidance should mention `1=1` as the all-rows pattern"
+    # No DB call should have been issued (FakeDB has no run_query side effect to
+    # observe — the guard runs BEFORE _execute_and_wrap so this is structural).
+
+
+def test_sample_rows_with_empty_where_clause_returns_rejected_without_db_call():
+    """sample_rows mirrors count_rows — the same guard applies."""
+    from pydantic_ai.models.test import TestModel
+
+    agent = build_chat_agent(TestModel())
+    sample_rows = agent._function_toolset.tools["sample_rows"].function
+    ctx = _make_ctx()
+    out = sample_rows(ctx, where_clause="", limit=5)
+    assert out.startswith("REJECTED:"), f"empty where_clause must be REJECTED: ; got {out!r}"
+    assert "1=1" in out
+
+
+def test_db_execution_error_is_routed_through_rejection_path():
+    """DB-side execution errors (syntax, missing columns, runtime) get the
+    REJECTED: prefix so the agent counts them toward the D-CHAT-02 retry cap
+    and recognizes the result as retryable."""
+    from sqlalchemy.exc import OperationalError
+
+    class _ExplodingDB(DBAdapter):
+        def __init__(self):  # bypass DBAdapter's DatabaseConfig requirement
+            pass
+
+        def test_connection(self):  # noqa: D401
+            return True, "ok"
+
+        def list_tables(self):
+            return ["ufs_data"]
+
+        def get_schema(self, tables=None):
+            return {"ufs_data": []}
+
+        def run_query(self, sql):
+            raise OperationalError(sql, {}, Exception("near \"LIMIT\": syntax error"))
+
+    cfg = AgentConfig(allowed_tables=["ufs_data"], chat_max_steps=12)
+    deps = ChatAgentDeps(
+        db=_ExplodingDB(),
+        agent_cfg=cfg,
+        active_llm_type="ollama",
+    )
+    ctx = MagicMock()
+    ctx.deps = deps
+
+    out = _execute_and_wrap(ctx, "SELECT * FROM ufs_data", prefix_rejection=True)
+    assert out.startswith("REJECTED:"), (
+        f"DB execution errors must be routed through the REJECTED: path so the "
+        f"D-CHAT-02 retry counter increments; got {out!r}"
+    )
+    assert "OperationalError" in out, "error type should be visible to the LLM"
+
+
 # --- D-CHAT-11 scrub-on-write -------------------------------------------
 
 
