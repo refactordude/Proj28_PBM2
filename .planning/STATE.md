@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: v1.0 milestone complete
 stopped_at: Completed 04-05-PLAN.md (Wave 5 — atomic .panel-header to .ph migration on Browse/JV/Ask + Phase 02 invariant rewrites)
-last_updated: "2026-05-03T12:05:46.243Z"
+last_updated: "2026-05-03T15:44:33.496Z"
 last_activity: 2026-05-03
 progress:
   total_phases: 4
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-03
+Last activity: 2026-05-03 - Completed quick task 260504-114: Ask UI: right-aligned user bubbles, animated thinking indicator, streaming assistant response
 
 Progress: [——————————] no active milestone
 
@@ -63,6 +63,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260502-jb2 | Add fake joint validation fixture folders to stress-test JV grid with 20+ results (16 new fakes → 22 total, page-2 active) | 2026-05-02 | cd9b417 | [260502-jb2-add-fake-joint-validation-fixture-folder](./quick/260502-jb2-add-fake-joint-validation-fixture-folder/) |
 | 260502-sqi | Fix JV pagination losing sort state — thread sort/order into pagination hx-vals | 2026-05-02 | 2167592 | [260502-sqi-fix-jv-pagination-losing-sort-state-thre](./quick/260502-sqi-fix-jv-pagination-losing-sort-state-thre/) |
 | 260502-v09 | Cleanup v1.0 Streamlit-era dead code — legacy LLM adapter cluster (4 files, ~226 LOC), 4 stale deps from requirements.txt, orphan `.streamlit/` + `config/overview.example.yaml` | 2026-05-02 | 03c9717 | [260502-v09-cleanup-v1-0-streamlit-era-dead-code-leg](./quick/260502-v09-cleanup-v1-0-streamlit-era-dead-code-leg/) |
+| 260504-114 | Ask UI: right-aligned user bubbles, animated thinking indicator, streaming assistant response | 2026-05-03 | c887eb4 | [260504-114-ask-ui-right-aligned-user-bubbles-animat](./quick/260504-114-ask-ui-right-aligned-user-bubbles-animat/) |
 
 ## Blockers/Concerns
 
