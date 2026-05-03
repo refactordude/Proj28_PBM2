@@ -1,56 +1,64 @@
 {# Phase 3 — Final answer card (D-CHAT-05, UI-SPEC §F).
 
+   QUICK TASK 260504-220: dropped .panel/.panel-body chrome — the assistant's
+   final response now renders as plain prose flush with the left column where
+   the tool-call/tool-result pills sit. The .chat-summary-callout (soft-accent
+   prose block) is preserved as the only surviving visual emphasis on the
+   summary text, matching markdown's "callout/note" idiom. The summary text
+   is wrapped per-word in <span class="sw"> spans so the index.html reveal
+   handler can progressively unhide them on the 'final' SSE event, giving
+   the response a "typed live" feel.
+
    Rendered by app_v2/routers/ask._hydrate_final_card when chat_loop emits the
    structured 'final' payload. The router OWNS the entire render so chat_loop
    stays DB-free (WARNING-3 contract).
 
-   Three vertical sections inside one .panel.chat-final-card:
+   Three vertical sections, all flush in the left column:
 
-     1. Top — summary callout: NL summary on --accent-soft background
-        (D-CHAT-05). Agent-supplied — uses | e.
+     1. Top — summary callout (.chat-summary-callout): NL summary on
+        --accent-soft background (D-CHAT-05). Per-word <span class="sw">
+        wrappers drive the word-reveal animation (260504-220).
      2. Middle — pivot table: rendered by the router via the existing Browse
-        macro browse/_grid.html (RESEARCH Gap 9). The router-pre-rendered
-        markup arrives as {{ table_html }}; | safe is acceptable here because
-        the Browse macro already escapes every cell via `| string | e`.
+        macro browse/_grid.html. Atomic render — no progressive reveal.
      3. Bottom — Plotly chart: server-side render via plotly.graph_objects.Figure
-        in the router (T-03-04-09 mitigation — agent only picks ChartSpec
-        fields, never produces raw HTML). When chart_spec.chart_type == 'none'
-        OR a column is missing in df, chart_html is empty and the section is
-        omitted (silent downgrade per RESEARCH Open Question 3).
-
-   Trailing OOB swap flips #input-zone back to idle so the user can ask
-   another question (D-CHAT-14).
+        in the router (T-03-04-09). Atomic render — no progressive reveal.
 
    AUTOESCAPE CONTRACT (T-03-04-04):
-     - {{ summary }}    — agent-supplied → | e
-     - {{ row_count }}  — int, type-safe
-     - {{ table_html }} — router-pre-rendered Jinja → | safe (whitelisted)
-     - {{ chart_html }} — router-pre-rendered Plotly → | safe (whitelisted)
+     - {{ word | e }}    — agent-supplied → | e (one per .sw span)
+     - {{ row_count }}   — int, type-safe
+     - {{ table_html }}  — router-pre-rendered Jinja → | safe (whitelisted)
+     - {{ chart_html }}  — router-pre-rendered Plotly → | safe (whitelisted)
      The | safe filter appears ONLY on table_html and chart_html — both are
      produced by trusted server-side renderers, never by agent text.
 #}
-<div class="panel chat-final-card">
-  <div class="panel-body">
-    {# 1. Summary callout (D-CHAT-05; UI-SPEC §F). #}
-    <div class="chat-summary-callout">{{ summary | e }}</div>
-
-    {# 2. Pivot table — Browse _grid.html VERBATIM via router-side render. #}
-    {% if table_html %}
-      <div class="table-responsive">
-        {{ table_html | safe }}
-      </div>
-      {% if row_count is not none and row_count > 0 %}
-        <p class="text-muted small mt-2 mb-0">{{ row_count }} rows returned.</p>
-      {% endif %}
-    {% endif %}
-
-    {# 3. Plotly chart — silently omitted when chart_type=='none' or columns
-          missing. The Plotly bundle is loaded by ask/index.html via the
-          {% block extra_head %} so include_plotlyjs=False is safe. #}
-    {% if chart_html %}
-      <div class="chat-plotly">{{ chart_html | safe }}</div>
-    {% endif %}
+<div class="chat-final-card">
+  {# 1. Summary callout — word-reveal target (260504-220).
+     Each token from the agent-supplied summary is wrapped in a single .sw
+     span; literal whitespace between spans preserves word boundaries.
+     CSS default opacity 0; index.html reveal handler adds .is-visible
+     in document order on htmx:sseMessage of the 'final' event. #}
+  <div class="chat-summary-callout">
+    {%- for word in (summary or "").split() -%}
+      <span class="sw">{{ word | e }}</span>{% if not loop.last %} {% endif %}
+    {%- endfor -%}
   </div>
+
+  {# 2. Pivot table — Browse _grid.html VERBATIM via router-side render. #}
+  {% if table_html %}
+    <div class="table-responsive">
+      {{ table_html | safe }}
+    </div>
+    {% if row_count is not none and row_count > 0 %}
+      <p class="text-muted small mt-2 mb-0">{{ row_count }} rows returned.</p>
+    {% endif %}
+  {% endif %}
+
+  {# 3. Plotly chart — silently omitted when chart_type=='none' or columns
+        missing. The Plotly bundle is loaded by ask/index.html via the
+        {% block extra_head %} so include_plotlyjs=False is safe. #}
+  {% if chart_html %}
+    <div class="chat-plotly">{{ chart_html | safe }}</div>
+  {% endif %}
 </div>
 
 {# OOB swap — D-CHAT-14: flip #input-zone back to idle on turn end. #}

@@ -2,12 +2,17 @@
 
    Three top-level pieces:
 
-     1. The user-message block (question + "Thinking…" placeholder) — appended
-        into #chat-transcript by the form's hx-target/hx-swap.
+     1. The user-message block (question only) — appended into #chat-transcript
+        by the form's hx-target/hx-swap. The user bubble is right-aligned and
+        byte-stable from quick task 260504-114.
      2. The SSE consumer wrapper — opens an EventSource against
         /ask/stream/{{ turn_id }} and swaps each event payload INTO this same
         wrapper (beforeend). Closes when the agent emits a 'final' or 'error'
-        event (sse-close attribute).
+        event (sse-close attribute). Per quick task 260504-220, the
+        "Thinking…" indicator now lives as the FIRST child of .chat-events
+        (assistant column, left-aligned) so it appears in the same column
+        where assistant content will mount, not under the right-aligned user
+        bubble.
      3. An OOB swap targeting #input-zone — flips it to the active (Stop button)
         state. The Stop button POSTs to /ask/cancel/{{ turn_id }} and is
         styled by .btn-stop in app.css (D-CHAT-14, UI-SPEC §H).
@@ -15,21 +20,24 @@
    Per UI-SPEC §B:
      - .chat-user-question is 15px / 600 / --ink — the user's question reads as
        their own voice (no "You asked:" prefix).
-     - .chat-thinking is 13px italic / --mute — replaced by the first SSE event.
-       No animation in Phase 3 (motion is a Phase 4+ enhancement).
+     - .chat-thinking is 13px italic / --mute with a CSS-only bouncing-dots
+       animation (quick task 260504-114). Replaced by the first SSE event of
+       any kind via the hide-thinking IIFE in index.html.
 #}
 <div class="chat-user-message">
   <div class="chat-user-bubble">
     <p class="chat-user-question">{{ question | e }}</p>
   </div>
-  <p class="chat-thinking" aria-live="polite" aria-label="Agent is thinking">
-    <span class="chat-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-    <span class="chat-thinking-label">Thinking…</span>
-  </p>
 </div>
 
 {# SSE consumer — opens EventSource against the per-turn stream and appends
    each event's rendered fragment into THIS element (beforeend).
+
+   Quick task 260504-220: the .chat-thinking row now sits as the FIRST child
+   of .chat-events so it appears LEFT-aligned (assistant column), not under
+   the right-aligned user bubble. New SSE events mount AFTER it (beforeend);
+   the index.html hide-thinking handler adds Bootstrap .d-none to it on the
+   first SSE message of any kind.
 
    htmx-ext-sse 2.x's sse-close attribute accepts ONE event name only (it
    registers a single addEventListener), so we listen for a synthetic "close"
@@ -42,7 +50,10 @@
      sse-swap="thought,tool_call,tool_result,text_delta,final,error"
      hx-swap="beforeend"
      sse-close="close">
-  {# Empty — the agent's events arrive here as they happen. #}
+  <p class="chat-thinking" aria-live="polite" aria-label="Agent is thinking">
+    <span class="chat-thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    <span class="chat-thinking-label">Thinking…</span>
+  </p>
 </div>
 
 {# OOB swap — D-CHAT-14: flip #input-zone to the active (Stop button) state.

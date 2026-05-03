@@ -440,6 +440,32 @@ main.container-fluid {
   line-height: 1.6;
 }
 
+/* Word-reveal animation for the assistant summary (Quick task 260504-220).
+   The structured-output contract (ToolOutput(PresentResult)) means the
+   agent does not emit free TextPart events in practice; rather than fight
+   that contract with server-side splitting, we reveal the summary text
+   word-by-word client-side once the final card mounts. JS handler in
+   ask/index.html walks the .sw spans and adds .is-visible at ~30ms
+   cadence. Each span starts invisible (opacity 0); the .is-visible
+   class fades it in over 80ms via the transition. */
+.chat-summary-callout .sw {
+  opacity: 0;
+  transition: opacity 80ms ease-out;
+}
+.chat-summary-callout .sw.is-visible {
+  opacity: 1;
+}
+
+/* Reduced-motion: skip the word-by-word reveal entirely — show the full
+   summary at once. The reveal IIFE in index.html still adds .is-visible
+   classes (idempotent), but they're already covered by this override. */
+@media (prefers-reduced-motion: reduce) {
+  .chat-summary-callout .sw {
+    opacity: 1;
+    transition: none;
+  }
+}
+
 /* Thought event (D-CHAT-12; UI-SPEC §C) */
 .chat-thought {
   font-style: italic;
@@ -553,6 +579,17 @@ main.container-fluid {
   font-size: 15px;
 }
 .chat-plotly { margin-top: 18px; min-height: 320px; }
+
+/* Final answer card — chrome-stripped (Quick task 260504-220).
+   The assistant's final response renders flush in the left column of
+   .chat-events, alongside the tool pills above it. No panel background,
+   no border, no shadow — just prose with a top margin to separate it
+   from the preceding tool-result pill. The .chat-summary-callout below
+   is the only surviving visual emphasis (markdown-style soft-accent
+   block on the summary line). */
+.chat-final-card {
+  margin-top: 12px;
+}
 
 /* Click-to-fill: first cell of every row in a chat final-card pivot
    table acts as a drill-in handle — populates the question textarea
