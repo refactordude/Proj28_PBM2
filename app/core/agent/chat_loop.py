@@ -202,7 +202,15 @@ async def stream_chat_turn(
         if "timeout" in msg or "max_execution_time" in msg or "deadline" in msg:
             yield {"event": "error", "html": _render_error("timeout")}
         else:
-            _log.debug("chat-loop unexpected exception: %s", type(exc).__name__)
+            # WARNING-level so unexpected exceptions surface in the dev log for
+            # diagnosis. Include the message AND traceback so we can see
+            # malformed-tool-call payloads, JSON-decode failures, etc.
+            _log.warning(
+                "chat-loop unexpected exception (%s): %s",
+                type(exc).__name__,
+                exc,
+                exc_info=True,
+            )
             yield {
                 "event": "error",
                 "html": _render_error("llm-error", detail=type(exc).__name__),
