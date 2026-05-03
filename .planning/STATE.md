@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 04-03-PLAN.md (Wave 3 — atomic Helix topbar swap + chip-toggle.js + test rewrites)
-last_updated: "2026-05-03T08:22:43.435Z"
+stopped_at: Completed 04-05-PLAN.md (Wave 5 — atomic .panel-header to .ph migration on Browse/JV/Ask + Phase 02 invariant rewrites)
+last_updated: "2026-05-03T10:56:34.672Z"
 last_activity: 2026-05-03
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 20
-  completed_plans: 18
-  percent: 90
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 ## Current Position
 
 Phase: 04 (UI Foundation — Helix-aligned shell & primitives) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
 Last activity: 2026-05-03
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-03T08:22:27.642Z
+Last session: 2026-05-03T10:56:17.638Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed 04-03-PLAN.md (Wave 3 — atomic Helix topbar swap + chip-toggle.js + test rewrites)
+Stopped at: Completed 04-05-PLAN.md (Wave 5 — atomic .panel-header to .ph migration on Browse/JV/Ask + Phase 02 invariant rewrites)
 
 ## Accumulated Context
 
@@ -151,6 +151,9 @@ Stopped at: Completed 04-03-PLAN.md (Wave 3 — atomic Helix topbar swap + chip-
 - [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-03: Single-commit atomicity for Wave 3 — markup swap + test rewrites + .navbar CSS rule removal landed in commit 395477b. Per RESEARCH §Migration Strategy + Pitfall 2: splitting them would leave the working tree red between commits (markup changed but tests pinning legacy literals, OR vice versa).
 - [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-03: test_get_root_marks_overview_active rewrite expanded backward-window from 200 to 300 chars — the new .tabs / .tab markup wraps differently and aria-selected="true" can sit on a different attribute line than href. 300 chars provides headroom without over-matching neighboring tabs.
 - [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-03: Comment text in base.html and app.css avoids echoing legacy literals (e.g. <nav class="navbar"> or .navbar { ... }) so grep-based acceptance criteria pass cleanly. Stub-comment-on-deletion pattern in tests preserves git blame continuity — function names retained, body documents the rename via Phase 04 D-UIF-06 comment.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-05: Atomic single-commit migration (e7e4455) — markup swap on 4 templates + CSS rule rewrite + Phase 02 invariant test updates landed together; same atomicity pattern as Wave 3's topbar swap. Splitting would have broken bisectability.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-05: Padding preservation over 4px-grid normalization — surviving .ph rule keeps 18px 26px padding from the legacy class. Wave 1's speculative 16px 24px block deleted to consolidate the duplicate .ph rules. UI-SPEC §Spacing 4px-grid normalization applies to NEW shell adoption only — adopting it on shipped surfaces would have produced 2px-per-axis visual drift.
+- [Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable-]: Plan 04-05: Rule 3 auto-fix — id rename and CSS comment hygiene. Plan's verbatim instructions preserved id='browse-panel-header' / id='overview-panel-header' and used comment phrasings like '.ph (was .panel-header per D-UIF-01)' which contained the literal panel-header. Migration completeness criterion grep -c 'panel-header' = 0 forced renaming the ids (zero callers — verified) and rephrasing comments to retire the legacy literal.
 
 ### Performance Metrics
 
@@ -174,3 +177,4 @@ Stopped at: Completed 04-03-PLAN.md (Wave 3 — atomic Helix topbar swap + chip-
 | Phase 04 P01 | 5min | 2 tasks | 2 files |
 | Phase 04 P02 | 5min | 2 tasks | 11 files |
 | Phase 04 P03 | 6min | 3 tasks | 4 files |
+| Phase 04-ui-foundation-helix-aligned-shell-primitives-build-reusable- P05 | 9min | 2 tasks | 6 files |

@@ -105,4 +105,4 @@ Plans:
 - [x] 04-02-PLAN.md — Wave 2: Create 7 Jinja macro partials in _components/ + HeroSpec/FilterGroup Pydantic models + chip-toggle.js sibling (UFS-eMMC hyphen-safe group_name)
 - [x] 04-03-PLAN.md — Wave 3: Atomic shell integration — base.html topbar swap + chip-toggle.js script tag + .navbar rule removal + test_main.py + test_phase02_invariants.py updates
 - [x] 04-04-PLAN.md — Wave 4: GET /_components showcase route + showcase.html sectioned page + 3 test files (test_phase04_uif_invariants/_components/_hero_spec)
-- [ ] 04-05-PLAN.md — Wave 5: Atomic panel-header → .ph migration on existing surfaces (Browse / JV listing / Ask / JV detail) + CSS rule rewrite + atomic Phase 02 invariant test updates (D-UIF-01 LOCKED rename path completion)
+- [x] 04-05-PLAN.md — Wave 5: Atomic panel-header → .ph migration on existing surfaces (Browse / JV listing / Ask / JV detail) + CSS rule rewrite + atomic Phase 02 invariant test updates (D-UIF-01 LOCKED rename path completion)
