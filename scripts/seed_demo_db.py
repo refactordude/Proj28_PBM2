@@ -35,6 +35,7 @@ _DB_PATH = _DATA_DIR / "demo_ufs.db"
 # ---------------------------------------------------------------------------
 TIERS: dict[str, tuple[str, ...]] = {
     "modern_flagship": (
+        "SM8850_v1",
         "SM8650_v1",
         "SM8650_v2",
         "MTK6989_rev2",
@@ -66,7 +67,7 @@ TIERS: dict[str, tuple[str, ...]] = {
     ),
 }
 PLATFORMS: tuple[str, ...] = tuple(p for tier in TIERS.values() for p in tier)
-assert len(PLATFORMS) == 20, f"expected 20 platforms, got {len(PLATFORMS)}"
+assert len(PLATFORMS) == 21, f"expected 21 platforms, got {len(PLATFORMS)}"
 
 # ---------------------------------------------------------------------------
 # Base parameter pool — 12 (InfoCategory, Item) entries with their value pool.
