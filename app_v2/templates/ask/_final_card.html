@@ -4,10 +4,13 @@
    final response now renders as plain prose flush with the left column where
    the tool-call/tool-result pills sit. The .chat-summary-callout (soft-accent
    prose block) is preserved as the only surviving visual emphasis on the
-   summary text, matching markdown's "callout/note" idiom. The summary text
-   is wrapped per-word in <span class="sw"> spans so the index.html reveal
-   handler can progressively unhide them on the 'final' SSE event, giving
-   the response a "typed live" feel.
+   summary text, matching markdown's "callout/note" idiom.
+
+   QUICK TASK 260504-2jl (Bug 1 fix): the per-word <span class="sw"> wrappers
+   and the client-side reveal animation introduced by 260504-220 caused the
+   summary text to render invisible when the JS reveal handler failed to fire
+   (CSS default opacity was 0). Dropped both. Summary now renders as plain
+   text at full opacity, no animation, no JS dependency.
 
    Rendered by app_v2/routers/ask._hydrate_final_card when chat_loop emits the
    structured 'final' payload. The router OWNS the entire render so chat_loop
@@ -16,15 +19,15 @@
    Three vertical sections, all flush in the left column:
 
      1. Top — summary callout (.chat-summary-callout): NL summary on
-        --accent-soft background (D-CHAT-05). Per-word <span class="sw">
-        wrappers drive the word-reveal animation (260504-220).
+        --accent-soft background (D-CHAT-05). Plain {{ summary | e }} render
+        at full opacity (Quick task 260504-2jl).
      2. Middle — pivot table: rendered by the router via the existing Browse
         macro browse/_grid.html. Atomic render — no progressive reveal.
      3. Bottom — Plotly chart: server-side render via plotly.graph_objects.Figure
         in the router (T-03-04-09). Atomic render — no progressive reveal.
 
    AUTOESCAPE CONTRACT (T-03-04-04):
-     - {{ word | e }}    — agent-supplied → | e (one per .sw span)
+     - {{ summary | e }} — agent-supplied → | e (single render, full opacity)
      - {{ row_count }}   — int, type-safe
      - {{ table_html }}  — router-pre-rendered Jinja → | safe (whitelisted)
      - {{ chart_html }}  — router-pre-rendered Plotly → | safe (whitelisted)
@@ -32,15 +35,14 @@
      produced by trusted server-side renderers, never by agent text.
 #}
 <div class="chat-final-card">
-  {# 1. Summary callout — word-reveal target (260504-220).
-     Each token from the agent-supplied summary is wrapped in a single .sw
-     span; literal whitespace between spans preserves word boundaries.
-     CSS default opacity 0; index.html reveal handler adds .is-visible
-     in document order on htmx:sseMessage of the 'final' event. #}
+  {# 1. Summary callout — NL summary text on --accent-soft background
+     (D-CHAT-05). Quick task 260504-2jl: dropped the per-word <span class="sw">
+     wrappers and the client-side reveal animation — text now renders at full
+     opacity immediately so the user can always SEE the summary, no JS
+     dependency. The .chat-summary-callout block keeps its soft-accent
+     background, --accent-ink color, --radius-card corners. #}
   <div class="chat-summary-callout">
-    {%- for word in (summary or "").split() -%}
-      <span class="sw">{{ word | e }}</span>{% if not loop.last %} {% endif %}
-    {%- endfor -%}
+    {{ summary | e }}
   </div>
 
   {# 2. Pivot table — Browse _grid.html VERBATIM via router-side render. #}

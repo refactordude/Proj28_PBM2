@@ -389,11 +389,24 @@ main.container-fluid {
   font-style: italic;
   color: var(--mute);
   margin: 0 0 16px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
 }
 .chat-thinking-label { display: inline; }
+
+/* Hide the "Thinking…" indicator the moment any other child mounts in
+   .chat-events. The thinking row sits as the initial sole child of
+   .chat-events; once any SSE event (thought / tool_call / tool_result /
+   text_delta / final / error) swaps in via hx-swap="beforeend", this
+   :has() predicate matches and display: none collapses the thinking
+   row out of layout. CSS-only — replaces the JS hide handler that
+   proved unreliable in practice (Quick task 260504-2jl Bug 2).
+   :has() is supported in Chrome 105+, Safari 15.4+, Firefox 121+ —
+   fine for the intranet target. */
+.chat-events:has(> :not(.chat-thinking)) .chat-thinking {
+  display: none;
+}
 
 /* CSS-only bouncing-dots animation. Three small circles step out of phase
    so the eye reads them as a continuous wave. ~1.4s loop matches typical
@@ -438,32 +451,6 @@ main.container-fluid {
   font-size: 14px;
   color: var(--ink);
   line-height: 1.6;
-}
-
-/* Word-reveal animation for the assistant summary (Quick task 260504-220).
-   The structured-output contract (ToolOutput(PresentResult)) means the
-   agent does not emit free TextPart events in practice; rather than fight
-   that contract with server-side splitting, we reveal the summary text
-   word-by-word client-side once the final card mounts. JS handler in
-   ask/index.html walks the .sw spans and adds .is-visible at ~30ms
-   cadence. Each span starts invisible (opacity 0); the .is-visible
-   class fades it in over 80ms via the transition. */
-.chat-summary-callout .sw {
-  opacity: 0;
-  transition: opacity 80ms ease-out;
-}
-.chat-summary-callout .sw.is-visible {
-  opacity: 1;
-}
-
-/* Reduced-motion: skip the word-by-word reveal entirely — show the full
-   summary at once. The reveal IIFE in index.html still adds .is-visible
-   classes (idempotent), but they're already covered by this override. */
-@media (prefers-reduced-motion: reduce) {
-  .chat-summary-callout .sw {
-    opacity: 1;
-    transition: none;
-  }
 }
 
 /* Thought event (D-CHAT-12; UI-SPEC §C) */
