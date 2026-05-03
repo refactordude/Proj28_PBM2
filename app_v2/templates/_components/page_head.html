@@ -2,20 +2,29 @@
 
    Renders the .page-head row used at the top of detail pages.
    Existing CSS rules in app.css (lines 43-46) provide the visual.
-   `actions_html` is RAW HTML passed by the caller (typically a
-   short snippet of <button> markup). The caller is responsible
-   for escaping any user-facing strings inside actions_html — the
-   macro applies `| safe` so the snippet renders as HTML rather
-   than escaped text. Title and subtitle are escaped via `| e`.
+   Title and subtitle are escaped via `| e`.
 
-   Caller: `{% from "_components/page_head.html" import page_head %}`
-           `{{ page_head("Component Showcase", subtitle="...", actions_html="<button class=\"btn-helix sm\">Export</button>") }}` #}
-{% macro page_head(title, subtitle="", actions_html="") %}
+   Right-side actions (typically buttons) are passed as a Jinja
+   `{% call %}` block. Each `{{ var }}` inside the call block is
+   rendered in the calling template's autoescape context, so any
+   user/DB-derived data interpolated by the caller is HTML-escaped
+   automatically — no `| safe` foot-gun, no XSS path even if a future
+   caller passes user-controlled content. (WR-01 fix)
+
+   Caller (no actions):
+       `{% from "_components/page_head.html" import page_head %}`
+       `{{ page_head("Component Showcase", subtitle="...") }}`
+
+   Caller (with actions block):
+       `{% call page_head("Title", subtitle="...") %}`
+       `  <button class="btn-helix sm">Export</button>`
+       `{% endcall %}` #}
+{% macro page_head(title, subtitle="") %}
 <div class="page-head">
   <div>
     <h1 class="page-title">{{ title | e }}</h1>
     {% if subtitle %}<div class="page-sub">{{ subtitle | e }}</div>{% endif %}
   </div>
-  {% if actions_html %}<div class="page-actions">{{ actions_html | safe }}</div>{% endif %}
+  {% if caller %}<div class="page-actions">{{ caller() }}</div>{% endif %}
 </div>
 {% endmacro %}

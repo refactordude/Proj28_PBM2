@@ -39,10 +39,13 @@
     <div class="ph"><b>Page-head</b><span class="tag">D-UIF-08</span></div>
     <div class="panel-body">
       <p>The bold "Component Showcase" title + grey subtitle above is the
-        <code>page_head</code> macro. Pass <code>actions_html</code> to
-        inject right-aligned buttons.</p>
-      {{ page_head("With actions", subtitle="Renders <code>actions_html</code> on the right",
-                   actions_html='<button class="btn-helix sm">Export</button> <button class="btn-helix sm ghost">Share</button>') }}
+        <code>page_head</code> macro. Use a <code>{% raw %}{% call %}{% endraw %}</code>
+        block to inject right-aligned actions; content inside the call block is
+        autoescaped (no <code>| safe</code> needed).</p>
+      {% call page_head("With actions", subtitle="Renders the call() block on the right") %}
+        <button class="btn-helix sm">Export</button>
+        <button class="btn-helix sm ghost">Share</button>
+      {% endcall %}
     </div>
   </div>
 
