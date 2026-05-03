@@ -103,37 +103,51 @@ def test_execute_and_wrap_empty_df_returns_no_rows_marker():
 # --- Empty-where guard + DB-error → REJECTED rerouting ------------------
 
 
-def test_count_rows_with_empty_where_clause_returns_rejected_without_db_call():
-    """count_rows MUST short-circuit on empty where_clause and return REJECTED:
-    so the agent sees actionable guidance and the rejection counter increments.
-
-    Without this guard, the assembled SQL is `SELECT … WHERE LIMIT 200` which
-    SQLite/MySQL parse as a syntax error — wasting a DB roundtrip and producing
-    a generic exception message.
+def test_count_rows_with_empty_where_clause_raises_model_retry_without_db_call():
+    """count_rows MUST short-circuit on empty where_clause and raise ModelRetry
+    so PydanticAI re-prompts the model WITHOUT consuming a budget slot
+    (Cursor / Aider "free retries on parseable errors" pattern).
     """
+    from pydantic_ai import ModelRetry
     from pydantic_ai.models.test import TestModel
 
     agent = build_chat_agent(TestModel())
-    # Find the registered count_rows tool function and call it directly.
     count_rows = agent._function_toolset.tools["count_rows"].function
     ctx = _make_ctx()
-    out = count_rows(ctx, where_clause="")
-    assert out.startswith("REJECTED:"), f"empty where_clause must be REJECTED: ; got {out!r}"
-    assert "1=1" in out, "guidance should mention `1=1` as the all-rows pattern"
-    # No DB call should have been issued (FakeDB has no run_query side effect to
-    # observe — the guard runs BEFORE _execute_and_wrap so this is structural).
+    ctx.run_step = 1
+    with pytest.raises(ModelRetry, match="non-empty"):
+        count_rows(ctx, where_clause="")
 
 
-def test_sample_rows_with_empty_where_clause_returns_rejected_without_db_call():
-    """sample_rows mirrors count_rows — the same guard applies."""
+def test_sample_rows_with_empty_where_clause_raises_model_retry_without_db_call():
+    """sample_rows mirrors count_rows — the same guard raises ModelRetry."""
+    from pydantic_ai import ModelRetry
     from pydantic_ai.models.test import TestModel
 
     agent = build_chat_agent(TestModel())
     sample_rows = agent._function_toolset.tools["sample_rows"].function
     ctx = _make_ctx()
-    out = sample_rows(ctx, where_clause="", limit=5)
-    assert out.startswith("REJECTED:"), f"empty where_clause must be REJECTED: ; got {out!r}"
-    assert "1=1" in out
+    ctx.run_step = 1
+    with pytest.raises(ModelRetry, match="non-empty"):
+        sample_rows(ctx, where_clause="", limit=5)
+
+
+def test_successful_tool_result_carries_remaining_budget_hint():
+    """Cursor / Aider pattern: tool results inject a remaining-budget hint
+    so the model self-paces and calls present_result before exhaustion.
+    """
+    from pydantic_ai.models.test import TestModel
+
+    agent = build_chat_agent(TestModel())
+    inspect_schema = agent._function_toolset.tools["inspect_schema"].function
+    ctx = _make_ctx()
+    ctx.run_step = 3
+    out = inspect_schema(ctx)
+    assert "PLATFORM_ID:str" in out, "schema content must still be returned"
+    assert "[budget:" in out, "budget hint should be appended"
+    # cap=12, run_step=3, remaining=9
+    assert "9/12" in out, f"expected '9/12' remaining; got {out!r}"
+    assert "present_result" in out, "hint should mention present_result"
 
 
 def test_db_execution_error_is_routed_through_rejection_path():
