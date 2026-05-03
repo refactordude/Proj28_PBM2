@@ -20,15 +20,22 @@
    D-CHAT-10: NO _starter_chips include in the chat shell.
    D-CHAT-11: LLM dropdown HTML carried VERBATIM from Phase 6 (lines 47-82
               of the prior index.html).
-   UI-SPEC §A: Plotly + htmx-ext-sse loaded only on /ask via {% block extra_head %}.
+   UI-SPEC §A: Plotly loaded on /ask via {% block extra_head %}.
+   htmx-ext-sse loaded via {% block scripts %} so it registers AFTER
+   htmx.min.js — putting it in extra_head would cause defer-order to run
+   it before window.htmx exists, and the extension would silently fail.
 #}
 {% extends "base.html" %}
 
 {% block extra_head %}
-  {# Phase 3 only — Plotly bundle for _final_card.html chart rendering;
-     htmx-ext-sse to wire the SSE consumer in _user_message.html. Both
-     vendored in plan 03-01. #}
+  {# Phase 3 only — Plotly bundle for _final_card.html chart rendering.
+     Loaded only on /ask; vendored in plan 03-01. #}
   <script src="{{ url_for('static', path='vendor/plotly/plotly.min.js') }}" defer></script>
+{% endblock %}
+
+{% block scripts %}
+  {# htmx-ext-sse must load AFTER htmx.min.js so the extension can register
+     on the htmx global. Vendored in plan 03-01. #}
   <script src="{{ url_for('static', path='vendor/htmx/htmx-ext-sse.js') }}" defer></script>
 {% endblock %}
 

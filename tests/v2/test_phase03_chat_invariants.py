@@ -194,6 +194,49 @@ def test_plotly_only_loaded_on_ask_page():
 
 
 # -----------------------------------------------------------------------
+# htmx-ext-sse must load AFTER htmx core (defer-order bug — see commit
+# fixing /ask/stream never being opened by the browser)
+# -----------------------------------------------------------------------
+
+
+def test_htmx_ext_sse_loads_after_htmx_core_in_rendered_ask_page():
+    """htmx-ext-sse.js MUST load AFTER htmx.min.js on the /ask page.
+
+    Both are loaded with ``defer``, which means scripts execute in document
+    order at parse time. If htmx-ext-sse runs before htmx core, the
+    extension's ``htmx.defineExtension('sse', ...)`` call hits an undefined
+    ``htmx`` global, registration fails silently, and every fragment with
+    ``hx-ext="sse"`` swapped in afterwards is ignored — the browser never
+    opens the EventSource against ``/ask/stream/{turn_id}`` so the chat
+    appears completely dead even though the server-side POST /ask/chat
+    succeeded.
+
+    This test asserts the document order of the two ``<script src=...>``
+    tags. It does NOT spin up a browser — the order alone is sufficient
+    given both tags use the ``defer`` attribute.
+    """
+    from fastapi.testclient import TestClient
+
+    from app_v2.main import app
+
+    with TestClient(app) as client:
+        html = client.get("/ask").text
+
+    pattern = re.compile(
+        r'<script\s+src="[^"]*vendor/htmx/(htmx-ext-sse|htmx)\.(?:min\.)?js"',
+    )
+    order = [m.group(1) for m in pattern.finditer(html)]
+    assert "htmx" in order, "htmx.min.js should be referenced on /ask"
+    assert "htmx-ext-sse" in order, "htmx-ext-sse.js should be referenced on /ask"
+    assert order.index("htmx") < order.index("htmx-ext-sse"), (
+        "htmx-ext-sse.js must load AFTER htmx.min.js on /ask — "
+        "defer-order means an earlier script executes first; the extension "
+        "needs htmx defined before its registration runs. Use the "
+        "{% block scripts %} slot in base.html, not {% block extra_head %}."
+    )
+
+
+# -----------------------------------------------------------------------
 # CLAUDE.md banned libs — chat module guard
 # -----------------------------------------------------------------------
 

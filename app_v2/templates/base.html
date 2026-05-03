@@ -25,6 +25,12 @@
      AFTER bootstrap.bundle.min.js so bootstrap.Dropdown.getInstance(...) is
      available; defer order matches document source order at parse time. #}
   <script src="{{ url_for('static', path='js/popover-search.js') }}" defer></script>
+
+  {# Phase 03: per-page scripts that depend on htmx (e.g., htmx extensions).
+     Loaded AFTER htmx.min.js so htmx-ext-* registrations find the htmx
+     global. Use {% block extra_head %} for assets that do NOT depend on
+     htmx (CSS, vendor bundles like Plotly). #}
+  {% block scripts %}{% endblock %}
 </head>
 <body>
   {# Horizontal top-nav tabs (INFRA-02). hx-boost is NOT applied here per
