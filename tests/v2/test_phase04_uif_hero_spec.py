@@ -116,6 +116,17 @@ def test_filter_option_on_explicit():
     assert opt.on is True
 
 
+def test_filter_option_empty_value_raises():
+    """WR-04 fix: empty value strings are rejected at validation time.
+
+    chip-toggle.js disables hidden inputs in the OFF state, so an
+    empty value would never round-trip; rejecting at the model layer
+    prevents the dead UI from existing in the first place.
+    """
+    with pytest.raises(ValidationError):
+        FilterOption(label="Any", value="")
+
+
 # ----- FilterGroup -----
 
 def test_filter_group_default_empty_options():

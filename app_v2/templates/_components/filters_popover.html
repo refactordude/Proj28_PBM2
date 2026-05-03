@@ -48,11 +48,18 @@
                     data-value="{{ opt.value | e }}">
               {{ opt.label | e }}
             </button>
+            {# WR-04 fix: when the chip is OFF, mark the hidden input
+               `disabled` so the browser excludes it from form submission
+               entirely. chip-toggle.js mirrors this on click. The value
+               attribute is always the chip's value (no longer overloaded
+               to encode ON/OFF as value vs ''). FilterOption.value is
+               validated non-empty in filter_spec.py. #}
             <input type="hidden"
                    name="{{ group_name | e }}"
-                   value="{% if opt.on %}{{ opt.value | e }}{% endif %}"
+                   value="{{ opt.value | e }}"
                    data-opt="{{ opt.value | e }}"
-                   form="{{ form_id }}">
+                   form="{{ form_id }}"
+                   {% if not opt.on %}disabled{% endif %}>
           {% endfor %}
         </div>
       </div>

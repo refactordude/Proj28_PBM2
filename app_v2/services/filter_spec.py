@@ -16,10 +16,18 @@ from pydantic import BaseModel, Field
 
 
 class FilterOption(BaseModel):
-    """One toggleable chip in a filter group."""
+    """One toggleable chip in a filter group.
+
+    `value` must be a non-empty string (WR-04 fix). Empty-string values
+    are ambiguous on the wire: the chip-toggle.js OFF state already
+    excludes the hidden input from form submission via the `disabled`
+    attribute, but a chip whose ON-state value was '' would still be
+    indistinguishable from "no value submitted" on the server. Reject
+    empty values at construction time so the bug cannot reach the DOM.
+    """
 
     label: str
-    value: str
+    value: str = Field(min_length=1)
     on: bool = False
 
 

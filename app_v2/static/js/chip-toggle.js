@@ -1,12 +1,12 @@
 /* Phase 4 — UI Foundation: chip-toggle helper (D-UIF-04, sibling of popover-search.js).
  *
  * Click on `.pop .opt` toggles the `.on` class on the chip and syncs
- * the value of an associated hidden <input>. Does NOT submit the form;
- * the popover's Apply button is responsible for submission.
+ * the associated hidden <input>'s submission state. Does NOT submit the
+ * form; the popover's Apply button is responsible for submission.
  *
  * Click on `[data-action="reset"]` (typically the "Reset" link in
  * .pop-head and the ghost button in .foot) clears every `.opt.on`,
- * zeroes every hidden input, and zeroes every date input within the
+ * disables every hidden input, and zeroes every date input within the
  * enclosing `.pop`. (WR-02 fix.)
  *
  * Loaded with `defer` AFTER bootstrap.bundle.min.js in base.html
@@ -27,6 +27,15 @@
  *   2. A sibling within the same `.opts` group with attribute
  *      `data-opt="<chip value>"` (the convention used by
  *      filters_popover.html).
+ *
+ * OFF-state semantics (WR-04 fix): when a chip is OFF the associated
+ * hidden input is `disabled` (so the browser excludes it from the form
+ * submission) instead of having its value cleared to ''. The previous
+ * "value = ''" approach silently dropped chips whose legitimate value
+ * happened to be empty and was indistinguishable from "no chip ever
+ * existed" on the server side. The form-decoder now sees presence vs
+ * absence, not '' vs ''. FilterOption.value is also constrained to
+ * non-empty in filter_spec.py as a belt-and-braces validation.
  */
 (function () {
   "use strict";
@@ -56,14 +65,20 @@
 
     var isOn = opt.classList.contains('on');
     // D-UIF-04 chip-value-as-payload: when ON, write the chip's data-value
-    // into the hidden input (so the form submission carries the actual
-    // category value); when OFF, clear the input. This diverges from
-    // RESEARCH §Pitfall 8 sketch (which used '1') so that multi-option
-    // groups submit a meaningful value per option, not a generic flag.
+    // into the hidden input and ENABLE submission. When OFF, DISABLE the
+    // input so the browser excludes it from the form payload entirely
+    // (WR-04 fix — robust against legitimate empty-string values, and
+    // distinguishes "no chip selected" from "chip selected with empty
+    // value" on the server).
     var chipValue = opt.dataset.value || '';
     var hidden = findHiddenForChip(opt);
     if (hidden) {
-      hidden.value = isOn ? chipValue : '';
+      if (isOn) {
+        hidden.value = chipValue;
+        hidden.disabled = false;
+      } else {
+        hidden.disabled = true;
+      }
     }
   }
 
@@ -80,8 +95,11 @@
     pop.querySelectorAll('.opt.on').forEach(function (o) {
       o.classList.remove('on');
     });
+    // WR-04 fix: disable hidden inputs (don't just clear values) so the
+    // browser excludes them from submission, regardless of any legitimate
+    // empty-string value a chip may carry.
     pop.querySelectorAll('input[type=hidden][data-opt]').forEach(function (i) {
-      i.value = '';
+      i.disabled = true;
     });
     pop.querySelectorAll('input[type=date]').forEach(function (i) {
       i.value = '';
