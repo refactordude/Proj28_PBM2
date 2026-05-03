@@ -3,14 +3,14 @@
 <div class="shell">
 
   {# 260502-ui — title + Confluence Page ID moved INSIDE the properties
-     panel's panel-header for visual consistency with the JV listing
-     (`<h1 class="panel-title">` inside `.panel-header`) and Browse
-     (`<b>Browse</b>` inside `.panel-header`). The prior `.page-head`
-     wrapper rendered the h1 OUTSIDE any panel — an isolated heading on
-     the grey page background — which broke the rounded-card pattern
-     used by every other page. #}
+     panel's .ph (shell-header class, post-D-UIF-01) for visual consistency
+     with the JV listing (`<h1 class="panel-title">` inside `.ph`) and
+     Browse (`<b>Browse</b>` inside `.ph`). The prior `.page-head` wrapper
+     rendered the h1 OUTSIDE any panel — an isolated heading on the grey
+     page background — which broke the rounded-card pattern used by every
+     other page. #}
   <div class="panel mb-3">
-    <div class="panel-header">
+    <div class="ph">
       <h1 class="panel-title">{{ jv.title | e }}</h1>
       <small class="ms-auto text-muted">Confluence Page ID: <code>{{ jv.confluence_page_id | e }}</code></small>
     </div>

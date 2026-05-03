@@ -56,23 +56,35 @@ main.container-fluid {
   overflow: hidden;
 }
 .panel-body { padding: 26px 32px; }
-.panel-header { padding: 18px 26px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+/* Phase 04 D-UIF-01: legacy shell-header family rules rewritten to .ph
+   (atomic with markup migration in Wave 5). Declarations byte-equivalent
+   — only the selector changes. The legacy 18px 26px declarations are
+   preserved under the new .ph selector so existing surfaces (Browse /
+   JV / Ask / JV detail) render at the same visible padding they always
+   did. The Wave 1 speculative .ph block (padding: 16px 24px) that lived
+   at the end of this file is deleted as part of this consolidation;
+   UI-SPEC §Spacing 4px-grid normalization applies to NEW shell adoption,
+   not the migration of shipped surfaces. */
+.ph { padding: 18px 26px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
 /* 260502-ui — panel-footer: closes the rounded card on its bottom edge.
-   Mirrors panel-header symmetry (border-{top,bottom}) so each panel reads
-   as a self-contained card. The panel's overflow:hidden + border-radius
+   Mirrors .ph symmetry (border-{top,bottom}) so each panel reads as a
+   self-contained card. The panel's overflow:hidden + border-radius
    handles bottom-corner rounding for free. Used by Browse (count caption)
    and JV (pagination) instead of the global .site-footer band — the
    formerly disconnected sticky-footer band looked square + far from the
    panel; embedding the footer inside the panel restores the unified
    rounded-card silhouette per user feedback. */
 .panel-footer { padding: 12px 26px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); }
-.panel-header b { font-size: 18px; font-weight: 700; letter-spacing: -.015em; }
-.panel-header .tag { font-size: 12px; color: var(--mute); background: #f4f6f8; padding: 3px 10px; border-radius: var(--radius-pill); font-weight: 500; }
-/* Phase 02 — JV h1 inside panel header (D-UI2-12). Visually mirrors
-   Browse's `.panel-header b` (18px / 700) so JV's <h1 class="panel-title">
-   and Browse's <b>Browse</b> render at the same size and weight. The
-   existing `.page-title` (28px) rule is preserved for detail-page headers. */
-.panel-header .panel-title { font-size: 18px; font-weight: 700; letter-spacing: -.015em; margin: 0; line-height: 1.2; }
+.ph b { font-size: 18px; font-weight: 700; letter-spacing: -.015em; }
+.ph .tag { font-size: 12px; color: var(--mute); background: #f4f6f8; padding: 3px 10px; border-radius: var(--radius-pill); font-weight: 500; }
+/* D-UI2-12 honored: .ph .panel-title carries the same declarations as
+   the legacy shell-header descendant rule (font-size: 18px;
+   font-weight: 700; margin: 0). Visually mirrors Browse's `.ph b`
+   (18px / 700) so JV's <h1 class="panel-title"> and Browse's <b>Browse</b>
+   render at the same size and weight. The existing `.page-title` (28px)
+   rule is preserved for detail-page headers. */
+.ph .panel-title { font-size: 18px; font-weight: 700; letter-spacing: -.015em; margin: 0; line-height: 1.2; }
+.ph .spacer { flex: 1; }
 
 /* §6 Edit-view nav-pills + secondary button */
 .nav-pills .nav-link {
@@ -545,16 +557,18 @@ main.container-fluid {
    Source: Dashboard_v2.html lines 31-152, 173-219, 263-268, 1155-1177.
    Spacing normalized to 4px grid per UI-SPEC §Spacing:
      .topbar  10px 14px -> 8px 16px
-     .ph      18px 26px -> 16px 24px
      .hero    30px 32px -> 32px 32px
      .btn     38px      -> 40px (height re-anchored mod-4)
-   D-UIF-01 rename path: this plan adds .ph as the new shell rule.
-   Existing .panel-header rules at lines 58-74 stay UNTOUCHED in
-   Wave 1; Wave 5 atomically rewrites .panel-header .panel-title
-   to .ph .panel-title together with the template markup migration
-   and the Phase 02 invariant test rewrites. D-UI2-12 declarations
-   (font-size: 18px; font-weight: 700; margin: 0) carry over to
-   .ph .panel-title byte-equivalent in Wave 5.
+   D-UIF-01 LOCKED rename path completed in Wave 5:
+   the .ph family rules now live earlier in this file (next to .panel)
+   where they replaced the legacy shell-header rules atomically with
+   the template markup migration and Phase 02 invariant test rewrites.
+   D-UI2-12 declarations (font-size: 18px; font-weight: 700; margin: 0)
+   are preserved byte-equivalent under the .ph .panel-title selector.
+   Padding stays at 18px 26px so shipped surfaces (Browse / JV / Ask /
+   JV detail) render byte-stable; the speculative 4px-grid 16px 24px
+   normalization applied to NEW shell adoption only (not to migration
+   of shipped surfaces).
    ================================================================ */
 
 /* §Topbar — Helix flat-pill nav (D-UIF-06, D-UIF-07).
@@ -632,23 +646,12 @@ main.container-fluid {
   box-shadow: none;
 }
 
-/* §.ph — new shell-header selector (D-UIF-01 rename path).
-   Rules are byte-equivalent to the existing .panel-header rule (lines 58-74) at
-   the property level (with the 16px 24px padding normalized per UI-SPEC §Spacing).
-   Wave 5 atomically rewrites the existing .panel-header CSS rules to .ph rules
-   together with the markup migration and Phase 02 invariant test rewrites. */
-.ph {
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--line);
-}
-.ph b { font-size: 18px; font-weight: 700; letter-spacing: -.015em; }
-.ph .tag { font-size: 12px; color: var(--mute); background: #f4f6f8; padding: 3px 10px; border-radius: var(--radius-pill); font-weight: 500; }
-.ph .spacer { flex: 1; }
-.ph .panel-title { font-size: 18px; font-weight: 700; letter-spacing: -.015em; margin: 0; line-height: 1.2; }
+/* §.ph — Wave 1 speculative block deleted in Wave 5.
+   The .ph family rules now live next to .panel (lines ~68-87) where they
+   replaced the legacy shell-header rules during the D-UIF-01 atomic
+   migration. Padding preserved at 18px 26px to keep shipped surfaces
+   visually byte-stable; UI-SPEC §Spacing 4px-grid normalization applies
+   to NEW shell adoption, not the migration of shipped surfaces. */
 
 /* §Chips — toggleable pills (Dashboard_v2.html lines 122-128) */
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }

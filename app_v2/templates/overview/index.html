@@ -2,13 +2,13 @@
 {% block content %}
 <div class="shell">
   {# Phase 02 D-UI2-07/11/12: single panel mirroring Browse. h1 + count
-     live in .panel-header; filter bar + grid live in .panel-body.
+     live in .ph (shell-header class, post-D-UIF-01); filter bar + grid live in .panel-body.
      The legacy `.page-head` wrapper that placed h1 OUTSIDE the panel is
      removed (D-UI2-12). The count caption migrates from .panel-body
-     into .panel-header right zone via ms-auto (D-UI2-11). #}
+     into .ph right zone via ms-auto (D-UI2-11). #}
   <div class="panel">
 
-    <div class="panel-header" id="overview-panel-header">
+    <div class="ph" id="overview-ph">
       <h1 class="panel-title">Joint Validation</h1>
       <span id="overview-count" class="ms-auto text-muted small" aria-live="polite">
         {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}
@@ -130,15 +130,15 @@
 {% block count_oob %}
 {# OOB count caption — emitted by POST /overview/grid alongside the primary
    grid swap. HTMX merges the #overview-count span by id into the
-   panel-header receiver above (mechanism unchanged from Phase 01 Plan 05;
-   only the receiver's DOM location moves to the panel-header). The element
-   shape is <span> to match the panel-header receiver — both share the same
+   .ph receiver above (mechanism unchanged from Phase 01 Plan 05;
+   only the receiver's DOM location moves to the .ph). The element
+   shape is <span> to match the .ph receiver — both share the same
    id so HTMX merge-by-id stays correct (W1, Test 35b).
 
    DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this
    block in isolation via `block_names=["count_oob"]` WITHOUT it leaking
    into the full-page render of GET /overview (which would produce a
-   duplicate #overview-count span — once in panel-header, once orphaned in
+   duplicate #overview-count span — once in .ph, once orphaned in
    the panel-body). Same hotfix pattern as `params_picker_oob` (260429-qyv). #}
   <span id="overview-count" hx-swap-oob="true" class="ms-auto text-muted small" aria-live="polite">
     {{ vm.total_count | e }} {{ "entry" if vm.total_count == 1 else "entries" }}

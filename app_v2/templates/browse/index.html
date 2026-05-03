@@ -9,7 +9,7 @@
       (Pattern 6 of 04-RESEARCH.md).
 
    Layout zones inside the .panel:
-   - .panel-header: "Browse" title + "Pivot grid" tag + count caption (right).
+   - .ph (post-D-UIF-01 shell-header class; legacy name retired): "Browse" title + "Pivot grid" tag + count caption (right).
      The #grid-count span lives here, OUTSIDE #browse-grid, so OOB swaps
      from POST responses land in a stable element that is NEVER replaced by
      the primary innerHTML swap on #browse-grid (Pitfall 7).
@@ -26,7 +26,7 @@
 <div class="shell">
   <div class="panel">
 
-    <div class="panel-header" id="browse-panel-header">
+    <div class="ph" id="browse-ph">
       <b>Browse</b>
       <span class="tag">Pivot grid</span>
     </div>
@@ -77,7 +77,7 @@
 {# OOB count caption — emitted by POST /browse/grid alongside the primary
    grid swap. HTMX detaches this element from the response body and merges
    it into the existing #grid-count span in the sticky footer (Plan 02-02
-   moved it from .panel-header). Uses &times; (HTML entity) for the
+   moved it from .ph (the shell-header class). Uses &times; (HTML entity) for the
    multiplication sign per UI-SPEC §9 — NOT the ASCII letter "x".
 
    DEFINED OUTSIDE `{% block content %}` so jinja2-fragments can render this

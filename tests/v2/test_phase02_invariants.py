@@ -159,22 +159,33 @@ def test_site_footer_rule() -> None:
 
 
 def test_panel_title_rule() -> None:
-    """D-UI2-12: app.css must contain .panel-header .panel-title with 18px/700."""
+    """D-UI2-12 (post-D-UIF-01 migration): app.css must contain .ph .panel-title with 18px/700.
+
+    Phase 04 D-UIF-01 LOCKED rename path — the .panel-header family rules were
+    atomically rewritten to .ph family rules (selectors swapped; declarations
+    byte-equivalent). D-UI2-12 declarations (font-size: 18px; font-weight: 700;
+    margin: 0) are preserved verbatim under the new selector.
+    """
     src = _read(APP_CSS)
-    assert ".panel-header .panel-title" in src, (
-        "app.css must contain .panel-header .panel-title rule (D-UI2-12)"
+    assert ".ph .panel-title" in src, (
+        "app.css must contain .ph .panel-title rule (D-UI2-12 honored under D-UIF-01 selector)"
     )
-    idx = src.find(".panel-header .panel-title")
+    idx = src.find(".ph .panel-title")
     block_end = src.find("}", idx)
     block = src[idx:block_end]
     assert "font-size: 18px" in block, (
-        ".panel-header .panel-title must have font-size: 18px (D-UI2-12)"
+        ".ph .panel-title must have font-size: 18px (D-UI2-12)"
     )
     assert "font-weight: 700" in block, (
-        ".panel-header .panel-title must have font-weight: 700 (D-UI2-12)"
+        ".ph .panel-title must have font-weight: 700 (D-UI2-12)"
     )
     assert "margin: 0" in block, (
-        ".panel-header .panel-title must have margin: 0 (D-UI2-12)"
+        ".ph .panel-title must have margin: 0 (D-UI2-12)"
+    )
+    # Belt-and-suspenders: the legacy .panel-header .panel-title rule MUST be gone.
+    assert ".panel-header .panel-title" not in src, (
+        "app.css must NOT contain the legacy .panel-header .panel-title rule "
+        "(Phase 04 D-UIF-01 atomically rewrote it to .ph .panel-title)"
     )
 
 
@@ -590,24 +601,35 @@ def test_overview_index_h1_inside_panel() -> None:
 
 
 def test_overview_index_count_in_panel_header() -> None:
-    """Test 35: <span id="overview-count"> must be inside <div class="panel-header" (D-UI2-11)."""
+    """Test 35 (post-D-UIF-01 migration): <span id="overview-count"> must be inside <div class="ph" (D-UI2-11).
+
+    Phase 04 D-UIF-01 LOCKED rename path — the parent <div class="panel-header"> was
+    atomically renamed to <div class="ph">. The receiver placement contract
+    (D-UI2-11) is preserved: count receiver still lives inside the panel header
+    (now class="ph") and still carries ms-auto for right-alignment.
+    """
     src = _read(OVERVIEW_INDEX_HTML)
     assert '<span id="overview-count"' in src, (
         'overview/index.html must contain <span id="overview-count" (D-UI2-11)'
     )
-    panel_header_idx = src.find('<div class="panel-header"')
+    ph_idx = src.find('<div class="ph"')
     count_idx = src.find('<span id="overview-count"')
-    # count span (receiver) in panel-header must appear after panel-header opens
-    assert panel_header_idx >= 0, (
-        'overview/index.html must contain <div class="panel-header" (D-UI2-11)'
+    # count span (receiver) in panel header must appear after the ph div opens
+    assert ph_idx >= 0, (
+        'overview/index.html must contain <div class="ph" (D-UI2-11 honored under D-UIF-01 selector)'
     )
-    assert count_idx > panel_header_idx, (
-        '<span id="overview-count" must appear after <div class="panel-header"> opener (D-UI2-11)'
+    assert count_idx > ph_idx, (
+        '<span id="overview-count" must appear after <div class="ph"> opener (D-UI2-11)'
     )
     # The receiver span must carry ms-auto for right-alignment
     receiver_src = src[count_idx:src.find(">", count_idx)]
     assert "ms-auto" in receiver_src, (
-        '<span id="overview-count" in panel-header must carry ms-auto class (D-UI2-11)'
+        '<span id="overview-count" in panel header must carry ms-auto class (D-UI2-11)'
+    )
+    # Belt-and-suspenders: the legacy panel-header literal MUST be gone.
+    assert 'class="panel-header"' not in src, (
+        'overview/index.html must NOT contain class="panel-header" '
+        "(Phase 04 D-UIF-01 atomically rewrote it to class=\"ph\")"
     )
 
 
@@ -641,18 +663,27 @@ def test_overview_index_count_oob_block_emits_span() -> None:
 
 
 def test_overview_index_filter_bar_inside_panel() -> None:
-    """Test 37: the {% include "overview/_filter_bar.html" %} must be positioned
-    after panel-header and before the overview-grid div (D-UI2-07)."""
+    """Test 37 (post-D-UIF-01 migration): {% include "overview/_filter_bar.html" %}
+    must be positioned after the panel header (now class="ph") and before the
+    overview-grid div (D-UI2-07).
+
+    Phase 04 D-UIF-01 LOCKED rename path — the parent <div class="panel-header"> was
+    atomically renamed to <div class="ph">. The filter bar placement contract
+    (D-UI2-07) is preserved: filter bar still appears AFTER the panel header.
+    """
     src = _read(OVERVIEW_INDEX_HTML)
     include_line = '{% include "overview/_filter_bar.html" %}'
     assert include_line in src, (
         'overview/index.html must contain {% include "overview/_filter_bar.html" %}'
     )
-    panel_header_idx = src.find('<div class="panel-header"')
+    ph_idx = src.find('<div class="ph"')
     include_idx = src.find(include_line)
     grid_idx = src.find('<div id="overview-grid"')
-    assert panel_header_idx < include_idx, (
-        "Filter bar include must appear AFTER panel-header (D-UI2-07)"
+    assert ph_idx >= 0, (
+        'overview/index.html must contain <div class="ph" (D-UIF-01 selector)'
+    )
+    assert ph_idx < include_idx, (
+        "Filter bar include must appear AFTER the panel header (D-UI2-07)"
     )
     assert include_idx < grid_idx, (
         "Filter bar include must appear BEFORE #overview-grid div (D-UI2-07)"
