@@ -92,3 +92,17 @@ Plans:
 - [x] 03-03-PLAN.md — Chat plumbing: chat_session (per-turn registry + 12-msg sliding window + scrub-on-write) + chat_loop (stream_chat_turn async generator with cancel/retry-cap/step-budget/error classification) + main.py state init
 - [x] 03-04-PLAN.md — Atomic rewrite: routers/ask.py end-to-end (4 new routes, session-cookie auth) + 8 new chat templates + delete NL-05 templates + chat-surface CSS append
 - [x] 03-05-PLAN.md — Tests: rewrite test_ask_routes.py + Phase 3 invariants + chat_loop/chat_session/chat_agent unit tests + delete test_phase06_invariants.py
+
+### Phase 4: UI Foundation — Helix-aligned shell & primitives
+
+**Goal:** Build reusable Jinja partials and CSS for the visual system anchored to `Dashboard_v2.html` (sibling project `Proj27_PBM1_fork_bootstrap/Dashboard_v2.html`). Includes: topbar (brand + tab strip + avatar), page-head (28 px title + sub + actions), hero (1.3:1 grid with 72 px stat number, segmented bar, side-stats panel), KPI cards (4-up and 5-up with sparkline), panel + `.ph` header, status pills / chips / tiny-chips, date-range popover (7/14/30/60d quick chips + start/end inputs + reset/apply), filters popover (multi-select chip groups + reset/apply), sticky-corner table styling. Tokens already in `app_v2/static/css/tokens.css`; expand `app.css` and add partials under `app_v2/templates/_components/`. Stack: Jinja + HTMX (no React). Brand stays PBM2. Foundation consumed by downstream phases (Joint Validation list, Platform BM pivot on `browse/`, Ask AI sidebar + citations).
+**Requirements**: D-UIF-01, D-UIF-02, D-UIF-03, D-UIF-04, D-UIF-05, D-UIF-06, D-UIF-07, D-UIF-08, D-UIF-09, D-UIF-10, D-UIF-11
+**Depends on:** Phase 3
+**Plans:** 5 plans
+
+Plans:
+- [x] 04-01-PLAN.md — Wave 1: Append all Helix primitive CSS rules to app.css + add Google Fonts link to base.html (.ph as new shell-header selector per D-UIF-01 rename path)
+- [ ] 04-02-PLAN.md — Wave 2: Create 7 Jinja macro partials in _components/ + HeroSpec/FilterGroup Pydantic models + chip-toggle.js sibling (UFS-eMMC hyphen-safe group_name)
+- [ ] 04-03-PLAN.md — Wave 3: Atomic shell integration — base.html topbar swap + chip-toggle.js script tag + .navbar rule removal + test_main.py + test_phase02_invariants.py updates
+- [ ] 04-04-PLAN.md — Wave 4: GET /_components showcase route + showcase.html sectioned page + 3 test files (test_phase04_uif_invariants/_components/_hero_spec)
+- [ ] 04-05-PLAN.md — Wave 5: Atomic panel-header → .ph migration on existing surfaces (Browse / JV listing / Ask / JV detail) + CSS rule rewrite + atomic Phase 02 invariant test updates (D-UIF-01 LOCKED rename path completion)

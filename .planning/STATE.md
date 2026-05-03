@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase complete — ready for verification
-stopped_at: Phase 4 context gathered
-last_updated: "2026-05-03T05:32:43.289Z"
-last_activity: 2026-05-02
+status: Ready to execute
+stopped_at: Completed 04-01-PLAN.md (Wave 1 — CSS foundation)
+last_updated: "2026-05-03T08:00:21.852Z"
+last_activity: 2026-05-03
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
-  percent: 100
+  total_plans: 20
+  completed_plans: 16
+  percent: 80
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-04-29)
 
 **Core value:** Fast ad-hoc browsing of the UFS parameter database — even if NL fails, the UI lets non-SQL users find platforms, compare parameters, chart, and export
-**Current focus:** Phase 03 — Overhaul Ask feature into multi-step agentic chat
+**Current focus:** Phase 04 — UI Foundation — Helix-aligned shell & primitives
 
 ## Current Position
 
-Phase: 03 (Overhaul Ask feature into multi-step agentic chat) — EXECUTING
-Plan: 5 of 5
+Phase: 04 (UI Foundation — Helix-aligned shell & primitives) — EXECUTING
+Plan: 2 of 5
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-02
+Last activity: 2026-05-03
 
 Progress: [——————————] no active milestone
 
@@ -70,9 +70,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-03T05:32:43.269Z
+Last session: 2026-05-03T08:00:21.834Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Phase 4 context gathered
+Stopped at: Completed 04-01-PLAN.md (Wave 1 — CSS foundation)
 
 ## Accumulated Context
 
@@ -135,6 +135,11 @@ Stopped at: Phase 4 context gathered
 - [Phase 03]: Plan 03-05: Phase 4 plotly invariant narrowed by whitelisting app_v2/routers/ask.py only — D-CHAT-05 + T-03-04-09 require server-side Plotly chart construction in chat router; lazy import inside _build_plotly_chart_html keeps Browse/JV/Settings free of import cost
 - [Phase 03]: Plan 03-05: anyio's pytest plugin (group='pytest11', provided by anyio package) used via @pytest.mark.anyio + anyio_backend='asyncio' fixture — pytest-asyncio NOT required; avoids new dev dependency
 - [Phase 03]: Plan 03-05: Real DBAdapter subclass _FakeDB instead of MagicMock — Pydantic v2 ChatAgentDeps.db field annotated DBAdapter rejects MagicMock with isinstance check; reused across test_ask_routes.py and test_chat_agent_tools.py
+- [Phase 04]: Plan 04-01: D-UIF-01 rename path additive in Wave 1 — .ph shipped as new selector with normalized 16px 24px padding; existing .panel-header CSS rules at lines 58-74 stay byte-stable. Wave 5 atomically rewrites .panel-header CSS rules to .ph rules together with template markup migration and Phase 02 invariant test updates (same atomicity pattern as Wave 3's planned topbar swap + test_main.py rewrite).
+- [Phase 04]: Plan 04-01: No new tokens added to tokens.css — researcher and planner confirmed no Phase 4 primitive uses --cyan or --cyan-soft (deferred to chat sidebar per CONTEXT.md §Deferred). All new rules consume existing tokens.css vars.
+- [Phase 04]: Plan 04-01: Inter Tight + JetBrains Mono via Google Fonts CDN — fixes Pitfall 1 (.page-title font-weight 800 was silently degrading to system fallback ~700 because base.html had no <link> for the font). Loaded BEFORE tokens.css so @font-face rules are available when font-family declarations apply. Vendored woff2 fallback deferred to follow-up if intranet DNS restricts fonts.googleapis.com.
+- [Phase 04]: Plan 04-01: btn-helix namespace (NOT overriding Bootstrap .btn) — Phase 4 primary-button rules apply only via .btn-helix class, avoiding site-wide Bootstrap button restyling. Co-exists with Bootstrap .btn (Bootstrap rules win for unscoped .btn callers; Phase 4 rules apply when paired with .btn-helix or used inside .pop).
+- [Phase 04]: Plan 04-01: !important on .pop width/min-width to defeat Bootstrap --bs-dropdown-min-width: 10rem default (Pitfall 3) — when Wave 2 macros apply .pop to a .dropdown-menu, this guarantees the 300px width wins regardless of cascade tie-breaker.
 
 ### Performance Metrics
 
@@ -155,3 +160,4 @@ Stopped at: Phase 4 context gathered
 | Phase 03 P03 | 12min | 3 tasks | 3 files |
 | Phase 03 P04 | 12min | 4 tasks | 11 files |
 | Phase 03 P05 | 20min | 2 tasks | 9 files |
+| Phase 04 P01 | 5min | 2 tasks | 2 files |
