@@ -112,11 +112,13 @@ class PageLink(BaseModel):
     the type explicit and lets callers compare via attributes or
     ``model_dump()`` without coercion surprises.
 
-    ``num=None`` marks an ellipsis ("…") sentinel.
+    ``num=None`` historically marked an ellipsis sentinel; group-of-10
+    algorithm (260507-lcc) does not emit ellipses, but the model stays for
+    B3 byte-stability.
     """
 
     label: str
-    num: int | None = None  # None marks ellipsis ("…")
+    num: int | None = None  # historically marked ellipsis sentinel; unused under group-of-10
 
 
 class JointValidationGridViewModel(BaseModel):
@@ -132,6 +134,10 @@ class JointValidationGridViewModel(BaseModel):
     page: int = 1
     page_count: int = 1
     page_links: list[PageLink] = Field(default_factory=list)
+    # Quick task 260507-lcc (group-of-10 pagination supersedes D-UI2-13's
+    # sliding-window): None when the chevron should not render.
+    prev_group_page: int | None = None
+    next_group_page: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -293,45 +299,43 @@ def _sort_rows(
 # ---------------------------------------------------------------------------
 
 
+# Phase 02 Plan 02-04 superseded 2026-05-07 (quick task 260507-lcc):
+# group-of-10 pagination replaces sliding-window-with-ellipsis. GROUP_SIZE
+# picks 10 because (a) it matches Bootstrap's pagination-sm aesthetic,
+# (b) <=10 numbered links don't wrap on the standard JV grid width, and
+# (c) >10 leads to too-many-jumps friction; <10 leads to too-many-group-
+# boundaries friction. Treat as a fixed product decision, NOT a setting.
+GROUP_SIZE: Final[int] = 10
+
+
 def _build_page_links(
     page: int,
     page_count: int,
 ) -> list[PageLink]:
-    """Compute pagination labels with ellipsis (D-UI2-13).
+    """Return PageLinks for the current group of GROUP_SIZE pages.
 
-    Returns a list of PageLink objects. PageLink.num=None marks an
-    ellipsis sentinel (PageLink.label="…"). Algorithm: always include 1,
-    page_count, current ± 1; insert ellipsis when the gap between
-    consecutive shown pages is > 1. Result has at most 7 entries on
-    typical inputs (1, …, p-1, p, p+1, …, N).
+    Group-of-10 algorithm (replaces the original Phase 02 sliding-window
+    algorithm 2026-05-07 — quick task 260507-lcc). Pages partition into
+    groups of GROUP_SIZE: group 1 = pages 1..10, group 2 = pages 11..20,
+    etc. The bar always shows ALL pages in the current group; group
+    boundaries are signalled by ``<`` / ``>`` chevrons in the template (see
+    ``prev_group_page`` / ``next_group_page`` on the view model).
 
-    Examples (using model_dump() for clarity):
-      - 3 pages, current 1: [{label:"1",num:1},{label:"2",num:2},{label:"3",num:3}]
-      - 10 pages, current 5: [{label:"1",num:1},{label:"…",num:None},{label:"4",num:4},
-                               {label:"5",num:5},{label:"6",num:6},{label:"…",num:None},
-                               {label:"10",num:10}]
-      - 10 pages, current 1: [{label:"1",num:1},{label:"2",num:2},{label:"…",num:None},
-                               {label:"10",num:10}]
+    Examples:
+      - 5 pages, current=3:  [1,2,3,4,5]            (one group, fully shown)
+      - 13 pages, current=1: [1,2,3,4,5,6,7,8,9,10] (group 1 full)
+      - 13 pages, current=11:[11,12,13]             (group 2 truncated)
+      - 25 pages, current=15:[11,12,...,20]         (group 2 full middle)
+      - 25 pages, current=21:[21,22,23,24,25]       (last group truncated)
     """
     if page_count <= 0:
         return []
     if page_count == 1:
         return [PageLink(label="1", num=1)]
-    # Build the set of page numbers to show.
-    shown: set[int] = {1, page_count, page}
-    if page - 1 >= 1:
-        shown.add(page - 1)
-    if page + 1 <= page_count:
-        shown.add(page + 1)
-    ordered = sorted(shown)
-    out: list[PageLink] = []
-    prev: int | None = None
-    for n in ordered:
-        if prev is not None and n - prev > 1:
-            out.append(PageLink(label="…", num=None))
-        out.append(PageLink(label=str(n), num=n))
-        prev = n
-    return out
+    group_index = (page - 1) // GROUP_SIZE
+    start_page = group_index * GROUP_SIZE + 1
+    end_page = min((group_index + 1) * GROUP_SIZE, page_count)
+    return [PageLink(label=str(n), num=n) for n in range(start_page, end_page + 1)]
 
 
 # ---------------------------------------------------------------------------
@@ -455,6 +459,16 @@ def build_joint_validation_grid_view_model(
     paged_rows = sorted_rows[start:end]
     page_links = _build_page_links(page_int, page_count)
 
+    # Quick task 260507-lcc — group-of-10 chevron targets:
+    _group_index = (page_int - 1) // GROUP_SIZE
+    prev_group_page = _group_index * GROUP_SIZE if _group_index > 0 else None
+    _next_group_first_page = (_group_index + 1) * GROUP_SIZE + 1
+    next_group_page = (
+        _next_group_first_page
+        if (_group_index + 1) * GROUP_SIZE < page_count
+        else None
+    )
+
     # 5) Active filter counts (always present for all 6 keys).
     active_filter_counts = {
         c: len(clean_filters.get(c, [])) for c in FILTERABLE_COLUMNS
@@ -470,4 +484,6 @@ def build_joint_validation_grid_view_model(
         page=page_int,
         page_count=page_count,
         page_links=page_links,
+        prev_group_page=prev_group_page,
+        next_group_page=next_group_page,
     )

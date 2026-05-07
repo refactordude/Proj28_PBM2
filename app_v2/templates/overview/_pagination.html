@@ -1,31 +1,36 @@
-{# _pagination.html — Phase 02 Plan 02-04 (D-UI2-13).
-   B5: single source of truth; included by block footer AND block pagination_oob.
-   B3: vm.page_links is list[PageLink]; iterate via pl.label / pl.num (NOT tuple). #}
+{# _pagination.html — Phase 02 Plan 02-04 (D-UI2-13/14), group-of-10 algorithm
+   (260507-lcc supersedes original sliding-window-with-ellipsis).
+   B5: single source of truth; included by .panel-footer AND block pagination_oob.
+   B3: vm.page_links is list[PageLink]; iterate via pl.label / pl.num. #}
 {% if vm.page_count > 1 %}
 <nav aria-label="Joint Validation pages">
   <ul class="pagination pagination-sm mb-0">
-    <li class="page-item {% if vm.page <= 1 %}disabled{% endif %}" {% if vm.page <= 1 %}aria-disabled="true"{% endif %}>
-      <a class="page-link"
-         {% if vm.page > 1 %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ vm.page - 1 }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}
+    {% if vm.prev_group_page is not none %}
+    <li class="page-item">
+      <a class="page-link" href="#"
+         hx-post="/overview/grid" hx-include="#overview-filter-form"
+         hx-vals='{"page": "{{ vm.prev_group_page }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}'
+         hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"
          aria-label="Previous"><i class="bi bi-chevron-left"></i></a>
     </li>
+    {% endif %}
     {% for pl in vm.page_links %}
-      {% if pl.num is none %}
-        <li class="page-item disabled" aria-disabled="true"><span class="page-link">{{ pl.label | e }}</span></li>
-      {% else %}
-        <li class="page-item {% if pl.num == vm.page %}active{% endif %}" {% if pl.num == vm.page %}aria-current="page"{% endif %}>
-          <a class="page-link"
-             {% if pl.num != vm.page %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ pl.num }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}>
-            {{ pl.label | e }}
-          </a>
-        </li>
-      {% endif %}
+      <li class="page-item {% if pl.num == vm.page %}active{% endif %}" {% if pl.num == vm.page %}aria-current="page"{% endif %}>
+        <a class="page-link"
+           {% if pl.num != vm.page %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ pl.num }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}>
+          {{ pl.label | e }}
+        </a>
+      </li>
     {% endfor %}
-    <li class="page-item {% if vm.page >= vm.page_count %}disabled{% endif %}" {% if vm.page >= vm.page_count %}aria-disabled="true"{% endif %}>
-      <a class="page-link"
-         {% if vm.page < vm.page_count %}href="#" hx-post="/overview/grid" hx-include="#overview-filter-form" hx-vals='{"page": "{{ vm.page + 1 }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}' hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"{% endif %}
+    {% if vm.next_group_page is not none %}
+    <li class="page-item">
+      <a class="page-link" href="#"
+         hx-post="/overview/grid" hx-include="#overview-filter-form"
+         hx-vals='{"page": "{{ vm.next_group_page }}", "sort": "{{ vm.sort_col | e }}", "order": "{{ vm.sort_order | e }}"}'
+         hx-target="#overview-grid" hx-swap="outerHTML" hx-push-url="true"
          aria-label="Next"><i class="bi bi-chevron-right"></i></a>
     </li>
+    {% endif %}
   </ul>
 </nav>
 {% endif %}

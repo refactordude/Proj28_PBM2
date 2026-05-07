@@ -144,38 +144,19 @@ def test_page_links_short(tmp_path: Path) -> None:
     assert [pl.model_dump() for pl in vm.page_links] == expected
 
 
-def test_page_links_ellipsis_left(tmp_path: Path) -> None:
-    """P9 (B3 form): With 10 pages, page=8, ellipsis appears between page 1 and page 7."""
+def test_page_links_group_1_full(tmp_path: Path) -> None:
+    """P9 (260507-lcc form): With 10 pages, page=8 (still in group 1), all 10 pages render."""
     links = _build_page_links(8, 10)
-    labels = [pl.label for pl in links]
-    nums = [pl.num for pl in links]
-    # First entry is page 1
-    assert labels[0] == "1" and nums[0] == 1
-    # Ellipsis must be present
-    assert "…" in labels
-    ellipsis_idx = labels.index("…")
-    # The ellipsis must not be first or last
-    assert 0 < ellipsis_idx < len(labels) - 1
-    # Page 8 must be present
-    assert 8 in nums
-    # All elements are PageLink instances
-    for pl in links:
-        assert isinstance(pl, PageLink)
-
-
-def test_page_links_ellipsis_both_sides(tmp_path: Path) -> None:
-    """P10 (B3 form): With 10 pages, page=5, ellipsis on both sides of current cluster."""
-    links = _build_page_links(5, 10)
     dicts = [pl.model_dump() for pl in links]
-    expected = [
-        {"label": "1", "num": 1},
-        {"label": "…", "num": None},
-        {"label": "4", "num": 4},
-        {"label": "5", "num": 5},
-        {"label": "6", "num": 6},
-        {"label": "…", "num": None},
-        {"label": "10", "num": 10},
-    ]
+    expected = [{"label": str(n), "num": n} for n in range(1, 11)]
+    assert dicts == expected, f"Got: {dicts}"
+
+
+def test_page_links_group_2_full_middle(tmp_path: Path) -> None:
+    """P10 (260507-lcc form): With 25 pages, page=15 (group 2), pages 11..20 render — no ellipsis."""
+    links = _build_page_links(15, 25)
+    dicts = [pl.model_dump() for pl in links]
+    expected = [{"label": str(n), "num": n} for n in range(11, 21)]
     assert dicts == expected, f"Got: {dicts}"
 
 
@@ -186,6 +167,94 @@ def test_page_links_returns_pagelink_instances(tmp_path: Path) -> None:
     assert isinstance(links[0], PageLink), f"Expected PageLink, got {type(links[0])}"
     # Explicitly not a tuple
     assert not isinstance(links[0], tuple), "page_links must NOT be a list[tuple] (B3)"
+
+
+# 260507-lcc: group-of-10 boundary cases (sliding-window-with-ellipsis superseded).
+
+
+def test_page_links_5_pages(tmp_path: Path) -> None:
+    """260507-lcc: 5 pages, current=3 → [1,2,3,4,5] (one group fully shown)."""
+    assert [pl.model_dump() for pl in _build_page_links(3, 5)] == (
+        [{"label": str(n), "num": n} for n in range(1, 6)]
+    )
+
+
+def test_page_links_10_pages_current_10(tmp_path: Path) -> None:
+    """260507-lcc: 10 pages, current=10 → [1..10] (current sits in only/last group)."""
+    assert [pl.model_dump() for pl in _build_page_links(10, 10)] == (
+        [{"label": str(n), "num": n} for n in range(1, 11)]
+    )
+
+
+def test_page_links_13_pages_current_1(tmp_path: Path) -> None:
+    """260507-lcc: 13 pages, current=1 → group 1 [1..10]."""
+    assert [pl.model_dump() for pl in _build_page_links(1, 13)] == (
+        [{"label": str(n), "num": n} for n in range(1, 11)]
+    )
+
+
+def test_page_links_13_pages_current_11(tmp_path: Path) -> None:
+    """260507-lcc: 13 pages, current=11 → group 2 truncated [11,12,13]."""
+    assert [pl.model_dump() for pl in _build_page_links(11, 13)] == [
+        {"label": "11", "num": 11},
+        {"label": "12", "num": 12},
+        {"label": "13", "num": 13},
+    ]
+
+
+def test_page_links_25_pages_current_21(tmp_path: Path) -> None:
+    """260507-lcc: 25 pages, current=21 → last group truncated [21..25]."""
+    assert [pl.model_dump() for pl in _build_page_links(21, 25)] == (
+        [{"label": str(n), "num": n} for n in range(21, 26)]
+    )
+
+
+def test_prev_next_group_page_first_group(tmp_path: Path) -> None:
+    """260507-lcc: page=5 of 25 (group 1) → prev=None, next=11."""
+    # 25 rows × page_size=1 → 25 pages
+    for i in range(1, 26):
+        _write_jv(tmp_path, str(i).zfill(3), title=f"JV {i}")
+    vm = build_joint_validation_grid_view_model(tmp_path, page=5, page_size=1)
+    assert vm.page_count == 25
+    assert vm.prev_group_page is None
+    assert vm.next_group_page == 11
+
+
+def test_prev_next_group_page_at_boundary(tmp_path: Path) -> None:
+    """260507-lcc: page=11 of 25 (group 2) → prev=10, next=21."""
+    for i in range(1, 26):
+        _write_jv(tmp_path, str(i).zfill(3), title=f"JV {i}")
+    vm = build_joint_validation_grid_view_model(tmp_path, page=11, page_size=1)
+    assert vm.prev_group_page == 10
+    assert vm.next_group_page == 21
+
+
+def test_prev_next_group_page_last_group(tmp_path: Path) -> None:
+    """260507-lcc: page=21 of 25 (group 3) → prev=20, next=None."""
+    for i in range(1, 26):
+        _write_jv(tmp_path, str(i).zfill(3), title=f"JV {i}")
+    vm = build_joint_validation_grid_view_model(tmp_path, page=21, page_size=1)
+    assert vm.prev_group_page == 20
+    assert vm.next_group_page is None
+
+
+def test_prev_next_group_page_single_page(tmp_path: Path) -> None:
+    """260507-lcc: page_count=1 → both chevron targets are None."""
+    _write_jv(tmp_path, "001", title="single")
+    vm = build_joint_validation_grid_view_model(tmp_path, page=1, page_size=15)
+    assert vm.page_count == 1
+    assert vm.prev_group_page is None
+    assert vm.next_group_page is None
+
+
+def test_prev_next_group_page_exactly_one_full_group(tmp_path: Path) -> None:
+    """260507-lcc: page_count == GROUP_SIZE (10) → no next group exists."""
+    for i in range(1, 11):
+        _write_jv(tmp_path, str(i).zfill(3), title=f"JV {i}")
+    vm = build_joint_validation_grid_view_model(tmp_path, page=1, page_size=1)
+    assert vm.page_count == 10
+    assert vm.prev_group_page is None
+    assert vm.next_group_page is None
 
 
 def test_filter_options_built_from_all_rows_not_paged(tmp_path: Path) -> None:
