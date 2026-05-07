@@ -19,25 +19,56 @@
        container; macro byte-stable; Clear-all has ms-auto. #}
     {% include "overview/_filter_bar.html" %}
 
-    {# OOB filter badges block — rendered both in full page and in HTMX swaps.
-       B1 (revision 1): Filter badges ARE user-visible today (each active filter
-       with count > 0 renders a chip-style "Status: 1" badge). Visibility is
-       PRESERVED in the new layout. Placement: BELOW the filter row and ABOVE
-       the grid scroll container — same visual relationship as the pre-rewrite
-       template (where the wrapper sat between _filter_bar.html and the grid
-       panel). The wrapper div from the old template (`overview-filter-badges-wrapper`)
-       is removed because the inner OOB div is itself the visible badges
-       container. The OOB target id `#overview-filter-badges` is byte-stable;
-       HTMX merges by id regardless of DOM location. NO `visually-hidden`
-       class — badges remain visible. #}
+    {# Active-filter summary (260507-nzp): replaces the prior
+       "{{ col }}: {{ count }}" badge strip. Each facet renders one row:
+       "<Label>: <chip> <chip> ... [+N more]". Up to 10 value chips per row;
+       row is omitted entirely when the facet has zero selected values.
+       Chip color is determined per-facet via .c-1..c-6 in app.css
+       (anchored to Dashboard_v2.html tiny-chip language, lines 263-268).
+
+       The wrapper #overview-filter-badges + hx-swap-oob is byte-stable —
+       POST /overview/grid still emits this block via block_names so HTMX
+       merges it back into the page on every filter change. The chip
+       markup itself is render-layer only; selected_filters is supplied
+       verbatim by the existing router context (see routers/overview.py).
+
+       Inline {% set %} maps below define the col → label and col → variant
+       mappings explicitly so the contract is reviewable at the call site
+       instead of being scattered across the codebase. #}
     {% block filter_badges_oob %}
+      {%- set ff_labels = {
+          "status":      "Status",
+          "customer":    "Customer",
+          "ap_company":  "AP Company",
+          "device":      "Device",
+          "controller":  "Controller",
+          "application": "Application",
+      } -%}
+      {%- set ff_variants = {
+          "status":      "c-1",
+          "customer":    "c-2",
+          "ap_company":  "c-3",
+          "device":      "c-4",
+          "controller":  "c-5",
+          "application": "c-6",
+      } -%}
       <div id="overview-filter-badges" hx-swap-oob="true" class="px-3 pt-2">
-        {% for col, count in vm.active_filter_counts.items() %}
-          {% if count > 0 %}
-            <span class="badge bg-secondary me-1">
-              {{ col | e }}: {{ count | e }}
-            </span>
-          {% endif %}
+        {% for col in ["status", "customer", "ap_company", "device", "controller", "application"] %}
+          {%- set values = selected_filters.get(col) or [] -%}
+          {%- if values -%}
+            {%- set total = values | length -%}
+            {%- set visible = values[:10] -%}
+            {%- set overflow = total - 10 -%}
+            <div class="ff-row" data-facet="{{ col | e }}">
+              <span class="ff-label">{{ ff_labels[col] | e }}:</span>
+              {% for v in visible %}
+                <span class="ff-chip {{ ff_variants[col] }}">{{ v | e }}</span>
+              {% endfor %}
+              {% if overflow > 0 %}
+                <span class="ff-chip ff-more">+{{ overflow | e }} more</span>
+              {% endif %}
+            </div>
+          {%- endif -%}
         {% endfor %}
       </div>
     {% endblock %}
