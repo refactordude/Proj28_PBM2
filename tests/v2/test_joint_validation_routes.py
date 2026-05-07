@@ -328,3 +328,100 @@ def test_grid_renders_active_confluence_anchor_when_conf_url_set(
     assert 'href="https://example.com/3193868109"' in body
     # Disabled-branch marker MUST be absent (the row has a page_id)
     assert 'aria-label="No Confluence URL configured"' not in body
+
+
+# ---------------------------------------------------------------------------
+# 260507-nzp — active-filter summary chips
+# ---------------------------------------------------------------------------
+
+
+def _write_many_jv_status_values(root: Path, n: int) -> list[str]:
+    """Create N fake JV folders each with a distinct status value.
+
+    Returns the list of N status strings so callers can request them all
+    as filter values. Uses 9-digit numeric folder names so they validate
+    against the JointValidationRow.confluence_page_id pattern (^\\d+$).
+    """
+    statuses: list[str] = []
+    for i in range(n):
+        page_id = f"99000000{i:02d}"  # 9-digit, distinct per i
+        status = f"S{i:02d}"
+        folder = root / page_id
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "index.html").write_text(
+            f"<html><body><h1>Title {i}</h1>"
+            f"<table><tr><th>Status</th><td>{status}</td></tr></table>"
+            f"</body></html>",
+            encoding="utf-8",
+        )
+        statuses.append(status)
+    return statuses
+
+
+def test_overview_filter_chips_render_actual_values(
+    jv_dir_with_one: Path, client: TestClient
+) -> None:
+    """260507-nzp: facets show chips listing the selected values, not just a count."""
+    r = client.get(
+        "/overview",
+        params=[
+            ("status", "In Progress"),
+            ("status", "Verified"),
+            ("customer", "Samsung"),
+        ],
+    )
+    assert r.status_code == 200
+    # Wrapper byte-stable for HTMX OOB merge.
+    assert 'id="overview-filter-badges"' in r.text
+    # Status row: label + 2 chips, c-1 variant.
+    assert 'data-facet="status"' in r.text
+    assert 'class="ff-chip c-1">In Progress</span>' in r.text
+    assert 'class="ff-chip c-1">Verified</span>' in r.text
+    # Customer row: label + 1 chip, c-2 variant.
+    assert 'data-facet="customer"' in r.text
+    assert 'class="ff-chip c-2">Samsung</span>' in r.text
+    # Inactive facets (ap_company etc.) DO NOT render rows.
+    assert 'data-facet="ap_company"' not in r.text
+    # No "+N more" because each facet has ≤10 selected.
+    assert "ff-more" not in r.text
+
+
+def test_overview_filter_chips_overflow_shows_plus_n_more(
+    tmp_path: Path, client: TestClient, monkeypatch
+) -> None:
+    """260507-nzp: >10 selected values per facet renders 10 chips + '+N more'."""
+    # Point JV_ROOT at a tmp dir we control so we can create 11 distinct
+    # status values without polluting the real content/joint_validation tree.
+    from app_v2.services import joint_validation_store as _store
+    monkeypatch.setattr(_store, "JV_ROOT", tmp_path)
+
+    statuses = _write_many_jv_status_values(tmp_path, 11)
+    assert len(statuses) == 11
+
+    params = [("status", s) for s in statuses]
+    r = client.get("/overview", params=params)
+    assert r.status_code == 200
+
+    # Exactly 10 c-1 value chips render — count by occurrences of the
+    # c-1 variant attribute (the +N more chip uses ff-more, not c-1).
+    visible_chip_count = r.text.count('class="ff-chip c-1">')
+    assert visible_chip_count == 10, (
+        f"expected 10 visible chips, got {visible_chip_count}"
+    )
+
+    # Exactly 1 "+N more" indicator with N == 1 (11 total - 10 visible).
+    assert r.text.count("ff-more") == 1
+    assert "+1 more" in r.text
+
+
+def test_overview_filter_chips_no_active_filters_renders_empty_wrapper(
+    jv_dir_with_one: Path, client: TestClient
+) -> None:
+    """260507-nzp: with zero selected values the wrapper renders but contains no rows."""
+    r = client.get("/overview")
+    assert r.status_code == 200
+    # Wrapper present (HTMX needs a stable target).
+    assert 'id="overview-filter-badges"' in r.text
+    # No facet rows.
+    assert "ff-row" not in r.text
+    assert "ff-chip" not in r.text
