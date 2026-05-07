@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import urllib.parse
 from dataclasses import dataclass
+from typing import Hashable
 
 import pandas as pd
 
@@ -63,6 +64,15 @@ class BrowseViewModel:
     is_empty_selection: bool
     params_disabled: bool              # NEW (260429-qyv): True iff selected_platforms is empty
     index_col_name: str                # "PLATFORM_ID" (default) or "Item" (swap_axes)
+    # 260507-w7h — Highlight toggle: render-only minority cell decoration.
+    highlight: bool = False
+    minority_cells: set = None  # set[tuple[Hashable, str]] of (row_idx, col_name)
+
+    def __post_init__(self):
+        # Canonical mutable-default workaround for @dataclass without
+        # importing `field`. Keep imports stable.
+        if self.minority_cells is None:
+            self.minority_cells = set()
 
 
 def _parse_param_label(label: str) -> tuple[str, str] | None:
@@ -80,12 +90,90 @@ def _parse_param_label(label: str) -> tuple[str, str] | None:
     return (parts[0], parts[1]) if len(parts) == 2 else None
 
 
+def _compute_minority_cells(
+    df_wide: pd.DataFrame,
+    index_col: str,
+    swap_axes: bool,
+) -> set[tuple[Hashable, str]]:
+    """Return {(row_label_from_iterrows, col_name)} for cells that are
+    non-empty AND differ from the mode of non-empty values along the
+    parameter axis.
+
+    Axis semantics:
+      swap_axes=False → parameter is a column → mode along axis=0 (per column,
+                        across all platform rows)
+      swap_axes=True  → parameter is a row    → mode along axis=1 (per row,
+                        across all platform columns)
+
+    Empty rule: NaN, None, and "" are treated identically — they never count
+    toward mode and are never added to the result set. Use a single
+    is-empty predicate `_is_empty(v)` that returns True for any of those.
+
+    Tie rule: pandas Series.mode() returns sorted unique modes ascending.
+    Take .iloc[0] (lowest-sorted) as the baseline.
+
+    Iteration: enumerate via df_wide.iterrows() so the row keys in the set
+    match the keys the template will use when looping with iterrows() in
+    _grid.html (Pitfall — df_wide.index.tolist() can drift from iterrows()
+    if multiindex enters; iterrows() is the canonical source).
+
+    260507-w7h.
+    """
+    if df_wide.empty:
+        return set()
+
+    def _is_empty(v) -> bool:
+        # pd.isna handles None + NaN; "" is a separate empty signal in EAV data.
+        try:
+            if pd.isna(v):
+                return True
+        except (TypeError, ValueError):
+            pass
+        return v == "" or v is None
+
+    result: set[tuple[Hashable, str]] = set()
+    value_cols = [c for c in df_wide.columns if c != index_col]
+
+    if swap_axes:
+        # Parameter is the row → mode per row, across value columns.
+        for idx, row in df_wide.iterrows():
+            non_empty = [row[c] for c in value_cols if not _is_empty(row[c])]
+            if not non_empty:
+                continue
+            mode_baseline = pd.Series(non_empty).mode().iloc[0]
+            for c in value_cols:
+                v = row[c]
+                if _is_empty(v):
+                    continue
+                if v != mode_baseline:
+                    result.add((idx, c))
+    else:
+        # Parameter is a column → mode per column, across platform rows.
+        for c in value_cols:
+            col_values = df_wide[c]
+            non_empty_mask = ~col_values.apply(_is_empty)
+            non_empty = col_values[non_empty_mask]
+            if non_empty.empty:
+                continue
+            mode_baseline = non_empty.mode().iloc[0]
+            # Iterate via iterrows() so idx matches the template loop variable.
+            for idx, row in df_wide.iterrows():
+                v = row[c]
+                if _is_empty(v):
+                    continue
+                if v != mode_baseline:
+                    result.add((idx, c))
+
+    return result
+
+
 def build_view_model(
     db,
     db_name: str,
     selected_platforms: list[str],
     selected_param_labels: list[str],
     swap_axes: bool,
+    highlight: bool = False,
 ) -> BrowseViewModel:
     """Pure orchestrator: catalog → filter → pivot → view-model.
 
@@ -170,6 +258,9 @@ def build_view_model(
             is_empty_selection=True,
             params_disabled=params_disabled,
             index_col_name=index_col,
+            highlight=highlight,
+            # minority_cells defaults to empty set via __post_init__ — no
+            # data to compute on in the empty branch.
         )
 
     # Parse labels from the FILTERED checked-set — the intersection above
@@ -196,6 +287,13 @@ def build_view_model(
     # Subtract the index column from total columns to get the value-col count.
     n_value_cols_shown = max(0, len(df_wide.columns) - 1)
 
+    # 260507-w7h — minority detection only runs when the user opts in via the
+    # Highlight toggle. Pure render-layer decoration (no SQL or pivot effect).
+    minority_cells = (
+        _compute_minority_cells(df_wide, index_col, swap_axes)
+        if highlight else set()
+    )
+
     return BrowseViewModel(
         df_wide=df_wide,
         row_capped=row_capped,
@@ -215,13 +313,15 @@ def build_view_model(
         is_empty_selection=False,
         params_disabled=params_disabled,
         index_col_name=index_col,
+        highlight=highlight,
+        minority_cells=minority_cells,
     )
 
 
 def _build_browse_url(
-    platforms: list[str], params: list[str], swap: bool
+    platforms: list[str], params: list[str], swap: bool, highlight: bool = False
 ) -> str:
-    """Compose /browse?platforms=...&params=...&swap=1 with repeated keys.
+    """Compose /browse?platforms=...&params=...&swap=1&highlight=1 with repeated keys.
 
     Pitfall 6: use quote_via=urllib.parse.quote so spaces encode as %20
     (URL-style), not + (form-style). This makes the visible address-bar URL
@@ -230,12 +330,16 @@ def _build_browse_url(
 
     D-30: repeated keys (?platforms=A&platforms=B) — NOT comma-separated.
     D-31: swap='1' if axes swapped, omitted otherwise.
+    260507-w7h: highlight='1' if highlight toggle ON, omitted otherwise.
+                Order pinned: highlight AFTER swap.
     """
     pairs: list[tuple[str, str]] = []
     pairs += [("platforms", p) for p in platforms]
     pairs += [("params", p) for p in params]
     if swap:
         pairs.append(("swap", "1"))
+    if highlight:
+        pairs.append(("highlight", "1"))
     if not pairs:
         return "/browse"
     qs = urllib.parse.urlencode(pairs, quote_via=urllib.parse.quote)

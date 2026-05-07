@@ -23,6 +23,7 @@ from app_v2.services.browse_service import (
     BrowseViewModel,
     PARAM_LABEL_SEP,
     _build_browse_url,
+    _compute_minority_cells,
     _parse_param_label,
     build_view_model,
 )
@@ -604,3 +605,197 @@ def test_build_view_model_full_catalog_ignored_when_no_platforms(mocker):
             "browse_service should NOT reference the unfiltered list_parameters "
             "anymore; it must use list_parameters_for_platforms exclusively."
         )
+
+
+# ---------------------------------------------------------------------------
+# 260507-w7h: highlight + _compute_minority_cells
+# ---------------------------------------------------------------------------
+
+
+def test_compute_minority_cells_all_equal_returns_empty():
+    """Test A — all values in column equal → empty set (no minority)."""
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P2", "P3"],
+        "vendor_id": ["X", "X", "X"],
+    })
+    result = _compute_minority_cells(df, index_col="PLATFORM_ID", swap_axes=False)
+    assert result == set()
+
+
+def test_compute_minority_cells_single_outlier():
+    """Test B — single outlier → outlier (idx, col) in set; mode rows NOT in set."""
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P2", "P3"],
+        "vendor_id": ["X", "X", "Y"],
+    })
+    result = _compute_minority_cells(df, index_col="PLATFORM_ID", swap_axes=False)
+    # iterrows() yields the integer index 0..2 — the outlier is at row idx 2.
+    assert (2, "vendor_id") in result
+    # Mode-baseline rows are NOT in the set.
+    assert (0, "vendor_id") not in result
+    assert (1, "vendor_id") not in result
+
+
+def test_compute_minority_cells_empty_cells_ignored():
+    """Test C — empty cells (NaN/None/'') never appear; do NOT count toward mode.
+
+    Fixture: column with values ['X', 'X', '', 'Y'] (4 rows). Mode of non-empty
+    = 'X' (count 2). Expected: only (3, col) in set; empty row (2, col) NOT.
+    """
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P2", "P3", "P4"],
+        "vendor_id": ["X", "X", "", "Y"],
+    })
+    result = _compute_minority_cells(df, index_col="PLATFORM_ID", swap_axes=False)
+    assert (3, "vendor_id") in result
+    # Empty cell never marked.
+    assert (2, "vendor_id") not in result
+    # Mode rows never marked.
+    assert (0, "vendor_id") not in result
+    assert (1, "vendor_id") not in result
+
+    # NaN/None variant — same contract.
+    df_nan = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P2", "P3", "P4"],
+        "vendor_id": ["X", "X", None, "Y"],
+    })
+    result_nan = _compute_minority_cells(df_nan, index_col="PLATFORM_ID", swap_axes=False)
+    assert (3, "vendor_id") in result_nan
+    assert (2, "vendor_id") not in result_nan
+
+
+def test_compute_minority_cells_tie_for_mode_lowest_sorted_wins():
+    """Test D — tie for mode: pandas Series.mode() returns sorted modes;
+    .iloc[0] (lowest) is the baseline. Fixture: ['A','A','B','B'] → 'A' wins;
+    rows 2 and 3 ('B') are in the minority set.
+    """
+    df = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P2", "P3", "P4"],
+        "col1": ["A", "A", "B", "B"],
+    })
+    result = _compute_minority_cells(df, index_col="PLATFORM_ID", swap_axes=False)
+    assert (2, "col1") in result
+    assert (3, "col1") in result
+    # 'A' is baseline → not in set.
+    assert (0, "col1") not in result
+    assert (1, "col1") not in result
+
+
+def test_compute_minority_cells_swap_axes_flips_axis():
+    """Test E — swap_axes=True: parameter is the row → mode computed across
+    columns (axis=1) per row.
+    """
+    # When swap_axes=True, the index col is "Item" (or similar) and the
+    # value cols are platform IDs. Each row is a parameter; mode is across
+    # platform columns.
+    df = pd.DataFrame({
+        "Item": ["vendor_id", "device_id"],
+        "P1": ["X", "Y"],
+        "P2": ["X", "Y"],
+        "P3": ["Z", "Y"],  # vendor_id row: P3 is the outlier ("Z" vs mode "X")
+    })
+    result = _compute_minority_cells(df, index_col="Item", swap_axes=True)
+    # vendor_id row (idx=0): P3 is the outlier
+    assert (0, "P3") in result
+    # device_id row (idx=1): all "Y" → no minorities
+    assert (1, "P1") not in result
+    assert (1, "P2") not in result
+    assert (1, "P3") not in result
+    # Mode cells in row 0 are NOT marked.
+    assert (0, "P1") not in result
+    assert (0, "P2") not in result
+
+
+def test_build_view_model_highlight_false_skips_compute(mocker):
+    """Test F — highlight=False (default): vm.minority_cells is empty;
+    _compute_minority_cells is NOT called.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1"])
+    mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+    )
+    df_long = pd.DataFrame({
+        "PLATFORM_ID": ["P1"],
+        "InfoCategory": ["attribute"],
+        "Item": ["vendor_id"],
+        "Result": ["0xA1"],
+    })
+    mocker.patch.object(
+        browse_service, "fetch_cells", return_value=(df_long, False)
+    )
+    spy = mocker.spy(browse_service, "_compute_minority_cells")
+
+    vm = build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=["P1"],
+        selected_param_labels=["attribute · vendor_id"],
+        swap_axes=False,
+    )
+
+    assert vm.highlight is False
+    assert vm.minority_cells == set()
+    assert spy.call_count == 0
+
+
+def test_build_view_model_highlight_true_populates_minority_cells(mocker):
+    """Test G — highlight=True with a fixture that has at least one outlier:
+    vm.minority_cells is non-empty and vm.highlight is True.
+    """
+    db = object()
+    mocker.patch.object(browse_service, "list_platforms", return_value=["P1", "P2", "P3"])
+    mocker.patch.object(
+        browse_service,
+        "list_parameters_for_platforms",
+        return_value=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+    )
+    # 3 platforms × 1 param. Two rows "X", one row "Y" → "Y" is the minority.
+    df_long = pd.DataFrame({
+        "PLATFORM_ID": ["P1", "P2", "P3"],
+        "InfoCategory": ["attribute"] * 3,
+        "Item": ["vendor_id"] * 3,
+        "Result": ["X", "X", "Y"],
+    })
+    mocker.patch.object(
+        browse_service, "fetch_cells", return_value=(df_long, False)
+    )
+
+    vm = build_view_model(
+        db,
+        db_name="x",
+        selected_platforms=["P1", "P2", "P3"],
+        selected_param_labels=["attribute · vendor_id"],
+        swap_axes=False,
+        highlight=True,
+    )
+
+    assert vm.highlight is True
+    assert len(vm.minority_cells) > 0
+
+
+def test_build_browse_url_with_highlight():
+    """Test H — highlight=True appends 'highlight=1' to the query string;
+    highlight=False omits it. Order is pinned: swap before highlight.
+    """
+    # No selections + highlight=True → /browse?highlight=1
+    assert _build_browse_url([], [], False, highlight=True) == "/browse?highlight=1"
+
+    # Full URL with highlight=True (after swap=1).
+    url = _build_browse_url(["A", "B"], ["attribute · vendor_id"], True, highlight=True)
+    assert url == (
+        "/browse?platforms=A&platforms=B"
+        "&params=attribute%20%C2%B7%20vendor_id"
+        "&swap=1&highlight=1"
+    )
+
+    # highlight=False omits the key.
+    url2 = _build_browse_url(["A"], [], False, highlight=False)
+    assert url2 == "/browse?platforms=A"
+    assert "highlight" not in url2
+
+    # Default kwarg omitted altogether → False semantics.
+    url3 = _build_browse_url(["A"], [], False)
+    assert "highlight" not in url3
