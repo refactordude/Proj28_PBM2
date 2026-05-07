@@ -789,7 +789,7 @@ main.container-fluid {
   box-shadow: var(--shadow-panel);
   margin: 12px 16px 0;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: var(--ink); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--ink); }
 .brand-mark {
   width: 26px; height: 26px;
   border-radius: 8px;
@@ -825,7 +825,7 @@ main.container-fluid {
   height: 36px;
   padding: 0 14px;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--mute);
   text-decoration: none;
