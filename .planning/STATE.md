@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-07 - Completed quick task 260507-lox: JV parser h1-h6 skip + configurable conf_url + per-row 컨플 button
+Last activity: 2026-05-07 - Completed quick task 260507-mmv: Topbar rebrand (AE / Yhoon Dashboard / YH / bi-clipboard-check)
 
 Progress: [——————————] no active milestone
 
@@ -71,6 +71,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-l5w | JV grid Report Link button: relabel `Link` → `edm`; available state styled `text-dark` for clear contrast vs disabled | 2026-05-07 | 790d2a9 | [260507-l5w-jv-link-button-relabel-link-to-edm-make-](./quick/260507-l5w-jv-link-button-relabel-link-to-edm-make-/) |
 | 260507-lcc | JV pagination switched from sliding-window-with-ellipsis to fixed group-of-10 (stable bar width within a group; chevrons jump to adjacent group boundary) | 2026-05-07 | 7680d0e | [260507-lcc-pagination-switch-from-sliding-window-el](./quick/260507-lcc-pagination-switch-from-sliding-window-el/) |
 | 260507-lox | JV parser: skip `<strong>` matches nested in h1-h6 (defense-in-depth for Status); add `AppConfig.conf_url` (settings.yaml only); per-row 컨플 button next to edm linking to `{conf_url}/{page_id}` | 2026-05-07 | ecb98ec | [260507-lox-jv-status-specific-h1-h6-skip-in-parser-](./quick/260507-lox-jv-status-specific-h1-h6-skip-in-parser-/) |
+| 260507-mmv | Topbar rebrand: brand-mark `P`→`AE`, wordmark `PBM2`→`Yhoon Dashboard`, avatar `PM`→`YH`, JV tab icon `bi-list-ul`→`bi-clipboard-check`; `<title>` rebranded; tests updated in lockstep | 2026-05-07 | d9271d0 | [260507-mmv-in-main-page-instead-of-p-use-ae-instead](./quick/260507-mmv-in-main-page-instead-of-p-use-ae-instead/) |
 
 ## Blockers/Concerns
 
