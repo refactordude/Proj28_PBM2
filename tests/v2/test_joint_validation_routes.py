@@ -417,11 +417,24 @@ def test_overview_filter_chips_overflow_shows_plus_n_more(
 def test_overview_filter_chips_no_active_filters_renders_empty_wrapper(
     jv_dir_with_one: Path, client: TestClient
 ) -> None:
-    """260507-nzp: with zero selected values the wrapper renders but contains no rows."""
+    """260507-nzp: with zero selected values the wrapper renders but contains no rows.
+
+    260507-obp note: assertions tightened — the preset-chip strip
+    introduced by 260507-obp also uses the .ff-chip + .ff-preset-chip
+    classes, so a bare ``"ff-chip" not in r.text`` would now fail even
+    though no ACTIVE filters are present. This test still pins the
+    260507-nzp contract (no filter-VALUE chips and no .ff-row when no
+    filters are active); preset chips are a separate concern with their
+    own coverage in tests/v2/test_overview_presets.py.
+    """
     r = client.get("/overview")
     assert r.status_code == 200
     # Wrapper present (HTMX needs a stable target).
     assert 'id="overview-filter-badges"' in r.text
-    # No facet rows.
+    # No active-filter rows / value chips. We probe the per-facet color
+    # variants (.c-1..c-6) directly — these are the unambiguous markers
+    # of a rendered active-filter chip; .ff-preset-chip never gets a c-N
+    # class so it cannot trigger a false positive here.
     assert "ff-row" not in r.text
-    assert "ff-chip" not in r.text
+    for variant in ("c-1", "c-2", "c-3", "c-4", "c-5", "c-6"):
+        assert f'class="ff-chip {variant}"' not in r.text, variant

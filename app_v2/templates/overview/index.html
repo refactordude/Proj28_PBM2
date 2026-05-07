@@ -19,6 +19,34 @@
        container; macro byte-stable; Clear-all has ms-auto. #}
     {% include "overview/_filter_bar.html" %}
 
+    {# 260507-obp — Preset chip strip. Static (rendered only on full-page
+       GET /overview, GET /overview/preset/<name>, POST /overview/grid since
+       POST emits this block via the index template's full render layer is
+       bypassed; preset list is server-loaded once per request via
+       ctx["presets"]). Each chip issues GET /overview/preset/<slug> via
+       HTMX, target=#overview-grid, hx-push-url=true so the address bar
+       reflects the resolved filter URL after click.
+
+       Hidden entirely when presets is empty (no YAML file, all entries
+       malformed, or YAML present but list is empty) — prevents an empty
+       container from claiming vertical space. #}
+    {% if presets %}
+      <div class="ff-preset-row px-3 pt-2" id="overview-preset-row" aria-label="Filter presets">
+        <span class="ff-label">Presets:</span>
+        {% for p in presets %}
+          <a class="ff-chip ff-preset-chip"
+             href="/overview/preset/{{ p.name | e }}"
+             hx-get="/overview/preset/{{ p.name | e }}"
+             hx-target="#overview-grid"
+             hx-swap="outerHTML"
+             hx-push-url="true"
+             data-preset="{{ p.name | e }}">
+            {{ p.label | e }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     {# Active-filter summary (260507-nzp): replaces the prior
        "{{ col }}: {{ count }}" badge strip. Each facet renders one row:
        "<Label>: <chip> <chip> ... [+N more]". Up to 10 value chips per row;
