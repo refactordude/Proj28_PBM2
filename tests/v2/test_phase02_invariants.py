@@ -387,10 +387,17 @@ def test_post_browse_grid_emits_count_oob() -> None:
 
 
 def test_browse_panel_header_byte_stable_otherwise() -> None:
-    """Test 21: panel-header must still contain <b>Browse</b> and Pivot grid tag."""
+    """Test 21: panel-header must still contain the heading <b> and Pivot grid tag.
+
+    Quick 260508-01a: heading literal renamed from "Browse" to "Platform 브라우저"
+    to match the topbar tab label (single source of truth in
+    app_v2/templates/_components/topbar.html line 25). The Pivot grid tag is
+    intentionally untouched.
+    """
     src = _read(BROWSE_HTML)
-    assert "<b>Browse</b>" in src, (
-        "browse/index.html panel-header must still contain <b>Browse</b> (byte-stable)"
+    assert "<b>Platform 브라우저</b>" in src, (
+        "browse/index.html panel-header must contain <b>Platform 브라우저</b> "
+        "(post-260508-01a Korean heading)"
     )
     assert '<span class="tag">Pivot grid</span>' in src, (
         'browse/index.html panel-header must still contain <span class="tag">Pivot grid</span> '

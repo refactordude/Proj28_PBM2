@@ -40,11 +40,15 @@ def test_get_root_contains_bootstrap_nav_tabs(client):
 def test_get_root_contains_three_tab_labels(client):
     r = client.get("/")
     # Phase 1 Plan 05 (D-JV-01): top-nav label "Overview" was renamed to
-    # "Joint Validation"; URL "/" stayed the same. The Browse and Ask labels
-    # are unchanged.
+    # "Joint Validation"; URL "/" stayed the same.
+    # Quick 260507-mmv: topbar Browse/Ask tab labels were rebranded to the
+    # Korean strings "Platform 브라우저" and "AI 질문하기" (single source of
+    # truth in app_v2/templates/_components/topbar.html lines 25, 29).
+    # Quick 260508-01a updated the Browse/Ask page headings to match these
+    # tab labels verbatim, and this test follows in lockstep.
     assert "Joint Validation" in r.text
-    assert "Browse" in r.text
-    assert "Ask" in r.text
+    assert "Platform 브라우저" in r.text
+    assert "AI 질문하기" in r.text
 
 
 def test_get_root_marks_overview_active(client):
