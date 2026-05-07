@@ -288,13 +288,25 @@ main.container-fluid {
    width keeps the sticky-left edge predictable regardless of row content. */
 .overview-grid > thead > tr > th:first-child,
 .overview-grid > tbody > tr > td:first-child {
-  width: 350px;
-  max-width: 350px;
+  width: 400px;
+  max-width: 400px;
 }
 .overview-grid > tbody > tr > td:first-child {
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+/* Actions column (last) — pin to a tight width that exactly fits the three
+   .jv-action-btn buttons (3 × 48px + 2 × ms-1 gap + small cell padding) so
+   the column doesn't waste horizontal space. Slack returns to the Title
+   column above. nowrap prevents button labels from breaking onto two lines
+   if any future label grows. */
+.overview-grid > thead > tr > th:last-child,
+.overview-grid > tbody > tr > td:last-child {
+  width: 170px;
+  max-width: 170px;
+  white-space: nowrap;
 }
 
 /* Cap Model Name column (3rd) — same wrap-in-cell pattern as Title.
