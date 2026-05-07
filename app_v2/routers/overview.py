@@ -37,6 +37,7 @@ from app_v2.services.joint_validation_grid_service import (
     build_joint_validation_grid_view_model,
 )
 from app_v2.services.joint_validation_store import JV_ROOT
+from app_v2.services.preset_store import load_presets
 from app_v2.templates import templates
 
 router = APIRouter()
@@ -166,6 +167,8 @@ def get_overview(
         # template renders without 500.
         "all_platform_ids": [],
         "conf_url": conf_url,
+        # 260507-obp — preset chip strip rendered above filter_badges_oob.
+        "presets": load_presets(),
     }
     return templates.TemplateResponse(request, "overview/index.html", ctx)
 
@@ -223,6 +226,10 @@ def post_overview_grid(
         "active_filter_counts": vm.active_filter_counts,
         "all_platform_ids": [],
         "conf_url": conf_url,
+        # 260507-obp — threaded into POST context too so any future
+        # preset_chips_oob block has access; the strip itself is OUTSIDE
+        # the OOB swap targets so it stays put across filter changes.
+        "presets": load_presets(),
     }
     response = templates.TemplateResponse(
         request,
@@ -233,6 +240,85 @@ def post_overview_grid(
     # D-JV-12 + D-JV-14 + Pitfall 6 from Phase 4: server-set push URL
     # (canonical /overview?..., NOT /overview/grid).
     # Use vm.page (clamped) so URL reflects the actual landed page.
+    response.headers["HX-Push-Url"] = _build_overview_url(
+        filters, vm.sort_col, vm.sort_order, vm.page
+    )
+    return response
+
+
+@router.get("/overview/preset/{name}", response_class=HTMLResponse)
+def get_overview_preset(request: Request, name: str):
+    """Apply a named preset — OVERRIDES current filters (clears + replaces).
+
+    Looks up the preset by ``name`` in load_presets(); 404 if not found.
+    Builds the JV grid view-model from the preset's filter dict (other
+    facets default to empty lists), and returns the same four OOB blocks
+    as POST /overview/grid plus an HX-Push-Url header carrying the
+    canonical /overview?<facet>=... URL.
+
+    OVERRIDE semantics (260507-obp design decision): we deliberately do
+    NOT merge the preset on top of existing filters from the request. The
+    preset is the entire filter state the user wants. Any facets the
+    preset doesn't mention default to empty (= "any value matches")
+    rather than carrying over from the previous request. This keeps the
+    end state deterministic from the chip click alone.
+
+    HTMX call site (overview/index.html):
+        <a hx-get="/overview/preset/<name>"
+           hx-target="#overview-grid"
+           hx-swap="outerHTML"
+           hx-push-url="true">…</a>
+
+    The handler uses GET (not POST) because:
+      1. It's idempotent — repeated clicks land on the same state.
+      2. hx-push-url with GET produces a clean shareable URL in the bar.
+      3. Tests can hit it with TestClient.get().
+    """
+    presets = load_presets()
+    preset = next((p for p in presets if p["name"] == name), None)
+    if preset is None:
+        return HTMLResponse(status_code=404, content=f"preset '{name}' not found")
+
+    # Build the canonical filter dict — preset values for any mentioned
+    # facets, [] for the others. Reuses _parse_filter_dict for shape parity
+    # with the GET / POST handlers (so the resulting `selected_filters`
+    # dict in ctx is byte-equal in shape — same 6 keys always present).
+    pf = preset["filters"]
+    filters = _parse_filter_dict(
+        status=pf.get("status", []),
+        customer=pf.get("customer", []),
+        ap_company=pf.get("ap_company", []),
+        device=pf.get("device", []),
+        controller=pf.get("controller", []),
+        application=pf.get("application", []),
+    )
+
+    vm: JointValidationGridViewModel = build_joint_validation_grid_view_model(
+        JV_ROOT,
+        filters=filters,
+        sort_col=None,    # use service defaults — preset doesn't carry sort
+        sort_order=None,
+        page=1,           # always reset to page 1 on preset apply
+    )
+
+    settings_obj = getattr(request.app.state, "settings", None)
+    conf_url = (settings_obj.app.conf_url.rstrip("/") if settings_obj else "")
+
+    ctx = {
+        "vm": vm,
+        "selected_filters": filters,
+        "active_tab": "overview",
+        "active_filter_counts": vm.active_filter_counts,
+        "all_platform_ids": [],
+        "conf_url": conf_url,
+        "presets": presets,
+    }
+    response = templates.TemplateResponse(
+        request,
+        "overview/index.html",
+        ctx,
+        block_names=["grid", "count_oob", "filter_badges_oob", "pagination_oob"],
+    )
     response.headers["HX-Push-Url"] = _build_overview_url(
         filters, vm.sort_col, vm.sort_order, vm.page
     )
