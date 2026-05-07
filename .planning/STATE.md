@@ -95,6 +95,10 @@ Stopped at: Completed quick task 260507-wf6: JV detail iframe gutter + sticky to
 
 ## Accumulated Context
 
+### Pending Todos
+
+- [Enforce configured LLM model — drop hardcoded fallbacks + decide on app.agent.model](todos/pending/2026-05-07-enforce-configured-llm-model-no-fallbacks.md) — corporate gpt-oss-120b only; smoke-test tool calling first
+
 ### Roadmap Evolution
 
 - Phase 1 added: Overview Tab: Auto-discover Platforms from HTML Files (2026-04-30)
