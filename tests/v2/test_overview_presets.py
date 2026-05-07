@@ -219,12 +219,13 @@ def test_get_overview_preset_overrides_filters_and_returns_oob_blocks(
     assert 'id="overview-count" hx-swap-oob="true"' in r.text
     assert 'id="overview-pagination" hx-swap-oob="true"' in r.text
     # Active-filter chips reflect the preset's values, not whatever was sent.
-    # 260507-rmj: palette shifted up after dropping Status from facets —
-    # ap_company is now c-2 (was c-3) and application is now c-5 (was c-6).
+    # 260507-rmj: palette shifted up after dropping Status; 260507-s5c:
+    # ap_model inserted at c-3 so device→c-4, controller→c-5, application→c-6
+    # (ap_company stays c-2 — unaffected by the insertion below it).
     assert 'data-facet="ap_company"' in r.text
     assert 'class="ff-chip c-2">Qualcomm</span>' in r.text
     assert 'data-facet="application"' in r.text
-    assert 'class="ff-chip c-5">Wearable</span>' in r.text
+    assert 'class="ff-chip c-6">Wearable</span>' in r.text
     # No status / customer / device / controller chips (preset doesn't mention).
     assert 'data-facet="status"' not in r.text
     assert 'data-facet="customer"' not in r.text

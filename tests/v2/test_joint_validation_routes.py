@@ -446,9 +446,9 @@ def test_overview_filter_chips_no_active_filters_renders_empty_wrapper(
     # Wrapper present (HTMX needs a stable target).
     assert 'id="overview-filter-badges"' in r.text
     # No active-filter rows / value chips. We probe the per-facet color
-    # variants (.c-1..c-5 post-260507-rmj) directly — these are the
+    # variants (.c-1..c-6 post-260507-s5c) directly — these are the
     # unambiguous markers of a rendered active-filter chip; .ff-preset-chip
     # never gets a c-N class so it cannot trigger a false positive here.
     assert "ff-row" not in r.text
-    for variant in ("c-1", "c-2", "c-3", "c-4", "c-5"):
+    for variant in ("c-1", "c-2", "c-3", "c-4", "c-5", "c-6"):
         assert f'class="ff-chip {variant}"' not in r.text, variant
