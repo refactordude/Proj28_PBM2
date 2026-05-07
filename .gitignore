@@ -4,6 +4,7 @@ config/auth.yaml
 config/starter_prompts.yaml
 config/overview.yaml
 config/presets.yaml
+config/browse_presets.yaml
 .env
 
 # Phase 03: per-platform markdown content pages (D-28 — gitignored, .gitkeep retained)

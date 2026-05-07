@@ -1,0 +1,56 @@
+# config/browse_presets.example.yaml
+# Filter presets for the Browse (Pivot grid) page (260507-r0k).
+# Sibling to config/presets.example.yaml (which serves the Overview page);
+# kept separate because the two pages have different filter shapes:
+#   - Overview: 6-facet model (status, customer, ap_company, device,
+#     controller, application) — see preset_store.py.
+#   - Browse:   2-list model (platforms[], params[]) + swap_axes bool.
+#
+# Edit this file (or copy to config/browse_presets.yaml) to customize.
+# Each entry:
+#   name:       machine id used in /browse/preset/<name> (slug, [a-z0-9_-])
+#   label:      chip text shown to the user (<= 40 chars recommended)
+#   platforms:  list of PLATFORM_ID strings (verbatim from the ufs_data table)
+#   params:     list of "InfoCategory · Item" labels — middle-dot U+00B7 with
+#               surrounding spaces (D-13). NEVER the v1.0 slash separator.
+#   swap_axes:  optional bool, defaults to false (rows=platforms, cols=params).
+#               Set true to flip the pivot (rows=params, cols=platforms).
+#
+# Unknown keys at the entry top level are ignored. Missing/empty name,
+# missing/empty label, non-list platforms or params, or BOTH lists empty
+# cause the entry to be silently skipped at load time.
+#
+# Values below were sampled from data/demo_ufs.db on 2026-05-07; each
+# preset's platforms × params intersection has been verified non-empty.
+
+- name: snapdragon-flagships
+  label: "Snapdragon flagships"
+  platforms:
+    - "SM8550_rev1"
+    - "SM8650_v1"
+    - "SM8650_v2"
+    - "SM8850_v1"
+  params:
+    - "VendorInfo · ManufacturerName"
+    - "GeometryDescriptor · RawDeviceCapacity"
+
+- name: exynos-lineup
+  label: "Exynos lineup"
+  platforms:
+    - "EXYNOS1380_c"
+    - "EXYNOS2200_b"
+    - "EXYNOS2400_a"
+  params:
+    - "DeviceInfo · bDeviceVersion"
+    - "DeviceInfo · NumberOfLU"
+
+- name: auto-iot-specials
+  label: "Auto + IoT specials"
+  platforms:
+    - "SC8275_auto"
+    - "QCS6490_iot"
+  params:
+    - "AutomotiveProfile · QualGradeLevel"
+    - "IoTPowerProfile · DeepSleepCurrentUA"
+    - "VendorInfo · ManufacturerName"
+  swap_axes: true
