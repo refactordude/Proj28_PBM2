@@ -1258,6 +1258,6 @@ main.container-fluid {
    .btn-sm scale; text-align center keeps single-word labels visually centered
    inside the box. */
 .jv-action-btn {
-  min-width: 56px;
+  min-width: 48px;
   text-align: center;
 }
