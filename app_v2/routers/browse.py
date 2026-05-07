@@ -23,6 +23,7 @@ from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import HTMLResponse
 
 from app.adapters.db.base import DBAdapter
+from app_v2.services.browse_preset_store import load_browse_presets
 from app_v2.services.browse_service import _build_browse_url, build_view_model
 from app_v2.templates import templates
 
@@ -82,7 +83,12 @@ def browse_page(
         selected_param_labels=params,
         swap_axes=(swap == "1"),
     )
-    ctx = {"active_tab": "browse", "page_title": "Browse", "vm": vm}
+    ctx = {
+        "active_tab": "browse",
+        "page_title": "Browse",
+        "vm": vm,
+        "presets": load_browse_presets(),  # 260507-r0k — preset chip strip
+    }
     return templates.TemplateResponse(request, "browse/index.html", ctx)
 
 
@@ -131,7 +137,10 @@ def browse_grid(
         selected_param_labels=params,
         swap_axes=(swap == "1"),
     )
-    ctx = {"vm": vm}
+    ctx = {
+        "vm": vm,
+        "presets": load_browse_presets(),  # 260507-r0k — for OOB-render parity
+    }
     block_names = ["grid", "count_oob", "warnings_oob", "picker_badges_oob"]
     if origin != "params":
         # Refresh the Parameters picker slot when the request did NOT
@@ -190,3 +199,87 @@ def browse_params_fragment(
         ctx,
         block_names=["params_picker"],
     )
+
+
+@router.get("/browse/preset/{name}", response_class=HTMLResponse)
+def get_browse_preset(
+    request: Request,
+    name: str,
+    db: DBAdapter | None = Depends(get_db),
+):
+    """Apply a named Browse preset — OVERRIDES current selection.
+
+    Looks up the preset by ``name`` in load_browse_presets(); 404 if not
+    found. Builds the BrowseViewModel from the preset's platforms/params/
+    swap_axes triple, and returns the same OOB blocks POST /browse/grid
+    emits plus an HX-Push-Url header carrying the canonical
+    /browse?platforms=…&params=… URL.
+
+    OVERRIDE semantics (260507-r0k design decision, mirrors 260507-obp):
+    we deliberately do NOT merge the preset on top of existing query
+    params from the request. The preset is the entire filter state the
+    user wants. Any dimension the preset doesn't mention defaults to
+    empty/false (NOT carried over from the previous request). This
+    keeps the end state deterministic from the chip click alone.
+
+    HTMX call site (browse/index.html):
+        <a hx-get="/browse/preset/<name>"
+           hx-target="#browse-grid"
+           hx-swap="innerHTML"
+           hx-push-url="true">…</a>
+
+    The handler uses GET (not POST) because:
+      1. It is idempotent — repeated clicks land on the same state.
+      2. hx-push-url with GET produces a clean shareable URL in the bar.
+      3. Tests can hit it with TestClient.get().
+
+    block_names parity with POST /browse/grid:
+      - "grid"               — primary innerHTML target #browse-grid
+      - "count_oob"          — OOB swap into #grid-count
+      - "warnings_oob"       — reserved cap-warning slot
+      - "picker_badges_oob"  — OOB swap into #picker-{platforms,params}-badge
+      - "params_picker_oob"  — OOB swap into #params-picker-slot
+
+    The Parameters picker slot IS refreshed on preset apply (origin is
+    NOT "params" — the click came from the preset strip, not from inside
+    the Parameters popover), so the picker re-renders with the
+    preset's platforms-filtered catalog and pre-checked param boxes.
+    Same logic as POST /browse/grid's `if origin != "params"` branch
+    (which always evaluates to True here because there is no `_origin`
+    form field on a preset GET).
+    """
+    presets = load_browse_presets()
+    preset = next((p for p in presets if p["name"] == name), None)
+    if preset is None:
+        return HTMLResponse(
+            status_code=404,
+            content=f"browse preset '{name}' not found",
+        )
+
+    platforms = list(preset.get("platforms", []))
+    params = list(preset.get("params", []))
+    swap = bool(preset.get("swap_axes", False))
+
+    db_name = _resolve_db_name(db)
+    vm = build_view_model(
+        db,
+        db_name,
+        selected_platforms=platforms,
+        selected_param_labels=params,
+        swap_axes=swap,
+    )
+    ctx = {"vm": vm, "presets": presets}
+    response = templates.TemplateResponse(
+        request,
+        "browse/index.html",
+        ctx,
+        block_names=[
+            "grid",
+            "count_oob",
+            "warnings_oob",
+            "picker_badges_oob",
+            "params_picker_oob",
+        ],
+    )
+    response.headers["HX-Push-Url"] = _build_browse_url(platforms, params, swap)
+    return response
