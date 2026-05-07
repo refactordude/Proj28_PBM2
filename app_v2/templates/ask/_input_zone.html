@@ -15,9 +15,12 @@
                         on the textarea); the label element renders an empty
                         line for vertical rhythm.
      - Placeholder:     "Platform에 대한 문의사항을 입력하세요..."
-     - Primary CTA:     "Run"  (NOT "Run Query"; "Run Query" was the NL-05 confirm
-                                button copy that was deleted with the NL-05 flow)
-     - Clear aria:      "Clear question"
+     - Secondary CTA:   "Clear"  (POSTs /ask/clear; wipes the visible transcript
+                                   and drops server-side session history so the
+                                   next Ask starts fresh)
+     - Primary CTA:     "Ask"
+     - Clear aria:      "Clear question" (the small ✕ inside the textarea — different
+                        from the "Clear" button below; this only blanks the input)
 #}
 <form id="ask-form"
       hx-post="/ask/chat"
@@ -42,11 +45,23 @@
       <i class="bi bi-x-lg"></i>
     </button>
   </div>
-  <div class="d-flex justify-content-end mt-2">
+  <div class="d-flex justify-content-end mt-2 gap-2">
+    {# Clear: POST /ask/clear wipes #chat-transcript (innerHTML swap with
+       empty 200) and drops server-side message_history. hx-include="" stops
+       this button from accidentally submitting the question textarea. #}
+    <button type="button"
+            class="btn btn-outline-secondary"
+            hx-post="/ask/clear"
+            hx-target="#chat-transcript"
+            hx-swap="innerHTML"
+            hx-include=""
+            aria-label="Clear chat history and start over">
+      Clear
+    </button>
     <button type="submit"
             class="btn btn-primary"
             hx-disabled-elt="this">
-      Run
+      Ask
     </button>
   </div>
 </form>

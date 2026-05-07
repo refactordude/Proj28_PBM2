@@ -51,6 +51,7 @@ from app.core.agent.chat_loop import stream_chat_turn
 from app.core.agent.chat_session import (
     append_session_history,
     cancel_turn,
+    clear_session_history,
     get_cancel_event,
     get_pending_question,
     get_session_history,
@@ -297,6 +298,26 @@ async def ask_stream(turn_id: str, request: Request):
         background=BackgroundTask(pop_turn, turn_id),
         ping=15,
     )
+
+
+@router.post("/ask/clear")
+async def ask_clear(request: Request) -> HTMLResponse:
+    """Clear server-side session history and return an empty transcript fragment.
+
+    The Clear button (next to Ask in the input zone) targets ``#chat-transcript``
+    with ``hx-swap="innerHTML"`` so the body returned here replaces the visible
+    chat. We return an empty body — HTMX wipes the transcript. Server-side, the
+    PydanticAI ``message_history`` for this browser session is dropped so the
+    next turn starts fresh (no replay of prior tool calls / answers).
+
+    Idempotent: calling /ask/clear with no prior history is a no-op (returns 200).
+    Authenticated to the originating session via the same ``pbm2_session`` cookie
+    used elsewhere in this router; absent cookie clears the unnamed session
+    (matching the rest of the chat surface's session derivation).
+    """
+    sid = request.cookies.get(_PBM2_SESSION_COOKIE) or ""
+    clear_session_history(sid)
+    return HTMLResponse(content="", status_code=200)
 
 
 @router.post("/ask/cancel/{turn_id}")

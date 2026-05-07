@@ -246,6 +246,19 @@ def append_session_history(
         state.messages.extend(new_messages)
 
 
+def clear_session_history(session_id: str) -> None:
+    """Drop all messages for ``session_id`` so the next turn starts fresh.
+
+    Backs the POST /ask/clear endpoint (Clear button next to Ask). Idempotent:
+    clearing a session that has no messages — or no SessionState yet — is a no-op.
+    Acquires _SESSION_LOCK so a concurrent append from another tab can't race.
+    """
+    with _SESSION_LOCK:
+        state = _SESSIONS.get(session_id)
+        if state is not None:
+            state.messages.clear()
+
+
 def _scrub_messages_inplace(messages: list[ModelMessage]) -> None:
     """Walk messages and apply scrub_paths to all string content (D-CHAT-11).
 
@@ -290,4 +303,5 @@ __all__ = [
     "get_or_create_session",
     "get_session_history",
     "append_session_history",
+    "clear_session_history",
 ]
