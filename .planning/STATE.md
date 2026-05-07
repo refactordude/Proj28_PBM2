@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: v1.0 milestone complete
 stopped_at: Completed 04-05-PLAN.md (Wave 5 — atomic .panel-header to .ph migration on Browse/JV/Ask + Phase 02 invariant rewrites)
-last_updated: "2026-05-07T10:53:26.384Z"
+last_updated: "2026-05-07T11:16:01.890Z"
 last_activity: 2026-05-07
 progress:
   total_phases: 4
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-07 - Completed quick task 260507-rmj: drop Status/담당자/End columns + Status filter on Joint Validation listing (also from presets.example.yaml)
+Last activity: 2026-05-07 - Completed quick task 260507-s5c: add AP Model filter facet to JV listing (between AP Company and Device; 5→6 facets)
 
 Progress: [——————————] no active milestone
 
@@ -77,6 +77,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-r0k | Browse presets: sibling `config/browse_presets.example.yaml` (3 DB-sampled seeds incl. swap_axes case) + `browse_preset_store.py` loader (Browse uses platforms[]+params[]+swap_axes shape, not 6-facet) + `GET /browse/preset/{name}` route emits 4 OOB blocks; CSS reused (zero diff to app.css); +9 tests, 581 v2 tests pass; live-server smoke test green | 2026-05-07 | 1fc7fbc | [260507-r0k-add-presets-feature-to-browse-page-mirro](./quick/260507-r0k-add-presets-feature-to-browse-page-mirro/) |
 | 260507-rvx | JV Actions column polish: drop leading `bi-link-45deg`/`bi-magic` icons from edm and AI buttons, equal-width via new `.jv-action-btn` class (`min-width: 56px`), center-align column header+cells (`text-end` → `text-center`); 578 v2 tests pass | 2026-05-07 | b42e2fe | [260507-rvx-in-joint-validation-page-under-actions-c](./quick/260507-rvx-in-joint-validation-page-under-actions-c/) |
 | 260507-rmj | JV listing simplification: drop Status / 담당자 / End columns from `_grid.html` (13→10 col), drop Status picker from `_filter_bar.html` (6→5 facets), shrink service `FILTERABLE_COLUMNS`/`SORTABLE_COLUMNS`/`DATE_COLUMNS`, remove `status` param across `routers/overview.py` (5 sites), strip `status:` from `presets.example.yaml`; chip palette renumbered c-1..c-5; JV detail page + parser + Browse pivot grid untouched; 580 v2 tests pass | 2026-05-07 | 03e6fca | [260507-rmj-in-browse-page-ditch-status-and-end-colu](./quick/260507-rmj-in-browse-page-ditch-status-and-end-colu/) |
+| 260507-s5c | JV listing: add `AP Model` filter facet between `AP Company` and `Device` (5→6 facets); reuses existing `picker_popover` macro + already-parsed `ap_model` field on `JointValidationRow`; threads `ap_model` through `FILTERABLE_COLUMNS` + `_parse_filter_dict` + 3 router signatures (`get_overview`, `post_overview_grid`, `get_overview_preset`); chip palette extended c-1..c-6 with ap_model at c-3; live smoke test green (`?ap_model=SM8450` → 200); 580 v2 tests pass | 2026-05-07 | 166e138 | [260507-s5c-in-jv-page-add-ap-model-filter-between-a](./quick/260507-s5c-in-jv-page-add-ap-model-filter-between-a/) |
 
 ## Blockers/Concerns
 
