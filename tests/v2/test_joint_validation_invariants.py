@@ -291,18 +291,19 @@ def test_jv_static_mount_registered_before_static() -> None:
 
 
 # ---------------------------------------------------------------------------
-# D-JV-11 — 6 picker_popover invocations using the reused macro
+# D-JV-11 — 5 picker_popover invocations using the reused macro
+# (260507-rmj reduced from 6 by dropping the Status picker)
 # ---------------------------------------------------------------------------
 
 
 def test_jv_filter_bar_uses_picker_popover_macro_unmodified() -> None:
-    """D-JV-11: filter bar imports picker_popover from browse/_picker_popover.html."""
+    """D-JV-11 (post-260507-rmj): filter bar imports picker_popover from browse/_picker_popover.html."""
     fb = _read(TPL / "overview" / "_filter_bar.html")
     assert (
         '{% from "browse/_picker_popover.html" import picker_popover %}' in fb
     ), "Filter bar must import the macro from browse/_picker_popover.html (reuse)"
-    assert fb.count("picker_popover(") >= 6, (
-        "Filter bar must invoke picker_popover 6 times (D-JV-11)"
+    assert fb.count("picker_popover(") >= 5, (
+        "Filter bar must invoke picker_popover 5 times (D-JV-11 post-260507-rmj — Status dropped)"
     )
     # The macro file must remain present (reused AS-IS — not duplicated).
     macro_src = _read(TPL / "browse" / "_picker_popover.html")

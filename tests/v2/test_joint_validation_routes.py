@@ -130,14 +130,16 @@ def test_get_overview_renders_jv_grid(jv_dir_with_one: Path, client: TestClient)
 
 
 def test_get_overview_with_filters_round_trip_url(jv_dir_with_one: Path, client: TestClient) -> None:
+    # 260507-rmj: status was dropped — exercise the same filter-round-trip
+    # contract via customer (a surviving facet).
     r = client.get(
         "/overview",
-        params=[("status", "In Progress"), ("sort", "customer"), ("order", "asc")],
+        params=[("customer", "Samsung"), ("sort", "customer"), ("order", "asc")],
     )
     assert r.status_code == 200
-    # Active filter badge present (count > 0); accept either the literal "1"
-    # count or the badge container marker.
-    assert "status: 1" in r.text or "badge" in r.text
+    # Active filter chip present; accept either the chip wrapper marker or
+    # the chip text (analogous to the prior either/or assertion).
+    assert 'data-facet="customer"' in r.text or "Samsung" in r.text
 
 
 def test_post_overview_grid_returns_oob_blocks(jv_dir_with_one: Path, client: TestClient) -> None:
@@ -261,7 +263,7 @@ def test_empty_jv_root_renders_empty_state(
     assert r.status_code == 200
     assert "No Joint Validations yet." in r.text
     assert "0 entries" in r.text
-    assert 'colspan="13"' in r.text
+    assert 'colspan="10"' in r.text
 
 
 # ---------------------------------------------------------------------------
@@ -335,53 +337,60 @@ def test_grid_renders_active_confluence_anchor_when_conf_url_set(
 # ---------------------------------------------------------------------------
 
 
-def _write_many_jv_status_values(root: Path, n: int) -> list[str]:
-    """Create N fake JV folders each with a distinct status value.
+def _write_many_jv_customer_values(root: Path, n: int) -> list[str]:
+    """Create N fake JV folders each with a distinct customer value.
 
-    Returns the list of N status strings so callers can request them all
+    260507-rmj: status was dropped from FILTERABLE_COLUMNS; this helper
+    (renamed from _write_many_jv_status_values) writes <Customer> rows
+    instead so the multi-value chip-overflow test exercises a surviving
+    facet. Returns the N customer strings so callers can pass them all
     as filter values. Uses 9-digit numeric folder names so they validate
     against the JointValidationRow.confluence_page_id pattern (^\\d+$).
     """
-    statuses: list[str] = []
+    customers: list[str] = []
     for i in range(n):
         page_id = f"99000000{i:02d}"  # 9-digit, distinct per i
-        status = f"S{i:02d}"
+        customer = f"C{i:02d}"
         folder = root / page_id
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "index.html").write_text(
             f"<html><body><h1>Title {i}</h1>"
-            f"<table><tr><th>Status</th><td>{status}</td></tr></table>"
+            f"<table><tr><th>Customer</th><td>{customer}</td></tr></table>"
             f"</body></html>",
             encoding="utf-8",
         )
-        statuses.append(status)
-    return statuses
+        customers.append(customer)
+    return customers
 
 
 def test_overview_filter_chips_render_actual_values(
     jv_dir_with_one: Path, client: TestClient
 ) -> None:
-    """260507-nzp: facets show chips listing the selected values, not just a count."""
+    """260507-nzp: facets show chips listing the selected values, not just a count.
+
+    260507-rmj: status was dropped — re-pinned against customer (multi-value)
+    + ap_company (single-value). Palette shifted up: customer=c-1, ap_company=c-2.
+    """
     r = client.get(
         "/overview",
         params=[
-            ("status", "In Progress"),
-            ("status", "Verified"),
             ("customer", "Samsung"),
+            ("customer", "LG"),
+            ("ap_company", "Qualcomm"),
         ],
     )
     assert r.status_code == 200
     # Wrapper byte-stable for HTMX OOB merge.
     assert 'id="overview-filter-badges"' in r.text
-    # Status row: label + 2 chips, c-1 variant.
-    assert 'data-facet="status"' in r.text
-    assert 'class="ff-chip c-1">In Progress</span>' in r.text
-    assert 'class="ff-chip c-1">Verified</span>' in r.text
-    # Customer row: label + 1 chip, c-2 variant.
+    # Customer row: label + 2 chips, c-1 variant (was c-2 before 260507-rmj).
     assert 'data-facet="customer"' in r.text
-    assert 'class="ff-chip c-2">Samsung</span>' in r.text
-    # Inactive facets (ap_company etc.) DO NOT render rows.
-    assert 'data-facet="ap_company"' not in r.text
+    assert 'class="ff-chip c-1">Samsung</span>' in r.text
+    assert 'class="ff-chip c-1">LG</span>' in r.text
+    # AP Company row: label + 1 chip, c-2 variant (was c-3 before 260507-rmj).
+    assert 'data-facet="ap_company"' in r.text
+    assert 'class="ff-chip c-2">Qualcomm</span>' in r.text
+    # Inactive facets (device etc.) DO NOT render rows.
+    assert 'data-facet="device"' not in r.text
     # No "+N more" because each facet has ≤10 selected.
     assert "ff-more" not in r.text
 
@@ -389,16 +398,21 @@ def test_overview_filter_chips_render_actual_values(
 def test_overview_filter_chips_overflow_shows_plus_n_more(
     tmp_path: Path, client: TestClient, monkeypatch
 ) -> None:
-    """260507-nzp: >10 selected values per facet renders 10 chips + '+N more'."""
+    """260507-nzp: >10 selected values per facet renders 10 chips + '+N more'.
+
+    260507-rmj: status was dropped — re-pinned against customer. customer's
+    new variant is c-1 (was c-2 before 260507-rmj), so the c-1 chip count
+    assertion still holds (now counts customer chips, not status chips).
+    """
     # Point JV_ROOT at a tmp dir we control so we can create 11 distinct
-    # status values without polluting the real content/joint_validation tree.
+    # customer values without polluting the real content/joint_validation tree.
     from app_v2.services import joint_validation_store as _store
     monkeypatch.setattr(_store, "JV_ROOT", tmp_path)
 
-    statuses = _write_many_jv_status_values(tmp_path, 11)
-    assert len(statuses) == 11
+    customers = _write_many_jv_customer_values(tmp_path, 11)
+    assert len(customers) == 11
 
-    params = [("status", s) for s in statuses]
+    params = [("customer", s) for s in customers]
     r = client.get("/overview", params=params)
     assert r.status_code == 200
 
@@ -432,9 +446,9 @@ def test_overview_filter_chips_no_active_filters_renders_empty_wrapper(
     # Wrapper present (HTMX needs a stable target).
     assert 'id="overview-filter-badges"' in r.text
     # No active-filter rows / value chips. We probe the per-facet color
-    # variants (.c-1..c-6) directly — these are the unambiguous markers
-    # of a rendered active-filter chip; .ff-preset-chip never gets a c-N
-    # class so it cannot trigger a false positive here.
+    # variants (.c-1..c-5 post-260507-rmj) directly — these are the
+    # unambiguous markers of a rendered active-filter chip; .ff-preset-chip
+    # never gets a c-N class so it cannot trigger a false positive here.
     assert "ff-row" not in r.text
-    for variant in ("c-1", "c-2", "c-3", "c-4", "c-5", "c-6"):
+    for variant in ("c-1", "c-2", "c-3", "c-4", "c-5"):
         assert f'class="ff-chip {variant}"' not in r.text, variant

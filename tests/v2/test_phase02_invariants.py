@@ -540,12 +540,18 @@ def test_overview_clear_all_ms_auto() -> None:
 
 
 def test_overview_filter_bar_six_picker_calls() -> None:
-    """Test 30: _filter_bar.html must contain exactly 6 occurrences of picker_popover( (byte-stable)."""
+    """Test 30: _filter_bar.html must contain exactly 5 occurrences of picker_popover( (byte-stable post-260507-rmj).
+
+    Originally 6 (D-UI2-09); 260507-rmj dropped the Status picker, leaving
+    customer / ap_company / device / controller / application = 5 calls.
+    Test name kept for git-blame continuity.
+    """
     src = _read(OVERVIEW_FILTER_BAR_HTML)
     count = src.count("picker_popover(")
-    assert count == 6, (
-        f"overview/_filter_bar.html must contain exactly 6 picker_popover( calls, found {count} "
-        "(D-UI2-09 — 6 filters byte-stable; import line does not count as it lacks opening paren)"
+    assert count == 5, (
+        f"overview/_filter_bar.html must contain exactly 5 picker_popover( calls, found {count} "
+        "(D-UI2-09 — post-260507-rmj 5 filters byte-stable; Status picker dropped; "
+        "import line does not count as it lacks opening paren)"
     )
 
 

@@ -75,21 +75,15 @@ def test_blank_start_sorts_to_end_regardless_of_order(tmp_path: Path) -> None:
     assert vm_asc.rows[-1].confluence_page_id == "2"
 
 
-def test_filter_status_in_progress_excludes_others(tmp_path: Path) -> None:
-    _write_jv(tmp_path, "1", title="A", status="In Progress")
-    _write_jv(tmp_path, "2", title="B", status="Done")
-    _write_jv(tmp_path, "3", title="C", status="Blocked")
-    vm = build_joint_validation_grid_view_model(tmp_path, filters={"status": ["In Progress"]})
-    assert len(vm.rows) == 1
-    assert vm.rows[0].status == "In Progress"
-
-
-def test_six_filter_options_enumerated_from_full_set(tmp_path: Path) -> None:
-    _write_jv(tmp_path, "1", title="A", status="X")
-    _write_jv(tmp_path, "2", title="B", status="Y")
-    vm = build_joint_validation_grid_view_model(tmp_path, filters={"status": ["X"]})
-    # filter_options should still show both "X" and "Y" — built from full set
-    assert sorted(vm.filter_options["status"]) == ["X", "Y"]
+def test_five_filter_options_enumerated_from_full_set(tmp_path: Path) -> None:
+    # 260507-rmj: status was dropped as a filterable facet. Use customer
+    # (a surviving facet) to exercise the same filter-options-from-full-set
+    # contract: filter_options is built from ALL rows so the picker keeps
+    # showing every possible value even after a filter is applied.
+    _write_jv(tmp_path, "1", title="A", customer="X")
+    _write_jv(tmp_path, "2", title="B", customer="Y")
+    vm = build_joint_validation_grid_view_model(tmp_path, filters={"customer": ["X"]})
+    assert sorted(vm.filter_options["customer"]) == ["X", "Y"]
 
 
 def test_sanitize_link_drops_javascript_scheme() -> None:
@@ -114,21 +108,28 @@ def test_title_fallback_to_page_id_when_h1_missing(tmp_path: Path) -> None:
 
 
 def test_active_filter_counts_match_input(tmp_path: Path) -> None:
-    _write_jv(tmp_path, "1", title="A", status="A")
+    # 260507-rmj: status removed from FILTERABLE_COLUMNS — use customer
+    # (multi-value) and ap_company (single-value) to exercise the same
+    # accumulator. active_filter_counts now has 5 keys (was 6).
+    _write_jv(tmp_path, "1", title="A", customer="A")
     vm = build_joint_validation_grid_view_model(
         tmp_path,
-        filters={"status": ["A", "B"], "customer": ["X"]},
+        filters={"customer": ["A", "B"], "ap_company": ["X"]},
     )
     assert vm.active_filter_counts == {
-        "status": 2, "customer": 1, "ap_company": 0,
+        "customer": 2, "ap_company": 1,
         "device": 0, "controller": 0, "application": 0,
     }
 
 
 def test_invalid_sort_col_falls_back_to_default(tmp_path: Path) -> None:
+    # 260507-rmj: status / assignee / end are no longer sortable — pin the
+    # contract that requesting them as sort_col falls back to the default
+    # (start desc). "link" is the original probe (never a valid column).
     _write_jv(tmp_path, "1", title="A", start="2026-03-15")
-    vm = build_joint_validation_grid_view_model(tmp_path, sort_col="link")
-    assert vm.sort_col == DEFAULT_SORT_COL
+    for removed in ("status", "assignee", "end", "link"):
+        vm = build_joint_validation_grid_view_model(tmp_path, sort_col=removed)
+        assert vm.sort_col == DEFAULT_SORT_COL, removed
 
 
 def test_empty_jv_root_returns_zero_rows(tmp_path: Path) -> None:

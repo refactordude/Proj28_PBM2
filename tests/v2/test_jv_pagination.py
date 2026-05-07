@@ -258,14 +258,20 @@ def test_prev_next_group_page_exactly_one_full_group(tmp_path: Path) -> None:
 
 
 def test_filter_options_built_from_all_rows_not_paged(tmp_path: Path) -> None:
-    """P11: filter_options reflects ALL filtered rows (not just current page)."""
-    # Write 20 rows, each with a unique status, so page 1 (15 rows) won't contain all statuses
+    """P11: filter_options reflects ALL filtered rows (not just current page).
+
+    260507-rmj: status was dropped from FILTERABLE_COLUMNS, so the source
+    facet for this test moves from status → customer (a surviving facet).
+    Each of 20 rows still gets a distinct value to exercise the
+    all-rows-not-just-current-page contract.
+    """
+    # Write 20 rows, each with a unique customer, so page 1 (15 rows) won't contain all customers
     for i in range(1, 21):
-        _write_jv(tmp_path, str(i).zfill(3), title=f"JV {i}", status=f"Status{i}")
+        _write_jv(tmp_path, str(i).zfill(3), title=f"JV {i}", customer=f"Customer{i}")
     vm = build_joint_validation_grid_view_model(tmp_path, page=1, page_size=15)
-    # All 20 status values must appear in filter_options
-    assert len(vm.filter_options["status"]) == 20, (
-        f"filter_options should show all 20 statuses (from all rows), got {len(vm.filter_options['status'])}"
+    # All 20 customer values must appear in filter_options
+    assert len(vm.filter_options["customer"]) == 20, (
+        f"filter_options should show all 20 customers (from all rows), got {len(vm.filter_options['customer'])}"
     )
 
 

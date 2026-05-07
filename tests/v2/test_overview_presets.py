@@ -67,38 +67,52 @@ def client():
 
 
 def test_load_presets_returns_three_seed_entries() -> None:
-    """The committed config/presets.example.yaml seeds 3 entries verbatim."""
+    """The committed config/presets.example.yaml seeds 3 entries verbatim.
+
+    260507-rmj: status was dropped from the seeds. korean-oems-in-progress
+    keeps customer (multi-value); pending-ufs4 keeps device. Slug list
+    unchanged.
+    """
     presets = load_presets()
     assert len(presets) == 3, presets
     names = [p["name"] for p in presets]
     assert names == ["korean-oems-in-progress", "qualcomm-wearables", "pending-ufs4"]
-    # Multi-value within a facet preserved.
+    # Multi-value within a facet preserved on the surviving customer key.
     korean = next(p for p in presets if p["name"] == "korean-oems-in-progress")
     assert korean["label"] == "Korean OEMs in progress"
-    assert korean["filters"]["status"] == ["In Progress"]
     assert korean["filters"]["customer"] == ["Samsung", "Hyundai"]
+    assert "status" not in korean["filters"]
     # Multi-facet (AND-across-facets) preserved.
     qc = next(p for p in presets if p["name"] == "qualcomm-wearables")
     assert qc["filters"]["ap_company"] == ["Qualcomm"]
     assert qc["filters"]["application"] == ["Wearable"]
+    # Surviving filter on the third preset.
+    pending = next(p for p in presets if p["name"] == "pending-ufs4")
+    assert pending["filters"]["device"] == ["UFS 4.0"]
+    assert "status" not in pending["filters"]
 
 
 def test_load_presets_skips_malformed_entries(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Each malformed entry is silently dropped; valid entries survive."""
+    # 260507-rmj: status was dropped from FILTERABLE_COLUMNS — every
+    # malformed-entry case that previously used `status: …` swaps to
+    # `customer: …` (a still-valid facet) so the test isolates the
+    # malformed dimension instead of accidentally also failing on
+    # unknown-facet for status.
     yaml_text = dedent("""
         # 1 valid + 6 distinct malformed cases — only the valid one survives.
         - name: ok-preset
           label: OK preset
           filters:
-            status: ["Pending"]
+            customer: ["Pending"]
         - name: missing-label
           filters:
-            status: ["Pending"]
+            customer: ["Pending"]
         - label: missing-name
           filters:
-            status: ["Pending"]
+            customer: ["Pending"]
         - name: unknown-facet
           label: Unknown facet
           filters:
@@ -106,11 +120,11 @@ def test_load_presets_skips_malformed_entries(
         - name: non-list-value
           label: Non-list value
           filters:
-            status: "Pending"
+            customer: "Pending"
         - name: empty-facet
           label: Empty facet
           filters:
-            status: []
+            customer: []
         - name: missing-filters
           label: Missing filters
         - "not even a mapping"
@@ -129,7 +143,7 @@ def test_load_presets_skips_malformed_entries(
     presets = load_presets()
     assert len(presets) == 1, presets
     assert presets[0]["name"] == "ok-preset"
-    assert presets[0]["filters"] == {"status": ["Pending"]}
+    assert presets[0]["filters"] == {"customer": ["Pending"]}
 
 
 def test_load_presets_returns_empty_on_unparseable_yaml(
@@ -205,10 +219,12 @@ def test_get_overview_preset_overrides_filters_and_returns_oob_blocks(
     assert 'id="overview-count" hx-swap-oob="true"' in r.text
     assert 'id="overview-pagination" hx-swap-oob="true"' in r.text
     # Active-filter chips reflect the preset's values, not whatever was sent.
+    # 260507-rmj: palette shifted up after dropping Status from facets —
+    # ap_company is now c-2 (was c-3) and application is now c-5 (was c-6).
     assert 'data-facet="ap_company"' in r.text
-    assert 'class="ff-chip c-3">Qualcomm</span>' in r.text
+    assert 'class="ff-chip c-2">Qualcomm</span>' in r.text
     assert 'data-facet="application"' in r.text
-    assert 'class="ff-chip c-6">Wearable</span>' in r.text
+    assert 'class="ff-chip c-5">Wearable</span>' in r.text
     # No status / customer / device / controller chips (preset doesn't mention).
     assert 'data-facet="status"' not in r.text
     assert 'data-facet="customer"' not in r.text
@@ -241,13 +257,18 @@ def test_get_overview_preset_clicked_after_existing_filters_overrides_them(
     the request URL contains. We pin the contract by sending stray query
     params and asserting they are ignored.
     """
+    # 260507-rmj: status was dropped — swap the stray `status=Cancelled`
+    # probe to a still-valid facet (`device=X1`) so the test still
+    # demonstrates "preset OVERRIDES even live-recognized stray params"
+    # rather than exercising the unknown-param-silently-dropped FastAPI
+    # behavior (which would no longer be a meaningful test).
     r = client.get(
         "/overview/preset/qualcomm-wearables",
-        params=[("status", "Cancelled"), ("customer", "Apple")],
+        params=[("device", "X1"), ("customer", "Apple")],
     )
     assert r.status_code == 200
     push = r.headers.get("HX-Push-Url", "")
-    assert "status=" not in push
+    assert "device=" not in push
     assert "customer=" not in push
     assert "ap_company=Qualcomm" in push
     assert "application=Wearable" in push
