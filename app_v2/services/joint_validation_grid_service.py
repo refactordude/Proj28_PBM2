@@ -17,11 +17,12 @@ Contracts (from .planning/phases/01-overview-tab-auto-discover-platforms-from-ht
   Title falls back to confluence_page_id when <h1> is missing.
 - D-JV-08: get_parsed_jv is memoized by (page_id, mtime_ns) — this service
   calls it freely per request.
-- D-JV-10: 12 sortable columns; default ``start desc``; tiebreaker
+- D-JV-10: 9 sortable columns (260507-rmj — Status, 담당자, End columns
+  dropped from the listing); default ``start desc``; tiebreaker
   ``confluence_page_id`` ASC (stable for both orders); blank start to END.
-- D-JV-11: 6 popover-checklist filters (status, customer, ap_company, device,
-  controller, application). Multi-filter is set membership (AND across
-  columns, OR within a column).
+- D-JV-11: 5 popover-checklist filters (customer, ap_company, device,
+  controller, application — 260507-rmj dropped Status). Multi-filter is set
+  membership (AND across columns, OR within a column).
 - D-JV-15: link sanitizer ports D-OV-16 verbatim — drops dangerous schemes,
   promotes bare domains to https://.
 """
@@ -39,6 +40,11 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------------------------
 
 # 12 metadata fields from D-JV-04 (column order matches table left → right).
+# 260507-rmj note: status, assignee (담당자), and end remain in this tuple +
+# JointValidationRow + the parser's extraction surface because the JV detail
+# page (joint_validation/detail.html) still renders all three. They are no
+# longer displayed/sortable/filterable on the JV LISTING — see
+# FILTERABLE_COLUMNS / SORTABLE_COLUMNS below.
 ALL_METADATA_KEYS: Final[tuple[str, ...]] = (
     "title", "status", "customer", "model_name", "ap_company", "ap_model",
     "device", "controller", "application", "assignee", "start", "end",
@@ -50,17 +56,29 @@ _DANGEROUS_LINK_SCHEMES: Final[tuple[str, ...]] = (
     "javascript:", "data:", "vbscript:", "file:", "about:",
 )
 
-# 6 filterable columns per D-JV-11 — Title, Model Name, AP Model, assignee
-# (담당자), Start, End are NOT filterable.
+# 5 filterable columns (260507-rmj reduces from 6 by dropping Status). Title,
+# Model Name, AP Model, Start are NOT filterable. status / assignee (담당자) /
+# end are still parsed by joint_validation_parser.py and stored on
+# JointValidationRow (used by the JV detail page) but are no longer displayed
+# or filterable on the JV listing.
 FILTERABLE_COLUMNS: Final[tuple[str, ...]] = (
-    "status", "customer", "ap_company", "device", "controller", "application",
+    "customer", "ap_company", "device", "controller", "application",
 )
 
-# 12 sortable columns per D-JV-10.
-SORTABLE_COLUMNS: Final[tuple[str, ...]] = ALL_METADATA_KEYS
+# 9 sortable columns (260507-rmj reduces from 12 by dropping Status, 담당자
+# (assignee), End). The remaining 3 fields stay on JointValidationRow for the
+# detail page but their grid headers no longer render, so they cannot be sort
+# targets — _validate_sort whitelists this tuple.
+SORTABLE_COLUMNS: Final[tuple[str, ...]] = (
+    "title", "customer", "model_name", "ap_company", "ap_model",
+    "device", "controller", "application", "start",
+)
 
 # Date columns get parsed as ISO 8601 for sort; empty/malformed → END (D-JV-10).
-DATE_COLUMNS: Final[tuple[str, ...]] = ("start", "end")
+# 260507-rmj: end was dropped as a sortable column; only "start" remains.
+# Tuple shape preserved (not bare string) so the `sort_col in DATE_COLUMNS`
+# set-membership check shape elsewhere stays unchanged.
+DATE_COLUMNS: Final[tuple[str, ...]] = ("start",)
 
 DEFAULT_SORT_COL: Final[str] = "start"
 DEFAULT_SORT_ORDER: Final[Literal["asc", "desc"]] = "desc"
@@ -469,7 +487,8 @@ def build_joint_validation_grid_view_model(
         else None
     )
 
-    # 5) Active filter counts (always present for all 6 keys).
+    # 5) Active filter counts (always present for all 5 keys — 260507-rmj
+    # dropped status from the 6-key set).
     active_filter_counts = {
         c: len(clean_filters.get(c, [])) for c in FILTERABLE_COLUMNS
     }
