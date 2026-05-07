@@ -1225,6 +1225,19 @@ main.container-fluid {
   margin-bottom: 4px;
   border-bottom: 1px solid var(--line);
 }
+/* When active-filter chips are present (#overview-filter-badges has rows),
+   push the divider down from .ff-preset-row to the badges row so it always
+   sits below the bottom-most chip row, not between chip rows. */
+.panel:has(#overview-filter-badges > .ff-row) .ff-preset-row {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+#overview-filter-badges:has(> .ff-row) {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
 .ff-preset-chip {
   /* base .ff-chip already supplies size/radius/font; this rule layers
      on the interactive treatment + the neutral preset hue. */
