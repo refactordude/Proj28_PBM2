@@ -101,12 +101,12 @@ def test_get_detail_xss_escapes_script(isolated_content):
 
 
 def test_get_detail_includes_page_title(isolated_content):
-    """Page title contains platform_id and base.html '— Yhoon Dashboard v2.0' suffix
-    (rebranded in quick task 260507-mmv; test name kept for git blame continuity)."""
+    """Page title contains platform_id and base.html '— Platform Dashboard V1' suffix
+    (rebranded in quick task 260508-099; test name kept for git blame continuity)."""
     client, cd = isolated_content
     r = client.get(f"/platforms/{_PID}")
     assert r.status_code == 200
-    assert f"<title>{_PID} — Yhoon Dashboard v2.0</title>" in r.text
+    assert f"<title>{_PID} — Platform Dashboard V1</title>" in r.text
 
 
 # ---------------------------------------------------------------------------

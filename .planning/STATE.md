@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: v1.0 milestone complete
-stopped_at: "Completed quick task 260508-009: JV filter→Presets gap (mb-3 added to #overview-filter-form)"
-last_updated: "2026-05-08T00:00:00.000Z"
-last_activity: "2026-05-08 - Completed quick task 260508-009: JV filter→Presets gap (mb-3 added to #overview-filter-form)"
+stopped_at: "Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels (Platform 브라우저 / AI 질문하기)"
+last_updated: "2026-05-07T15:12:25.000Z"
+last_activity: "2026-05-07 - Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels (Platform 브라우저 / AI 질문하기)"
 progress:
   total_phases: 4
   completed_phases: 0
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-08 - Completed quick task 260508-009: JV filter→Presets gap (mb-3 added to #overview-filter-form)
+Last activity: 2026-05-07 - Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels (Platform 브라우저 / AI 질문하기)
 
 Progress: [——————————] no active milestone
 
@@ -82,6 +82,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-wzh | AI Summary popup: kill dead space above h1 — `.markdown-content > :first-child { margin-top: 0 }` zeros the 1.5em top margin when h1 is the first rendered child of the modal's `<article class="markdown-content">`; existing h1/h2/h3 top margins byte-stable so the heading rhythm in long-form bodies is preserved. Code shipped in bfeb3c6 (already-applied: rule was bundled into the topbar-sticky commit) | 2026-05-07 | bfeb3c6 | [260507-wzh-ai-summary-popup-remove-unnecessary-marg](./quick/260507-wzh-ai-summary-popup-remove-unnecessary-marg/) |
 | 260507-wf6 | JV detail page: (1) drop `p-0` from iframe-wrapping `.panel-body` so default 26/32 padding restores horizontal gutter around the embedded `index.html` (Confluence export) — fixes "too tight" margin; (2) make `.topbar` `position: sticky; top: 12px; z-index: 50` so the `Joint Validation` tab stays reachable while scrolling the 80vh iframe (root cause: tab `<a href="/">` was correct, but offscreen). Two atomic commits, 592 v2 tests pass (the 2 failing tests in test_main.py + test_phase04_uif_components.py predate this task — caused by f32cac1 topbar rebrand) | 2026-05-07 | bfeb3c6 | [260507-wf6-when-a-index-html-file-is-rendered-insid](./quick/260507-wf6-when-a-index-html-file-is-rendered-insid/) |
 | 260508-009 | JV filter→Presets vertical gap: append `mb-3` to `#overview-filter-form` class list to mirror Browse's `#browse-filter-controls` pattern; one-line template edit, no CSS change, byte-stable id + 5 hx-* attrs; 591 v2 tests pass (3 pre-existing failures unrelated) | 2026-05-08 | ce060ef | [260508-009-add-vertical-margin-between-filters-row-](./quick/260508-009-add-vertical-margin-between-filters-row-/) |
+| 260508-01a | Rename Browse/Ask page headings to Korean labels — `<b>Browse</b>`→`<b>Platform 브라우저</b>` (browse/index.html:30) + `<h1 class="panel-title">Ask</h1>`→`<h1 class="panel-title">AI 질문하기</h1>` (ask/index.html:76); both match topbar tab labels verbatim; lockstep test updates (test_main.py + test_phase02_invariants.py); 593 v2 tests pass | 2026-05-07 | 5092268 | [260508-01a-rename-browse-and-ask-labels-to-korean-p](./quick/260508-01a-rename-browse-and-ask-labels-to-korean-p/) |
 
 ## Blockers/Concerns
 
@@ -89,9 +90,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-07T14:20:36Z
+Last session: 2026-05-07T15:12:25Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed quick task 260507-wf6: JV detail iframe gutter + sticky topbar
+Stopped at: Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels
 
 ## Accumulated Context
 

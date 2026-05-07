@@ -35,7 +35,7 @@ def test_showcase_inherits_topbar(client):
     body = r.text
     assert 'class="topbar"' in body
     assert 'class="brand-mark">AE<' in body
-    assert ">Yhoon Dashboard<" in body
+    assert ">Platform Dashboard V1<" in body
 
 
 def test_showcase_no_active_tab(client):
