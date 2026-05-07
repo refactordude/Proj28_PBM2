@@ -80,6 +80,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-vys | Ask page: stack tool-call/tool-result pills vertically (each on its own line) — `.chat-pill-tool-call` and `.chat-pill-tool-result-ok/-rejected` switched from `display: inline-block` to `display: block; width: fit-content;`; `[open]` rules add `width: auto` so expanded pills still fill container width; `.chat-thought` / `.chat-text-delta` byte-stable; 78 chat/ask tests pass | 2026-05-07 | 7163edc | [260507-vys-in-ask-page-each-thought-process-message](./quick/260507-vys-in-ask-page-each-thought-process-message/) |
 | 260507-w7h | Browse: Highlight toggle next to Swap axes — mode-based per-axis minority detection on pivot grid; soft-yellow `#fff8c5` cell background; `?highlight=1` URL round-trip mirrors `?swap=1`; mutual `hx-include` between Swap and Highlight preserves both flags; preset chip `hx-include="#browse-highlight:checked"` keeps highlight state across preset apply; render-only flag (no SQL/pivot effect, no preset YAML schema bump); +13 tests (8 unit + 5 integration); 592 v2 tests pass | 2026-05-07 | a511727 | [260507-w7h-add-highlight-toggle-to-browse-page-next](./quick/260507-w7h-add-highlight-toggle-to-browse-page-next/) |
 | 260507-wzh | AI Summary popup: kill dead space above h1 — `.markdown-content > :first-child { margin-top: 0 }` zeros the 1.5em top margin when h1 is the first rendered child of the modal's `<article class="markdown-content">`; existing h1/h2/h3 top margins byte-stable so the heading rhythm in long-form bodies is preserved. Code shipped in bfeb3c6 (already-applied: rule was bundled into the topbar-sticky commit) | 2026-05-07 | bfeb3c6 | [260507-wzh-ai-summary-popup-remove-unnecessary-marg](./quick/260507-wzh-ai-summary-popup-remove-unnecessary-marg/) |
+| 260507-wf6 | JV detail page: (1) drop `p-0` from iframe-wrapping `.panel-body` so default 26/32 padding restores horizontal gutter around the embedded `index.html` (Confluence export) — fixes "too tight" margin; (2) make `.topbar` `position: sticky; top: 12px; z-index: 50` so the `Joint Validation` tab stays reachable while scrolling the 80vh iframe (root cause: tab `<a href="/">` was correct, but offscreen). Two atomic commits, 592 v2 tests pass (the 2 failing tests in test_main.py + test_phase04_uif_components.py predate this task — caused by f32cac1 topbar rebrand) | 2026-05-07 | bfeb3c6 | [260507-wf6-when-a-index-html-file-is-rendered-insid](./quick/260507-wf6-when-a-index-html-file-is-rendered-insid/) |
 
 ## Blockers/Concerns
 
@@ -87,9 +88,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-07T14:52:28.048Z
+Last session: 2026-05-07T14:20:36Z
 Next action: `/gsd-new-milestone` to scope v2.1+ when ready
-Stopped at: Completed quick task 260507-wzh: AI Summary popup CSS first-child margin fix (code shipped in bfeb3c6)
+Stopped at: Completed quick task 260507-wf6: JV detail iframe gutter + sticky topbar
 
 ## Accumulated Context
 
