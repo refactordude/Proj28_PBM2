@@ -56,17 +56,17 @@
                (sanitizer rejected scheme OR raw value was empty). #}
             {% if row.link %}
               <a href="{{ row.link | e }}"
-                 class="btn btn-sm btn-outline-secondary"
+                 class="btn btn-sm btn-outline-secondary text-dark"
                  target="_blank" rel="noopener noreferrer"
                  aria-label="Open report link for {{ row.title | e }}">
-                <i class="bi bi-link-45deg"></i> Link
+                <i class="bi bi-link-45deg"></i> edm
               </a>
             {% else %}
               <button type="button"
                       class="btn btn-sm btn-outline-secondary"
                       disabled
                       aria-label="No report link available">
-                <i class="bi bi-link-45deg"></i> Link
+                <i class="bi bi-link-45deg"></i> edm
               </button>
             {% endif %}
 
