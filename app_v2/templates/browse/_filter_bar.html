@@ -36,7 +36,10 @@
 
        hx-include uses name-specific selectors so the swap toggle can submit
        the existing platform/param selection alongside the new swap value
-       without picking up unrelated form inputs. #}
+       without picking up unrelated form inputs.
+
+       260507-w7h: hx-include now ALSO references #browse-highlight:checked
+       so toggling Swap axes preserves the user's Highlight state. #}
     <input type="checkbox"
            class="btn-check"
            id="browse-swap-axes"
@@ -45,13 +48,34 @@
            form="browse-filter-form"
            {% if vm.swap_axes %}checked{% endif %}
            hx-post="/browse/grid"
-           hx-include="#browse-filter-form input[name='platforms']:checked, #browse-filter-form input[name='params']:checked, #browse-swap-axes:checked"
+           hx-include="#browse-filter-form input[name='platforms']:checked, #browse-filter-form input[name='params']:checked, #browse-swap-axes:checked, #browse-highlight:checked"
            hx-target="#browse-grid"
            hx-swap="innerHTML swap:200ms"
            hx-trigger="change"
            aria-label="Swap axes (rows and columns)">
     <label class="btn btn-outline-secondary btn-sm" for="browse-swap-axes">
       <i class="bi bi-arrow-left-right"></i> Swap axes
+    </label>
+
+    {# Highlight toggle (260507-w7h): mode-based per-axis minority highlighting.
+       Pure render-layer decoration — does NOT affect filter, SQL, or pivot.
+       hx-include carries the existing platform/param checkboxes PLUS the
+       swap-axes checkbox so toggling Highlight preserves Swap axes state. #}
+    <input type="checkbox"
+           class="btn-check"
+           id="browse-highlight"
+           name="highlight"
+           value="1"
+           form="browse-filter-form"
+           {% if vm.highlight %}checked{% endif %}
+           hx-post="/browse/grid"
+           hx-include="#browse-filter-form input[name='platforms']:checked, #browse-filter-form input[name='params']:checked, #browse-swap-axes:checked, #browse-highlight:checked"
+           hx-target="#browse-grid"
+           hx-swap="innerHTML swap:200ms"
+           hx-trigger="change"
+           aria-label="Highlight minority values per parameter axis">
+    <label class="btn btn-outline-secondary btn-sm" for="browse-highlight">
+      <i class="bi bi-stars"></i> Highlight
     </label>
 
     {# Clear all (D-17, D-18): hidden via d-none when no selection; single

@@ -1121,3 +1121,194 @@ def test_grid_post_filters_stale_param_labels(client, monkeypatch):
     )
 
 
+# -----------------------------------------------------------------------
+# 260507-w7h: highlight toggle — render-layer minority decoration
+# -----------------------------------------------------------------------
+
+
+def _highlight_fixture_fetch():
+    """3-platform x 1-param fixture with one outlier (mode 'X', minority 'Y')."""
+    return lambda db, p, ic, i, row_cap=200, db_name="": (
+        pd.DataFrame({
+            "PLATFORM_ID": ["P1", "P2", "P3"],
+            "InfoCategory": ["attribute"] * 3,
+            "Item": ["vendor_id"] * 3,
+            "Result": ["X", "X", "Y"],   # mode = "X"; "Y" is the outlier
+        }),
+        False,
+    )
+
+
+def test_get_browse_with_highlight_renders_cell_highlight_class(client, monkeypatch):
+    """260507-w7h Test 1: GET /browse?highlight=1 with outlier fixture renders
+    `cell-highlight` on the minority cell, AND the Highlight checkbox is
+    pre-checked.
+    """
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1", "P2", "P3"],
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=_highlight_fixture_fetch(),
+    )
+    r = client.get(
+        "/browse?platforms=P1&platforms=P2&platforms=P3"
+        "&params=attribute%20%C2%B7%20vendor_id&highlight=1"
+    )
+    assert r.status_code == 200
+    # The minority outlier cell carries the cell-highlight class.
+    assert "cell-highlight" in r.text, (
+        "Expected `cell-highlight` class on the minority outlier cell when "
+        "?highlight=1 with the X/X/Y fixture."
+    )
+    # The Highlight checkbox is pre-checked.
+    assert 'id="browse-highlight"' in r.text
+    j = r.text.index('id="browse-highlight"')
+    seg_end = r.text.find(">", j)
+    seg = r.text[j:seg_end]
+    assert "checked" in seg, (
+        f"Highlight input should be pre-checked when ?highlight=1; got: {seg!r}"
+    )
+
+
+def test_get_browse_without_highlight_renders_no_cell_highlight(client, monkeypatch):
+    """260507-w7h Test 2: GET /browse (no highlight flag) — cell-highlight
+    substring is ABSENT, AND the Highlight checkbox is NOT pre-checked.
+    """
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1", "P2", "P3"],
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=_highlight_fixture_fetch(),
+    )
+    r = client.get(
+        "/browse?platforms=P1&platforms=P2&platforms=P3"
+        "&params=attribute%20%C2%B7%20vendor_id"
+    )
+    assert r.status_code == 200
+    # No cell-highlight class anywhere in the body when the flag is off.
+    assert "cell-highlight" not in r.text, (
+        "Expected `cell-highlight` to be absent when ?highlight is not set."
+    )
+    # Highlight checkbox MUST exist but NOT be pre-checked. Strip the
+    # hx-include attribute first (it contains ":checked" CSS selectors that
+    # would otherwise false-match the standalone `checked` attribute).
+    assert 'id="browse-highlight"' in r.text
+    j = r.text.index('id="browse-highlight"')
+    seg_end = r.text.find(">", j)
+    seg = r.text[j:seg_end]
+    import re
+    seg_clean = re.sub(r'hx-include="[^"]*"', "", seg)
+    assert "checked" not in seg_clean, (
+        f"Highlight input should NOT be pre-checked when flag is off; "
+        f"got (hx-include stripped): {seg_clean!r}"
+    )
+
+
+def test_filter_bar_highlight_button_structure(client, monkeypatch):
+    """260507-w7h Test 3: Filter-bar structural assertions for the Highlight
+    button — id, name=highlight, value=1 on the same input; mutual hx-include
+    references between Swap and Highlight; <label for="browse-highlight">.
+    """
+    _patch_cache(monkeypatch, platforms=["P1"], params=[
+        {"InfoCategory": "attribute", "Item": "vendor_id"},
+    ])
+    r = client.get("/browse")
+    assert r.status_code == 200
+
+    # Anchor on the Highlight input id and slice the open tag.
+    assert 'id="browse-highlight"' in r.text
+    j = r.text.index('id="browse-highlight"')
+    hl_seg_end = r.text.find(">", j)
+    hl_seg = r.text[r.text.rfind("<input", 0, j):hl_seg_end + 1]
+    # Same-tag boundary checks: name="highlight" + value="1" + hx-include
+    # references the swap-axes input.
+    assert 'name="highlight"' in hl_seg, hl_seg
+    assert 'value="1"' in hl_seg, hl_seg
+    assert "#browse-swap-axes:checked" in hl_seg, (
+        f"Highlight hx-include must reference #browse-swap-axes:checked so "
+        f"toggling Highlight preserves Swap axes. Got: {hl_seg!r}"
+    )
+    # Swap-axes input's hx-include must reference the Highlight checkbox too.
+    assert 'id="browse-swap-axes"' in r.text
+    k = r.text.index('id="browse-swap-axes"')
+    swap_seg_end = r.text.find(">", k)
+    swap_seg = r.text[r.text.rfind("<input", 0, k):swap_seg_end + 1]
+    assert "#browse-highlight:checked" in swap_seg, (
+        f"Swap-axes hx-include must reference #browse-highlight:checked so "
+        f"toggling Swap axes preserves Highlight. Got: {swap_seg!r}"
+    )
+    # Label paired with the highlight input.
+    assert 'for="browse-highlight"' in r.text
+
+
+def test_post_browse_grid_with_highlight_sets_hx_push_url(client, monkeypatch):
+    """260507-w7h Test 4: POST /browse/grid with highlight=1 form field sets
+    HX-Push-Url to a URL containing `highlight=1` (after `swap=1`).
+    """
+    _patch_cache(
+        monkeypatch,
+        platforms=["A", "B"],
+        params=[{"InfoCategory": "cat", "Item": "item"}],
+        fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+            pd.DataFrame({
+                "PLATFORM_ID": ["A"], "InfoCategory": ["cat"],
+                "Item": ["item"], "Result": ["v"],
+            }),
+            False,
+        ),
+    )
+    r = _post_form_pairs(client, "/browse/grid", [
+        ("platforms", "A"), ("platforms", "B"),
+        ("params", "cat · item"),
+        ("swap", "1"),
+        ("highlight", "1"),
+    ])
+    assert r.status_code == 200
+    push = r.headers.get("HX-Push-Url", "")
+    # Order pinned to swap first, highlight last.
+    assert push == (
+        "/browse?platforms=A&platforms=B"
+        "&params=cat%20%C2%B7%20item"
+        "&swap=1&highlight=1"
+    ), push
+
+
+def test_get_browse_preset_preserves_highlight(client, monkeypatch):
+    """260507-w7h Test 5: GET /browse/preset/{name}?highlight=1 preserves the
+    highlight flag in the response HX-Push-Url header.
+
+    Preset YAML does NOT carry highlight (render-only); the flag flows from
+    the user's current session state via hx-include on the preset chip's GET.
+    """
+    _patch_cache(
+        monkeypatch,
+        platforms=["P1"],
+        params=[{"InfoCategory": "attribute", "Item": "vendor_id"}],
+        fetch=lambda db, p, ic, i, row_cap=200, db_name="": (
+            pd.DataFrame({
+                "PLATFORM_ID": ["P1"], "InfoCategory": ["attribute"],
+                "Item": ["vendor_id"], "Result": ["0xA1"],
+            }),
+            False,
+        ),
+    )
+    # Stub the preset store to return a known preset.
+    fake_preset = {
+        "name": "test_preset",
+        "label": "Test",
+        "platforms": ["P1"],
+        "params": ["attribute · vendor_id"],
+        "swap_axes": False,
+    }
+    monkeypatch.setattr(
+        "app_v2.routers.browse.load_browse_presets",
+        lambda: [fake_preset],
+    )
+    r = client.get("/browse/preset/test_preset?highlight=1")
+    assert r.status_code == 200
+    push = r.headers.get("HX-Push-Url", "")
+    assert "highlight=1" in push, (
+        f"Preset apply must preserve highlight=1 in HX-Push-Url; got: {push!r}"
+    )
+
+

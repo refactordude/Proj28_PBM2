@@ -65,6 +65,7 @@
           <a class="ff-chip ff-preset-chip"
              href="/browse/preset/{{ p.name | e }}"
              hx-get="/browse/preset/{{ p.name | e }}"
+             hx-include="#browse-highlight:checked"
              hx-target="#browse-grid"
              hx-swap="innerHTML"
              hx-push-url="true"

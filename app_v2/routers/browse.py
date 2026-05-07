@@ -63,6 +63,9 @@ def browse_page(
     platforms: Annotated[list[str], Query(default_factory=list)],
     params: Annotated[list[str], Query(default_factory=list)],
     swap: Annotated[str, Query()] = "",
+    # 260507-w7h — highlight is render-only; flows through view-model and
+    # into URL round-trip but does NOT affect SQL or pivot.
+    highlight: Annotated[str, Query()] = "",
     db: DBAdapter | None = Depends(get_db),
 ):
     """Initial GET — pre-renders the grid from URL state (BROWSE-V2-05).
@@ -82,6 +85,7 @@ def browse_page(
         selected_platforms=platforms,
         selected_param_labels=params,
         swap_axes=(swap == "1"),
+        highlight=(highlight == "1"),
     )
     ctx = {
         "active_tab": "browse",
@@ -98,6 +102,9 @@ def browse_grid(
     platforms: Annotated[list[str], Form()] = [],
     params: Annotated[list[str], Form()] = [],
     swap: Annotated[str, Form()] = "",
+    # 260507-w7h — highlight is render-only; flows through view-model and
+    # into URL round-trip but does NOT affect SQL or pivot.
+    highlight: Annotated[str, Form()] = "",
     origin: Annotated[str, Form(alias="_origin")] = "",
     db: DBAdapter | None = Depends(get_db),
 ):
@@ -136,6 +143,7 @@ def browse_grid(
         selected_platforms=platforms,
         selected_param_labels=params,
         swap_axes=(swap == "1"),
+        highlight=(highlight == "1"),
     )
     ctx = {
         "vm": vm,
@@ -155,7 +163,7 @@ def browse_grid(
         block_names=block_names,
     )
     response.headers["HX-Push-Url"] = _build_browse_url(
-        platforms, params, swap == "1"
+        platforms, params, swap == "1", highlight == "1"
     )
     return response
 
@@ -205,6 +213,11 @@ def browse_params_fragment(
 def get_browse_preset(
     request: Request,
     name: str,
+    # 260507-w7h — highlight is render-only; flows through view-model and
+    # into URL round-trip but does NOT affect SQL or pivot. The flag is
+    # NOT carried in the preset YAML — it comes from the user's session
+    # state via hx-include on the preset chip.
+    highlight: Annotated[str, Query()] = "",
     db: DBAdapter | None = Depends(get_db),
 ):
     """Apply a named Browse preset — OVERRIDES current selection.
@@ -267,6 +280,7 @@ def get_browse_preset(
         selected_platforms=platforms,
         selected_param_labels=params,
         swap_axes=swap,
+        highlight=(highlight == "1"),
     )
     ctx = {"vm": vm, "presets": presets}
     response = templates.TemplateResponse(
@@ -281,5 +295,7 @@ def get_browse_preset(
             "params_picker_oob",
         ],
     )
-    response.headers["HX-Push-Url"] = _build_browse_url(platforms, params, swap)
+    response.headers["HX-Push-Url"] = _build_browse_url(
+        platforms, params, swap, highlight == "1"
+    )
     return response

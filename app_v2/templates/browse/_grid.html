@@ -19,7 +19,10 @@
    so heterogeneous Result values (Decimal, int, str) are coerced to str
    FIRST then HTML-escaped. None values render empty; the
    `.pivot-table td:empty::after` CSS pseudo-element injects an em-dash
-   (per UI-SPEC §"Phase 04 additions"). #}
+   (per UI-SPEC §"Phase 04 additions").
+
+   Per-cell `cell-highlight` class is added when vm.highlight is True AND
+   the (row idx, col name) tuple is in vm.minority_cells (260507-w7h). #}
 <div class="table-responsive">
   <table class="table table-striped table-hover table-sm pivot-table">
     <thead class="sticky-top bg-light">
@@ -36,11 +39,12 @@
          of pandas df_wide.columns order. Do NOT collapse this back to a single
          loop over df_wide.columns; that would reintroduce the parity bug if
          the index column ever drifts to a non-first position in df_wide. #}
-      {% for _, row in vm.df_wide.iterrows() %}
+      {% for idx, row in vm.df_wide.iterrows() %}
         <tr>
           <td>{{ row[vm.index_col_name] | string | e if row[vm.index_col_name] is not none else "" }}</td>
           {% for col in vm.df_wide.columns if col != vm.index_col_name %}
-            <td>{{ row[col] | string | e if row[col] is not none else "" }}</td>
+            {%- set hl = vm.highlight and (idx, col) in vm.minority_cells -%}
+            <td{% if hl %} class="cell-highlight"{% endif %}>{{ row[col] | string | e if row[col] is not none else "" }}</td>
           {% endfor %}
         </tr>
       {% endfor %}
