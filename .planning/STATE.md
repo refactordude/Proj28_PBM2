@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-07 - Completed quick task 260507-obp: Overview presets — config/presets.example.yaml + clickable chip strip + GET /overview/preset/{name}
+Last activity: 2026-05-07 - Completed quick task 260507-r0k: Browse presets — config/browse_presets.example.yaml + browse_preset_store + GET /browse/preset/{name}
 
 Progress: [——————————] no active milestone
 
@@ -74,6 +74,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-mmv | Topbar rebrand: brand-mark `P`→`AE`, wordmark `PBM2`→`Yhoon Dashboard`, avatar `PM`→`YH`, JV tab icon `bi-list-ul`→`bi-clipboard-check`; `<title>` rebranded; tests updated in lockstep | 2026-05-07 | d9271d0 | [260507-mmv-in-main-page-instead-of-p-use-ae-instead](./quick/260507-mmv-in-main-page-instead-of-p-use-ae-instead/) |
 | 260507-nzp | Overview filter summary: replace count badges with up to 10 value chips per facet + `+N more` overflow chip; deterministic per-facet color (status/customer/ap_company/device/controller/application); render-layer-only; +3 tests, 563 v2 tests pass | 2026-05-07 | c527a31 | [260507-nzp-replace-filter-facet-count-badges-with-c](./quick/260507-nzp-replace-filter-facet-count-badges-with-c/) |
 | 260507-obp | Overview presets: `config/presets.example.yaml` (3 DB-sampled seeds) + `preset_store.py` loader (skips malformed entries) + clickable `.ff-preset-chip` strip above active-filter summary; `GET /overview/preset/{name}` route returns 4 OOB blocks (override, not merge); +9 tests, 572 v2 tests pass | 2026-05-07 | 095ab9a | [260507-obp-add-browse-presets-presets-yaml-clickabl](./quick/260507-obp-add-browse-presets-presets-yaml-clickabl/) |
+| 260507-r0k | Browse presets: sibling `config/browse_presets.example.yaml` (3 DB-sampled seeds incl. swap_axes case) + `browse_preset_store.py` loader (Browse uses platforms[]+params[]+swap_axes shape, not 6-facet) + `GET /browse/preset/{name}` route emits 4 OOB blocks; CSS reused (zero diff to app.css); +9 tests, 581 v2 tests pass; live-server smoke test green | 2026-05-07 | 1fc7fbc | [260507-r0k-add-presets-feature-to-browse-page-mirro](./quick/260507-r0k-add-presets-feature-to-browse-page-mirro/) |
 
 ## Blockers/Concerns
 
