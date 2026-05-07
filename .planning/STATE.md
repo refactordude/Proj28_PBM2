@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-07 - Completed quick task 260507-s5c: add AP Model filter facet to JV listing (between AP Company and Device; 5→6 facets)
+Last activity: 2026-05-07 - Completed quick task 260507-vys: stack Ask page tool-call/tool-result pills vertically (one per line)
 
 Progress: [——————————] no active milestone
 
@@ -78,6 +78,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-rvx | JV Actions column polish: drop leading `bi-link-45deg`/`bi-magic` icons from edm and AI buttons, equal-width via new `.jv-action-btn` class (`min-width: 56px`), center-align column header+cells (`text-end` → `text-center`); 578 v2 tests pass | 2026-05-07 | b42e2fe | [260507-rvx-in-joint-validation-page-under-actions-c](./quick/260507-rvx-in-joint-validation-page-under-actions-c/) |
 | 260507-rmj | JV listing simplification: drop Status / 담당자 / End columns from `_grid.html` (13→10 col), drop Status picker from `_filter_bar.html` (6→5 facets), shrink service `FILTERABLE_COLUMNS`/`SORTABLE_COLUMNS`/`DATE_COLUMNS`, remove `status` param across `routers/overview.py` (5 sites), strip `status:` from `presets.example.yaml`; chip palette renumbered c-1..c-5; JV detail page + parser + Browse pivot grid untouched; 580 v2 tests pass | 2026-05-07 | 03e6fca | [260507-rmj-in-browse-page-ditch-status-and-end-colu](./quick/260507-rmj-in-browse-page-ditch-status-and-end-colu/) |
 | 260507-s5c | JV listing: add `AP Model` filter facet between `AP Company` and `Device` (5→6 facets); reuses existing `picker_popover` macro + already-parsed `ap_model` field on `JointValidationRow`; threads `ap_model` through `FILTERABLE_COLUMNS` + `_parse_filter_dict` + 3 router signatures (`get_overview`, `post_overview_grid`, `get_overview_preset`); chip palette extended c-1..c-6 with ap_model at c-3; live smoke test green (`?ap_model=SM8450` → 200); 580 v2 tests pass | 2026-05-07 | 166e138 | [260507-s5c-in-jv-page-add-ap-model-filter-between-a](./quick/260507-s5c-in-jv-page-add-ap-model-filter-between-a/) |
+| 260507-vys | Ask page: stack tool-call/tool-result pills vertically (each on its own line) — `.chat-pill-tool-call` and `.chat-pill-tool-result-ok/-rejected` switched from `display: inline-block` to `display: block; width: fit-content;`; `[open]` rules add `width: auto` so expanded pills still fill container width; `.chat-thought` / `.chat-text-delta` byte-stable; 78 chat/ask tests pass | 2026-05-07 | 7163edc | [260507-vys-in-ask-page-each-thought-process-message](./quick/260507-vys-in-ask-page-each-thought-process-message/) |
 
 ## Blockers/Concerns
 
