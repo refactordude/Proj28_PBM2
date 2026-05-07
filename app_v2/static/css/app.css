@@ -1158,3 +1158,54 @@ main.container-fluid {
 .btn-helix.sm { height: 32px; padding: 0 12px; font-size: 13px; }
 .btn-helix.ghost { background: transparent; color: var(--ink-2); }
 .btn-helix.ghost:hover { background: #f4f6f8; color: var(--ink); }
+
+/* §Active-filter summary chips (260507-nzp).
+   Anchored to Dashboard_v2.html tiny-chip language (lines 263-268) — soft
+   background + saturated ink, 11px / 600, pill radius. One row per facet:
+   "Label: chip chip chip +N more". Visible above the JV grid in
+   #overview-filter-badges; rendered by overview/index.html
+   filter_badges_oob block. */
+.ff-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.ff-row:last-child { margin-bottom: 0; }
+.ff-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  letter-spacing: -.005em;
+  margin-right: 2px;
+}
+.ff-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  /* default neutral fallback — overridden by .c-N variants */
+  background: #f4f6f8;
+  color: var(--ink-2);
+}
+/* 6 deterministic palette slots — one per FILTERABLE_COLUMNS entry.
+   c-1 status, c-2 customer, c-3 ap_company, c-4 device, c-5 controller,
+   c-6 application. Mapping is done in the template via a Jinja dict so
+   both color and slot stay byte-stable. */
+.ff-chip.c-1 { background: var(--accent-soft); color: var(--accent-ink); }
+.ff-chip.c-2 { background: var(--green-soft);  color: var(--green); }
+.ff-chip.c-3 { background: var(--violet-soft); color: var(--violet); }
+.ff-chip.c-4 { background: var(--amber-soft);  color: var(--amber); }
+.ff-chip.c-5 { background: var(--red-soft);    color: var(--red); }
+.ff-chip.c-6 { background: #f4f6f8;            color: var(--ink-2); }
+.ff-more {
+  /* "+N more" overflow indicator — always neutral so it visually
+     subordinates to the colored value chips of its row. */
+  background: transparent;
+  color: var(--mute);
+  font-style: normal;
+}
