@@ -189,6 +189,27 @@
   {% include "overview/_pagination.html" %}
 </div>
 {% endblock pagination_oob %}
+{% block picker_badges_oob %}
+{# OOB picker count badges — emitted by POST /overview/grid alongside the grid swap.
+   Each <span> carries hx-swap-oob="true" so HTMX merges by id into the
+   corresponding picker-{name}-badge inside the persistent .overview-filter-bar
+   trigger buttons. Matches Browse's gap-3 wiring (browse/index.html lines
+   154-157): without this, the count chip rendered by the picker_popover
+   macro on initial page load goes stale after every debounced filter
+   commit (the macro re-renders only on a full page reload).
+
+   Defined OUTSIDE `{% block content %}` so jinja2-fragments can render this
+   block in isolation via `block_names=["picker_badges_oob"]` WITHOUT it
+   leaking into the full-page render of GET /overview (which would produce
+   duplicate badge spans — once inside the trigger, once orphaned in body).
+   Same hotfix pattern as `count_oob` and `pagination_oob` above. #}
+  <span id="picker-customer-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not selected_filters['customer'] %} d-none{% endif %}" aria-live="polite">{{ selected_filters['customer'] | length }}</span>
+  <span id="picker-ap_company-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not selected_filters['ap_company'] %} d-none{% endif %}" aria-live="polite">{{ selected_filters['ap_company'] | length }}</span>
+  <span id="picker-ap_model-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not selected_filters['ap_model'] %} d-none{% endif %}" aria-live="polite">{{ selected_filters['ap_model'] | length }}</span>
+  <span id="picker-device-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not selected_filters['device'] %} d-none{% endif %}" aria-live="polite">{{ selected_filters['device'] | length }}</span>
+  <span id="picker-controller-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not selected_filters['controller'] %} d-none{% endif %}" aria-live="polite">{{ selected_filters['controller'] | length }}</span>
+  <span id="picker-application-badge" hx-swap-oob="true" class="badge bg-secondary ms-1{% if not selected_filters['application'] %} d-none{% endif %}" aria-live="polite">{{ selected_filters['application'] | length }}</span>
+{% endblock picker_badges_oob %}
 {% block count_oob %}
 {# OOB count caption — emitted by POST /overview/grid alongside the primary
    grid swap. HTMX merges the #overview-count span by id into the

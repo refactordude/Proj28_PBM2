@@ -246,7 +246,7 @@ def post_overview_grid(
         request,
         "overview/index.html",
         ctx,
-        block_names=["grid", "count_oob", "filter_badges_oob", "pagination_oob"],
+        block_names=["grid", "count_oob", "filter_badges_oob", "pagination_oob", "picker_badges_oob"],
     )
     # D-JV-12 + D-JV-14 + Pitfall 6 from Phase 4: server-set push URL
     # (canonical /overview?..., NOT /overview/grid).
@@ -330,7 +330,7 @@ def get_overview_preset(request: Request, name: str):
         request,
         "overview/index.html",
         ctx,
-        block_names=["grid", "count_oob", "filter_badges_oob", "pagination_oob"],
+        block_names=["grid", "count_oob", "filter_badges_oob", "pagination_oob", "picker_badges_oob"],
     )
     response.headers["HX-Push-Url"] = _build_overview_url(
         filters, vm.sort_col, vm.sort_order, vm.page

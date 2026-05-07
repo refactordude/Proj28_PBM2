@@ -150,6 +150,39 @@ def test_post_overview_grid_returns_oob_blocks(jv_dir_with_one: Path, client: Te
     assert 'id="overview-filter-badges"' in r.text
 
 
+def test_post_overview_grid_emits_picker_badge_oob_swaps(
+    jv_dir_with_one: Path, client: TestClient
+) -> None:
+    """Mirrors browse-side gap-3 contract: each of the 6 JV pickers must get
+    an OOB badge swap on POST /overview/grid so the count chip on the
+    persistent trigger button stays in sync after debounced filter commits.
+
+    Without this OOB contract the picker_popover macro's count badge stays
+    stuck on the value computed at last full-page render — the user toggles
+    a checkbox, the grid updates, but the trigger-button chip lags."""
+    r = client.post(
+        "/overview/grid",
+        data={"customer": ["Samsung"], "ap_company": ["Qualcomm"]},
+    )
+    assert r.status_code == 200
+    body = r.text
+    for facet in ("customer", "ap_company", "ap_model", "device", "controller", "application"):
+        marker = f'id="picker-{facet}-badge" hx-swap-oob="true"'
+        assert marker in body, (
+            f"POST /overview/grid must emit OOB swap for picker-{facet}-badge "
+            f"(parity with Browse picker_badges_oob block)"
+        )
+    # Selected facets show their count and DON'T carry d-none
+    assert '>1</span>' in body  # the customer/ap_company badges show "1"
+    # Unselected facet badge MUST carry d-none so the chip is hidden.
+    assert 'id="picker-device-badge" hx-swap-oob="true"' in body
+    device_idx = body.index('id="picker-device-badge"')
+    device_span_end = body.index("</span>", device_idx)
+    assert "d-none" in body[device_idx:device_span_end], (
+        "Unselected picker badge must carry d-none so the count chip is hidden"
+    )
+
+
 def test_post_overview_grid_sets_hx_push_url(jv_dir_with_one: Path, client: TestClient) -> None:
     r = client.post("/overview/grid", data={"sort": "start", "order": "desc"})
     assert r.status_code == 200
