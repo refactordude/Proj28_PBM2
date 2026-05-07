@@ -241,13 +241,45 @@ main.container-fluid {
    ============================================================ */
 
 /* Overview grid scroll container — vertical scroll for sticky-thead to
-   work (Pattern 5 / Pitfall 1 from Phase 4). Mirrors .browse-grid-body. */
+   work (Pattern 5 / Pitfall 1 from Phase 4). Mirrors .browse-grid-body.
+   overflow-x: auto pairs with sticky first/last columns below — long titles
+   (e.g. fixture 3193869180, 151 chars) no longer push metadata columns into
+   uneven widths; instead the table scrolls horizontally while Title and
+   Actions remain pinned. */
 .overview-grid-body {
   padding: 0;
   max-height: 70vh;
+  overflow-x: auto;
   overflow-y: auto;
 }
 .overview-grid-body .alert { margin: 16px; }
+
+/* Sticky first (Title) + last (Actions) columns — quick task 260507-rvx.
+   Background must be opaque so scrolling sibling cells don't bleed through;
+   var(--panel) matches the surrounding card. Hairline box-shadow draws a
+   1px separator so users see the pinned edge. z-index layering:
+     - body sticky cells: 1 (above scrolling siblings)
+     - thead sticky cells: 2 (above body cells when both axes scroll). */
+.overview-grid > thead > tr > th:first-child,
+.overview-grid > tbody > tr > td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--panel);
+  z-index: 1;
+  box-shadow: 1px 0 0 0 var(--line);
+}
+.overview-grid > thead > tr > th:last-child,
+.overview-grid > tbody > tr > td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--panel);
+  z-index: 1;
+  box-shadow: -1px 0 0 0 var(--line);
+}
+.overview-grid > thead > tr > th:first-child,
+.overview-grid > thead > tr > th:last-child {
+  z-index: 2;
+}
 
 /* Phase 02 — Overview filter bar layout (D-UI2-07/08/10).
    Browse-parity: filter row is horizontal (display:flex), 6 picker
