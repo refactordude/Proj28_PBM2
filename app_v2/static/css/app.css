@@ -281,6 +281,22 @@ main.container-fluid {
   z-index: 2;
 }
 
+/* Cap Title column width so long titles (e.g. fixture 3193869180 at 151
+   chars) wrap to multi-line inside the cell instead of expanding the entire
+   column. width + max-width together pin the column under table-layout:auto;
+   word-break + overflow-wrap handle very long unbroken tokens. The pinned
+   width keeps the sticky-left edge predictable regardless of row content. */
+.overview-grid > thead > tr > th:first-child,
+.overview-grid > tbody > tr > td:first-child {
+  width: 280px;
+  max-width: 280px;
+}
+.overview-grid > tbody > tr > td:first-child {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 /* Phase 02 — Overview filter bar layout (D-UI2-07/08/10).
    Browse-parity: filter row is horizontal (display:flex), 6 picker
    dropdowns + "Clear all" align-items center, gap 8px (matches Browse's
