@@ -194,10 +194,11 @@ def test_get_browse_renders_preset_chip_strip(client, monkeypatch) -> None:
     assert 'hx-get="/browse/preset/snapdragon-flagships"' in r.text
     assert 'href="/browse/preset/snapdragon-flagships"' in r.text
     assert 'hx-push-url="true"' in r.text
-    # Strip renders BEFORE the filter bar (line ordering check).
+    # Strip renders AFTER the filter bar (mirrors JV layout — preset
+    # row sits below filter row, not above it).
     strip_idx = r.text.index('browse-preset-row')
     bar_idx = r.text.index('browse-filter-bar')
-    assert strip_idx < bar_idx, "preset strip must render above filter bar"
+    assert bar_idx < strip_idx, "preset strip must render below filter bar (JV-parity layout)"
 
 
 def test_get_browse_omits_strip_when_no_presets(

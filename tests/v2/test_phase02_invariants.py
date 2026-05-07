@@ -454,7 +454,12 @@ def test_overview_filter_bar_old_padding_gone() -> None:
 
 
 def test_browse_filter_bar_byte_stable() -> None:
-    """Test 24: app.css .browse-filter-bar must still have padding:12px 26px 0 and border-bottom."""
+    """Test 24: app.css .browse-filter-bar must still have padding:12px 26px 0.
+
+    The border-bottom was dropped on the Browse-presets-below-filter migration
+    (mirrors JV's clean divider treatment — the divider migrated to
+    .ff-preset-row so the line sits below Presets, not between filter and
+    Presets). Rule remains; only the border-bottom declaration is gone."""
     src = _read(APP_CSS)
     pattern = re.compile(r"^\.browse-filter-bar\s*\{", re.MULTILINE)
     match = pattern.search(src)
@@ -465,8 +470,9 @@ def test_browse_filter_bar_byte_stable() -> None:
     assert "padding: 12px 26px 0" in block, (
         ".browse-filter-bar must still have padding: 12px 26px 0 (byte-stable)"
     )
-    assert "border-bottom: 1px solid var(--line)" in block, (
-        ".browse-filter-bar must still have border-bottom: 1px solid var(--line) (byte-stable)"
+    assert "border-bottom" not in block, (
+        ".browse-filter-bar must NOT have border-bottom — divider lives on "
+        ".ff-preset-row to mirror JV layout"
     )
 
 

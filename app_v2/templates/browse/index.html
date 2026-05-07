@@ -36,6 +36,9 @@
        AT trees while still being a valid form-association target. #}
     <form id="browse-filter-form" autocomplete="off" class="visually-hidden" aria-hidden="true"></form>
 
+    {# Filter bar — ABOVE the scroll container, always visible. #}
+    {% include "browse/_filter_bar.html" %}
+
     {# 260507-r0k — Preset chip strip (Browse). REUSES the .ff-preset-row /
        .ff-preset-chip rules from 260507-obp (app.css lines 1213-1251).
        Static — rendered only on full-page GET /browse. The OOB swap on
@@ -45,7 +48,11 @@
 
        Hidden entirely when presets is empty (no YAML file, all entries
        malformed, or YAML present but list is empty) — prevents an empty
-       container from claiming vertical space above the filter bar.
+       container from claiming vertical space below the filter bar.
+
+       Position: BELOW the filter bar (mirrors JV layout); the
+       .ff-preset-row carries the divider via its own border-bottom so
+       the line sits below Presets, not between filter and Presets.
 
        Anchored to Dashboard_v2.html tiny-chip language (per repo
        convention); the .ff-preset-chip hover/focus state uses the
@@ -67,9 +74,6 @@
         {% endfor %}
       </div>
     {% endif %}
-
-    {# Filter bar — ABOVE the scroll container, always visible. #}
-    {% include "browse/_filter_bar.html" %}
 
     {# Pivot grid scroll container. Vertical scroll lives HERE so
        <thead class="sticky-top"> engages (Pitfall 1). The .browse-grid-body
