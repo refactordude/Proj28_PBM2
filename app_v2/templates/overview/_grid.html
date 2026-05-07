@@ -3,13 +3,13 @@
    D-JV-15: two row buttons (Report Link + AI Summary).
    Title cell IS the link to /joint_validation/<id> (no separate View button).
 
-   12 sortable column headers via sortable_th macro defined in index.html grid
-   block. Action column is the 13th column and is NOT sortable. #}
+   9 sortable column headers (260507-rmj dropped Status, 담당자, End) via
+   sortable_th macro defined in index.html grid block. Action column is the
+   10th column and is NOT sortable. #}
 <table class="table table-sm overview-grid sticky-top-table" id="overview-grid-table">
   <thead>
     <tr>
       {{ sortable_th("title", "Title") }}
-      {{ sortable_th("status", "Status") }}
       {{ sortable_th("customer", "Customer") }}
       {{ sortable_th("model_name", "Model Name") }}
       {{ sortable_th("ap_company", "AP Company") }}
@@ -17,16 +17,14 @@
       {{ sortable_th("device", "Device") }}
       {{ sortable_th("controller", "Controller") }}
       {{ sortable_th("application", "Application") }}
-      {{ sortable_th("assignee", "담당자") }}
       {{ sortable_th("start", "Start") }}
-      {{ sortable_th("end", "End") }}
       <th class="text-end">Actions</th>
     </tr>
   </thead>
   <tbody>
     {% if vm.rows | length == 0 %}
       <tr>
-        <td colspan="13" class="text-center text-muted py-4">
+        <td colspan="10" class="text-center text-muted py-4">
           <strong>No Joint Validations yet.</strong>
           Drop a Confluence export at <code>content/joint_validation/&lt;page_id&gt;/index.html</code>.
         </td>
@@ -40,7 +38,6 @@
               {{ row.title | e }}
             </a>
           </td>
-          <td>{{ row.status | e }}</td>
           <td>{{ row.customer | e }}</td>
           <td>{{ row.model_name | e }}</td>
           <td>{{ row.ap_company | e }}</td>
@@ -48,9 +45,7 @@
           <td>{{ row.device | e }}</td>
           <td>{{ row.controller | e }}</td>
           <td>{{ row.application | e }}</td>
-          <td>{{ row.assignee | e }}</td>
           <td>{{ row.start | e }}</td>
-          <td>{{ row.end | e }}</td>
           <td class="text-end">
             {# Report Link button (D-JV-15) — disabled when row.link is None
                (sanitizer rejected scheme OR raw value was empty). #}

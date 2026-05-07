@@ -51,8 +51,11 @@
        "{{ col }}: {{ count }}" badge strip. Each facet renders one row:
        "<Label>: <chip> <chip> ... [+N more]". Up to 10 value chips per row;
        row is omitted entirely when the facet has zero selected values.
-       Chip color is determined per-facet via .c-1..c-6 in app.css
+       Chip color is determined per-facet via .c-1..c-5 in app.css
        (anchored to Dashboard_v2.html tiny-chip language, lines 263-268).
+       260507-rmj: dropped the Status facet; surviving 5 facets
+       (customer/ap_company/device/controller/application) re-occupy the
+       lower-index palette slots c-1..c-5.
 
        The wrapper #overview-filter-badges + hx-swap-oob is byte-stable —
        POST /overview/grid still emits this block via block_names so HTMX
@@ -65,7 +68,6 @@
        instead of being scattered across the codebase. #}
     {% block filter_badges_oob %}
       {%- set ff_labels = {
-          "status":      "Status",
           "customer":    "Customer",
           "ap_company":  "AP Company",
           "device":      "Device",
@@ -73,15 +75,14 @@
           "application": "Application",
       } -%}
       {%- set ff_variants = {
-          "status":      "c-1",
-          "customer":    "c-2",
-          "ap_company":  "c-3",
-          "device":      "c-4",
-          "controller":  "c-5",
-          "application": "c-6",
+          "customer":    "c-1",
+          "ap_company":  "c-2",
+          "device":      "c-3",
+          "controller":  "c-4",
+          "application": "c-5",
       } -%}
       <div id="overview-filter-badges" hx-swap-oob="true" class="px-3 pt-2">
-        {% for col in ["status", "customer", "ap_company", "device", "controller", "application"] %}
+        {% for col in ["customer", "ap_company", "device", "controller", "application"] %}
           {%- set values = selected_filters.get(col) or [] -%}
           {%- if values -%}
             {%- set total = values | length -%}

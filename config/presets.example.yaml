@@ -4,17 +4,17 @@
 # Each entry:
 #   name:    machine id used in /overview/preset/<name> (slug, [a-z0-9_-])
 #   label:   chip text shown to the user (<= 40 chars recommended)
-#   filters: dict keyed by FILTERABLE_COLUMNS (status, customer, ap_company,
-#            device, controller, application). Each value is a list of
-#            strings — UNION within a facet, INTERSECTION across facets,
-#            same semantics as the picker popovers.
+#   filters: dict keyed by FILTERABLE_COLUMNS (customer, ap_company, device,
+#            controller, application). Each value is a list of strings —
+#            UNION within a facet, INTERSECTION across facets, same
+#            semantics as the picker popovers.
+# (260507-rmj — Status was dropped as a filterable facet on the JV listing.)
 # Unknown facet keys, non-list values, or missing name/label cause the
 # entry to be silently skipped at load time.
 
 - name: korean-oems-in-progress
   label: "Korean OEMs in progress"
   filters:
-    status: ["In Progress"]
     customer: ["Samsung", "Hyundai"]
 
 - name: qualcomm-wearables
@@ -26,5 +26,4 @@
 - name: pending-ufs4
   label: "Pending UFS 4.0"
   filters:
-    status: ["Pending"]
     device: ["UFS 4.0"]

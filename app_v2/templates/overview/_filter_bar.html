@@ -2,13 +2,13 @@
    D-UI2-07: wrapper div is .overview-filter-bar (NO .panel class) — nested
    inside the outer .panel in overview/index.html.
    D-UI2-08: <form> is the flex container (d-flex gap-2 flex-wrap w-100) so
-   the 6 picker dropdowns lay out horizontally in a single row.
+   the 5 picker dropdowns lay out horizontally in a single row.
    D-UI2-09: picker_popover macro imported byte-stable from browse/.
    D-UI2-10: "Clear all" gets ms-auto so it floats to the far right within
    the flex row, matching Browse convention.
-   The 6 picker macro calls are byte-stable (D-JV-11 + D-15b auto-commit
+   The 5 picker macro calls are byte-stable (D-JV-11 + D-15b auto-commit
    + form-association + OOB filter-badge swap contracts unchanged from
-   Phase 01 Plan 05). #}
+   Phase 01 Plan 05; 260507-rmj dropped the Status picker). #}
 {% from "browse/_picker_popover.html" import picker_popover %}
 
 <div class="overview-filter-bar" id="overview-filter-bar">
@@ -22,18 +22,6 @@
     <input type="hidden" name="sort" value="{{ vm.sort_col | e }}">
     <input type="hidden" name="order" value="{{ vm.sort_order | e }}">
     <input type="hidden" name="page" value="1">  {# Phase 02 Plan 02-04: filter changes reset to page 1 (D-UI2-13). #}
-
-    {{ picker_popover(
-        name="status",
-        label="Status",
-        options=vm.filter_options["status"],
-        selected=selected_filters["status"],
-        form_id="overview-filter-form",
-        hx_post="/overview/grid",
-        hx_target="#overview-grid",
-        disable_auto_commit=False,
-        disabled=(vm.total_count == 0 and (vm.filter_options["status"] | length) == 0),
-    ) }}
 
     {{ picker_popover(
         name="customer",
