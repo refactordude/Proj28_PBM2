@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: v1.0 milestone complete
-stopped_at: "Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels (Platform 브라우저 / AI 질문하기)"
-last_updated: "2026-05-07T15:12:25.000Z"
-last_activity: "2026-05-07 - Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels (Platform 브라우저 / AI 질문하기)"
+stopped_at: "Completed quick task 260508-099: Browser <title> rebrand to Platform Dashboard V1 (synced with topbar wordmark)"
+last_updated: "2026-05-08T00:20:00.000Z"
+last_activity: "2026-05-08 - Completed quick task 260508-099: Browser <title> rebrand to Platform Dashboard V1 (synced with topbar wordmark)"
 progress:
   total_phases: 4
   completed_phases: 0
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-07 - Completed quick task 260508-01a: Rename Browse/Ask page headings to Korean labels (Platform 브라우저 / AI 질문하기)
+Last activity: 2026-05-08 - Completed quick task 260508-099: Browser <title> rebrand to Platform Dashboard V1 (synced with topbar wordmark)
 
 Progress: [——————————] no active milestone
 
@@ -83,6 +83,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260507-wf6 | JV detail page: (1) drop `p-0` from iframe-wrapping `.panel-body` so default 26/32 padding restores horizontal gutter around the embedded `index.html` (Confluence export) — fixes "too tight" margin; (2) make `.topbar` `position: sticky; top: 12px; z-index: 50` so the `Joint Validation` tab stays reachable while scrolling the 80vh iframe (root cause: tab `<a href="/">` was correct, but offscreen). Two atomic commits, 592 v2 tests pass (the 2 failing tests in test_main.py + test_phase04_uif_components.py predate this task — caused by f32cac1 topbar rebrand) | 2026-05-07 | bfeb3c6 | [260507-wf6-when-a-index-html-file-is-rendered-insid](./quick/260507-wf6-when-a-index-html-file-is-rendered-insid/) |
 | 260508-009 | JV filter→Presets vertical gap: append `mb-3` to `#overview-filter-form` class list to mirror Browse's `#browse-filter-controls` pattern; one-line template edit, no CSS change, byte-stable id + 5 hx-* attrs; 591 v2 tests pass (3 pre-existing failures unrelated) | 2026-05-08 | ce060ef | [260508-009-add-vertical-margin-between-filters-row-](./quick/260508-009-add-vertical-margin-between-filters-row-/) |
 | 260508-01a | Rename Browse/Ask page headings to Korean labels — `<b>Browse</b>`→`<b>Platform 브라우저</b>` (browse/index.html:30) + `<h1 class="panel-title">Ask</h1>`→`<h1 class="panel-title">AI 질문하기</h1>` (ask/index.html:76); both match topbar tab labels verbatim; lockstep test updates (test_main.py + test_phase02_invariants.py); 593 v2 tests pass | 2026-05-07 | 5092268 | [260508-01a-rename-browse-and-ask-labels-to-korean-p](./quick/260508-01a-rename-browse-and-ask-labels-to-korean-p/) |
+| 260508-099 | Browser `<title>` rebrand: `Yhoon Dashboard` → `Platform Dashboard V1` to sync with topbar wordmark; trailing ` v2.0` suffix dropped (new format `{page_title} — Platform Dashboard V1`); inline comment in base.html updated; 2 v2 test assertions realigned (test_phase04_uif_components topbar wordmark, test_content_routes title suffix); 594 passed / 5 skipped / 0 failed (resolves the 3 pre-existing topbar-rebrand test failures as a side effect) | 2026-05-08 | c01168f | [260508-099-rename-browser-title-from-yhoon-dashboar](./quick/260508-099-rename-browser-title-from-yhoon-dashboar/) |
 
 ## Blockers/Concerns
 
