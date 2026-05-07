@@ -92,7 +92,6 @@ Stopped at: Completed 04-05-PLAN.md (Wave 5 — atomic .panel-header to .ph migr
 - Phase 1 added: Overview Tab: Auto-discover Platforms from HTML Files (2026-04-30)
 - Phase 3 added: Overhaul Ask feature into multi-step agentic chat — PydanticAI tool loop + SSE streaming + ephemeral history; full decisions captured in `.planning/notes/ask-chat-overhaul-decisions.md` (2026-05-03)
 - Phase 4 added: UI Foundation — Helix-aligned shell & primitives (foundation for downstream JV list, Platform BM pivot, Ask AI sidebar+citations) (2026-05-03)
-- Phase 5 added: Stacked-Panel Filter/Grid Separation on Joint Validation + Browse — split single .panel into stacked filter + grid panels with ~16px gap; preserve all HTMX OOB receivers (2026-05-07)
 
 ### Decisions
 
