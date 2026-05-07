@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ page_title | default("PBM2") }} — PBM2 v2.0</title>
+  <title>{{ page_title | default("Yhoon Dashboard") }} — Yhoon Dashboard v2.0</title>
 
   {# INFRA-04: vendored Bootstrap 5.3.8, HTMX 2.0.10, Bootstrap Icons 1.13.1 #}
   <link rel="stylesheet" href="{{ url_for('static', path='vendor/bootstrap/bootstrap.min.css') }}">
@@ -51,8 +51,8 @@
 </head>
 <body>
   {# Phase 04 — Helix topbar (D-UIF-06, D-UIF-07).
-     Replaces the legacy Bootstrap navbar markup. Brand "P" + wordmark
-     "PBM2" + tab strip (Joint Validation / Browse / Ask) + static "PM"
+     Replaces the legacy Bootstrap navbar markup. Brand "AE" + wordmark
+     "Yhoon Dashboard" + tab strip (Joint Validation / Browse / Ask) + static "YH"
      avatar. Tabs are <a href> per Phase 1 Pitfall 8 (no hx-boost). #}
   {{ topbar(active_tab=active_tab|default("")) }}
 

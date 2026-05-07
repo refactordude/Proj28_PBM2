@@ -33,7 +33,7 @@ def test_get_root_contains_bootstrap_nav_tabs(client):
     # continuity; the contract is "shell renders the top nav".
     assert 'class="topbar"' in r.text
     assert 'class="brand"' in r.text
-    assert 'class="brand-mark">P<' in r.text
+    assert 'class="brand-mark">AE<' in r.text
     assert 'class="tabs"' in r.text
 
 

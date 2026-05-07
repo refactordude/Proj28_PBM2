@@ -4,21 +4,21 @@
    PBM2 trio: Joint Validation (active_tab="overview"), Browse
    (active_tab="browse"), Ask (active_tab="ask"). Tab elements are
    <a href> per D-UIF-06 + Phase 1 Pitfall 8 (no hx-boost — full-page
-   nav by contract). Brand-mark renders letter "P". Avatar slot
-   shows static "PM" initials.
+   nav by contract). Brand-mark renders letters "AE". Avatar slot
+   shows static "YH" initials.
 
    Caller: `{% from "_components/topbar.html" import topbar %}`
            `{{ topbar(active_tab=active_tab|default("")) }}` #}
 {% macro topbar(active_tab="") %}
 <div class="topbar">
   <div class="brand">
-    <div class="brand-mark">P</div>
-    <span>PBM2</span>
+    <div class="brand-mark">AE</div>
+    <span>Yhoon Dashboard</span>
   </div>
   <div class="tabs">
     <a class="tab" href="/"
        {% if active_tab == "overview" %}aria-selected="true"{% endif %}>
-      <i class="bi bi-list-ul"></i> Joint Validation
+      <i class="bi bi-clipboard-check"></i> Joint Validation
     </a>
     <a class="tab" href="/browse"
        {% if active_tab == "browse" %}aria-selected="true"{% endif %}>
@@ -30,7 +30,7 @@
     </a>
   </div>
   <div class="top-right">
-    <div class="av">PM</div>
+    <div class="av">YH</div>
   </div>
 </div>
 {% endmacro %}

@@ -34,8 +34,8 @@ def test_showcase_inherits_topbar(client):
     r = client.get("/_components")
     body = r.text
     assert 'class="topbar"' in body
-    assert 'class="brand-mark">P<' in body
-    assert ">PBM2<" in body
+    assert 'class="brand-mark">AE<' in body
+    assert ">Yhoon Dashboard<" in body
 
 
 def test_showcase_no_active_tab(client):
