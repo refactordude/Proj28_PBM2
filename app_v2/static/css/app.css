@@ -1249,3 +1249,14 @@ main.container-fluid {
      the user knows the click registered. */
   opacity: 0.7;
 }
+
+/* JV grid Actions column — quick task 260507-rvx.
+   Three Actions buttons (edm / 컨플 / AI) all carry .jv-action-btn so they
+   render at uniform width regardless of label glyph count. min-width sized to
+   comfortably fit the widest of the three labels (컨플 — 2 CJK glyphs) at
+   .btn-sm scale; text-align center keeps single-word labels visually centered
+   inside the box. */
+.jv-action-btn {
+  min-width: 56px;
+  text-align: center;
+}
