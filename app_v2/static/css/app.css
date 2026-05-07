@@ -267,6 +267,11 @@ main.container-fluid {
   table-layout: fixed;
   min-width: 1400px;
 }
+/* Vertically center cell content so wrapped Title rows (multi-line) align
+   middle against neighbouring single-line cells (Customer, Start, etc.). */
+.overview-grid > tbody > tr > td {
+  vertical-align: middle;
+}
 
 /* Sticky first (Title) + last (Actions) columns — quick task 260507-rvx.
    Background must be opaque so scrolling sibling cells don't bleed through;
