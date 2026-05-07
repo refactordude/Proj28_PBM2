@@ -78,18 +78,20 @@
       <i class="bi bi-highlighter"></i> Highlight
     </label>
 
-    {# Clear all (D-17, D-18): hidden via d-none when no selection; single
-       hx-post resets BOTH pickers AND the swap state. hx-vals='{}' sends an
-       empty form payload — the server's empty-selection branch renders the
-       empty-state alert. #}
-    <a href="#"
+    {# Clear all — mirrors JV's pattern (overview/_filter_bar.html lines
+       99-105): a btn-link styled link, ALWAYS visible, that GETs the
+       canonical /browse URL via HTMX with hx-target="body" + hx-push-url
+       so the address bar resets to /browse and the whole page re-renders
+       cleanly. Resets every render-time flag at once: platform/param
+       selections, swap_axes, highlight, and any preset-driven state —
+       the server's GET /browse default branch supplies the empty
+       selection + swap=False + highlight=False view-model. #}
+    <a href="/browse"
        id="clear-all-link"
-       class="ms-auto small text-decoration-none {% if not vm.selected_platforms and not vm.selected_params %}d-none{% endif %}"
-       style="color: var(--ink-2);"
-       hx-post="/browse/grid"
-       hx-vals='{}'
-       hx-target="#browse-grid"
-       hx-swap="innerHTML swap:200ms"
+       class="ms-auto btn btn-link btn-sm"
+       hx-get="/browse"
+       hx-target="body"
+       hx-push-url="true"
        aria-label="Clear all filters">
       Clear all
     </a>
