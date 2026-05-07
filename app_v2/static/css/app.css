@@ -259,7 +259,6 @@ main.container-fluid {
    imperceptible (UI-SPEC §Spacing Scale). */
 .overview-filter-bar {
   padding: 16px 24px 0;
-  border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1222,7 +1221,9 @@ main.container-fluid {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  padding-bottom: 8px;
   margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
 }
 .ff-preset-chip {
   /* base .ff-chip already supplies size/radius/font; this rule layers

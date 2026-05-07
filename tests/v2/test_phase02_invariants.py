@@ -406,7 +406,8 @@ def test_browse_panel_header_byte_stable_otherwise() -> None:
 
 def test_overview_filter_bar_flex_layout() -> None:
     """Test 22: .overview-filter-bar rule must have display:flex, align-items:center,
-    gap:8px, flex-wrap:wrap, border-bottom:1px solid var(--line), padding:16px 24px 0."""
+    gap:8px, flex-wrap:wrap, padding:16px 24px 0. (border-bottom moved to .ff-preset-row
+    so the divider visually sits below the Presets row instead of between filter & presets.)"""
     src = _read(APP_CSS)
     # Find the .overview-filter-bar rule selector (not self-match .panel.overview-filter-bar)
     pattern = re.compile(r"^\.overview-filter-bar\s*\{", re.MULTILINE)
@@ -427,11 +428,20 @@ def test_overview_filter_bar_flex_layout() -> None:
     assert "flex-wrap: wrap" in block, (
         ".overview-filter-bar must have flex-wrap: wrap (D-UI2-08)"
     )
-    assert "border-bottom: 1px solid var(--line)" in block, (
-        ".overview-filter-bar must have border-bottom: 1px solid var(--line) (D-UI2-08)"
-    )
     assert "padding: 16px 24px 0" in block, (
         ".overview-filter-bar must have padding: 16px 24px 0 (D-UI2-08)"
+    )
+
+    # Divider moved: .ff-preset-row owns the border-bottom so the line sits
+    # below Presets instead of between filter row and presets.
+    preset_pattern = re.compile(r"^\.ff-preset-row\s*\{", re.MULTILINE)
+    preset_match = preset_pattern.search(src)
+    assert preset_match, "app.css must contain a .ff-preset-row { rule"
+    preset_idx = preset_match.start()
+    preset_block = src[preset_idx:src.find("}", preset_idx)]
+    assert "border-bottom: 1px solid var(--line)" in preset_block, (
+        ".ff-preset-row must have border-bottom: 1px solid var(--line) "
+        "(divider moved here from .overview-filter-bar so the line renders below Presets)"
     )
 
 
