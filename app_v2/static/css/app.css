@@ -129,6 +129,11 @@ main.container-fluid {
 
 /* §Markdown content rendering rules */
 .markdown-content { max-width: 800px; margin: 0 auto; line-height: 1.6; }
+/* 260507-wzh — kill dead space above the first rendered child (typically h1 in
+   AI Summary popups). The h1/h2/h3 top margins below are designed to space
+   headings AWAY from preceding paragraphs; when a heading is the first child
+   they collapse into a visible gap above the modal/panel content. */
+.markdown-content > :first-child { margin-top: 0; }
 .markdown-content h1 { font-size: 24px; font-weight: 700; line-height: 1.3; margin-top: 1.5em; margin-bottom: 0.5em; }
 .markdown-content h2 { font-size: 20px; font-weight: 700; line-height: 1.3; margin-top: 1.4em; margin-bottom: 0.5em; }
 .markdown-content h3 { font-size: 17px; font-weight: 600; line-height: 1.4; margin-top: 1.2em; margin-bottom: 0.4em; }
@@ -801,6 +806,18 @@ main.container-fluid {
   border-radius: 16px;
   box-shadow: var(--shadow-panel);
   margin: 12px 16px 0;
+  /* 260507-wf6 — sticky topbar so the JV tab is reachable while
+     scrolling long pages (esp. /jv/{id} where the iframe is 80vh and
+     would otherwise scroll the topbar offscreen). top: 12px aligns
+     with the existing margin-top so the pill visually settles into
+     the same spot it occupied at scroll-top. z-index: 50 lays above
+     panels (which have no explicit z-index) and below Bootstrap's
+     dropdown / modal layers (1000+). The sticky-corner table z-index
+     ladder (corner=3, thead=2, first-col=1) is scoped to its own
+     stacking context, so 50 does not collide. */
+  position: sticky;
+  top: 12px;
+  z-index: 50;
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--ink); }
 .brand-mark {
