@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: v1.0 milestone complete
 stopped_at: Completed 04-05-PLAN.md (Wave 5 — atomic .panel-header to .ph migration on Browse/JV/Ask + Phase 02 invariant rewrites)
-last_updated: "2026-05-07T17:10:34.671Z"
+last_updated: "2026-05-07T05:58:23.587Z"
 last_activity: 2026-05-07
 progress:
   total_phases: 4
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-29)
 Phase: 04
 Plan: Not started
 Milestone: v2.0 Bootstrap Shell — ✅ Shipped 2026-04-29 (tag `v2.0`)
-Last activity: 2026-05-07 - Completed quick task 260504-30t: Ask streaming — server-side chunked emission of summary as text_delta SSE events
+Last activity: 2026-05-07 - Completed quick task 260507-ksn: JV parser — handle Page Properties next-sibling-td shape + dedupe header/table labels + strip Start/End parens
 
 Progress: [——————————] no active milestone
 
@@ -67,6 +67,7 @@ Not blocking — the project's accepted pattern is to defer browser UAT until re
 | 260504-220 | Ask UI follow-up: assistant response as plain prose (no panel chrome), thinking indicator moved to assistant side, perceived-streaming word-reveal | 2026-05-03 | 90d2530 | [260504-220-ask-ui-follow-up-assistant-response-as-p](./quick/260504-220-ask-ui-follow-up-assistant-response-as-p/) |
 | 260504-2jl | Ask UI fix: visible summary (drop word-reveal), CSS `:has()` thinking-hide, block-level `.chat-thinking` (own line) | 2026-05-03 | 5adf7f4 | [260504-2jl-ask-ui-fix-empty-summary-bubble-thinking](./quick/260504-2jl-ask-ui-fix-empty-summary-bubble-thinking/) |
 | 260504-30t | Ask streaming: server-side chunked emission of summary as `text_delta` SSE events between last tool_result and final | 2026-05-07 | eb4efb8 | [260504-30t-ask-streaming-server-side-chunked-emissi](./quick/260504-30t-ask-streaming-server-side-chunked-emissi/) |
+| 260507-ksn | JV parser: handle Page Properties next-sibling-`<td>` shape + dedupe heading/table label matches + strip parens from Start/End | 2026-05-07 | 4b9a92b | [260507-ksn-jv-parser-handle-page-properties-next-si](./quick/260507-ksn-jv-parser-handle-page-properties-next-si/) |
 
 ## Blockers/Concerns
 
