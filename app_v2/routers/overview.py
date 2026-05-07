@@ -18,8 +18,9 @@ Deleted (D-JV-07 + D-JV-09 — drop-folder workflow only):
 
 The ``_parse_filter_dict`` and ``_build_overview_url`` helpers are reused
 verbatim from the Phase 5 file — JV-agnostic. 260507-rmj dropped Status
-from the listing/preset facet set; the helpers now bundle 5 query keys
-(customer, ap_company, device, controller, application).
+from the listing/preset facet set; 260507-s5c re-added AP Model between
+AP Company and Device, restoring 6 query keys (customer, ap_company,
+ap_model, device, controller, application).
 
 Sync ``def`` per INFRA-05 — FastAPI dispatches BS4-parse work to the
 threadpool so it stays off the event loop.
@@ -48,20 +49,26 @@ router = APIRouter()
 def _parse_filter_dict(
     customer: list[str],
     ap_company: list[str],
+    ap_model: list[str],
     device: list[str],
     controller: list[str],
     application: list[str],
 ) -> dict[str, list[str]]:
-    """Bundle the 5 filter form lists into a dict shape the service expects.
+    """Bundle the 6 filter form lists into a dict shape the service expects.
 
     Filter columns enumerated explicitly (not iterated from FILTERABLE_COLUMNS)
     so the function signature mirrors FastAPI's Form() / Query() parameter
     list 1:1 — adding a new filter is a 3-line edit (sig + dict + form param).
-    260507-rmj dropped status from the 6-tuple.
+    260507-s5c inserted ap_model into the 5-tuple (post-260507-rmj reality),
+    restoring the 6-tuple shape with a different ordering than the pre-rmj
+    set (status was dropped, ap_model now sits where status used to live in
+    the legacy 6-tuple — but with a different position, between ap_company
+    and device).
     """
     return {
         "customer": customer,
         "ap_company": ap_company,
+        "ap_model": ap_model,
         "device": device,
         "controller": controller,
         "application": application,
@@ -88,9 +95,10 @@ def _build_overview_url(
     that ?page=1 is omitted from bookmark URLs and browser history.
 
     260507-rmj: status was dropped from the facet tuple.
+    260507-s5c: ap_model inserted after ap_company.
     """
     pairs: list[tuple[str, str]] = []
-    for col in ("customer", "ap_company", "device", "controller", "application"):
+    for col in ("customer", "ap_company", "ap_model", "device", "controller", "application"):
         for v in filters.get(col, []) or []:
             if v:  # drop empty / None
                 pairs.append((col, v))
@@ -119,6 +127,7 @@ def get_overview(
     # to [], not None.
     customer:    Annotated[list[str], Query(default_factory=list)],
     ap_company:  Annotated[list[str], Query(default_factory=list)],
+    ap_model:    Annotated[list[str], Query(default_factory=list)],
     device:      Annotated[list[str], Query(default_factory=list)],
     controller:  Annotated[list[str], Query(default_factory=list)],
     application: Annotated[list[str], Query(default_factory=list)],
@@ -139,7 +148,7 @@ def get_overview(
     dropped folders appear immediately. Per-folder mtime cache lives inside
     the grid service; the directory glob itself is NOT memoized.
     """
-    filters = _parse_filter_dict(customer, ap_company, device, controller, application)
+    filters = _parse_filter_dict(customer, ap_company, ap_model, device, controller, application)
     vm: JointValidationGridViewModel = build_joint_validation_grid_view_model(
         JV_ROOT,
         filters=filters,
@@ -184,6 +193,7 @@ def post_overview_grid(
     # used the same pattern. Empty omitted form key still resolves to [].
     customer:    Annotated[list[str], Form()] = [],
     ap_company:  Annotated[list[str], Form()] = [],
+    ap_model:    Annotated[list[str], Form()] = [],
     device:      Annotated[list[str], Form()] = [],
     controller:  Annotated[list[str], Form()] = [],
     application: Annotated[list[str], Form()] = [],
@@ -205,7 +215,7 @@ def post_overview_grid(
     Uses vm.page (clamped by service) so HX-Push-Url reflects the actual
     page the user lands on after server-side clamping (T-02-04-02 alignment).
     """
-    filters = _parse_filter_dict(customer, ap_company, device, controller, application)
+    filters = _parse_filter_dict(customer, ap_company, ap_model, device, controller, application)
     vm: JointValidationGridViewModel = build_joint_validation_grid_view_model(
         JV_ROOT,
         filters=filters,
@@ -283,12 +293,14 @@ def get_overview_preset(request: Request, name: str):
     # Build the canonical filter dict — preset values for any mentioned
     # facets, [] for the others. Reuses _parse_filter_dict for shape parity
     # with the GET / POST handlers (so the resulting `selected_filters`
-    # dict in ctx is byte-equal in shape — same 5 keys always present).
+    # dict in ctx is byte-equal in shape — same 6 keys always present).
     # 260507-rmj: status was dropped from the facet set.
+    # 260507-s5c: ap_model added to the facet set (between ap_company and device).
     pf = preset["filters"]
     filters = _parse_filter_dict(
         customer=pf.get("customer", []),
         ap_company=pf.get("ap_company", []),
+        ap_model=pf.get("ap_model", []),
         device=pf.get("device", []),
         controller=pf.get("controller", []),
         application=pf.get("application", []),

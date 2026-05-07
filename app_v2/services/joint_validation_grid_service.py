@@ -20,9 +20,10 @@ Contracts (from .planning/phases/01-overview-tab-auto-discover-platforms-from-ht
 - D-JV-10: 9 sortable columns (260507-rmj — Status, 담당자, End columns
   dropped from the listing); default ``start desc``; tiebreaker
   ``confluence_page_id`` ASC (stable for both orders); blank start to END.
-- D-JV-11: 5 popover-checklist filters (customer, ap_company, device,
-  controller, application — 260507-rmj dropped Status). Multi-filter is set
-  membership (AND across columns, OR within a column).
+- D-JV-11: 6 popover-checklist filters (customer, ap_company, ap_model,
+  device, controller, application — 260507-s5c inserted AP Model after AP
+  Company; 260507-rmj had dropped Status). Multi-filter is set membership
+  (AND across columns, OR within a column).
 - D-JV-15: link sanitizer ports D-OV-16 verbatim — drops dangerous schemes,
   promotes bare domains to https://.
 """
@@ -56,13 +57,14 @@ _DANGEROUS_LINK_SCHEMES: Final[tuple[str, ...]] = (
     "javascript:", "data:", "vbscript:", "file:", "about:",
 )
 
-# 5 filterable columns (260507-rmj reduces from 6 by dropping Status). Title,
-# Model Name, AP Model, Start are NOT filterable. status / assignee (담당자) /
-# end are still parsed by joint_validation_parser.py and stored on
-# JointValidationRow (used by the JV detail page) but are no longer displayed
-# or filterable on the JV listing.
+# 6 filterable columns (260507-s5c restores to 6 by inserting AP Model
+# between AP Company and Device; 260507-rmj had reduced to 5 by dropping
+# Status). Title, Model Name, Start are NOT filterable. status / assignee
+# (담당자) / end are still parsed by joint_validation_parser.py and stored
+# on JointValidationRow (used by the JV detail page) but are no longer
+# displayed or filterable on the JV listing.
 FILTERABLE_COLUMNS: Final[tuple[str, ...]] = (
-    "customer", "ap_company", "device", "controller", "application",
+    "customer", "ap_company", "ap_model", "device", "controller", "application",
 )
 
 # 9 sortable columns (260507-rmj reduces from 12 by dropping Status, 담당자
@@ -487,8 +489,8 @@ def build_joint_validation_grid_view_model(
         else None
     )
 
-    # 5) Active filter counts (always present for all 5 keys — 260507-rmj
-    # dropped status from the 6-key set).
+    # 5) Active filter counts (always present for all 6 keys — 260507-s5c
+    # re-added ap_model after 260507-rmj had dropped status from the 6-key set).
     active_filter_counts = {
         c: len(clean_filters.get(c, [])) for c in FILTERABLE_COLUMNS
     }

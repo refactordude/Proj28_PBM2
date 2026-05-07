@@ -75,8 +75,9 @@ def test_blank_start_sorts_to_end_regardless_of_order(tmp_path: Path) -> None:
     assert vm_asc.rows[-1].confluence_page_id == "2"
 
 
-def test_five_filter_options_enumerated_from_full_set(tmp_path: Path) -> None:
-    # 260507-rmj: status was dropped as a filterable facet. Use customer
+def test_six_filter_options_enumerated_from_full_set(tmp_path: Path) -> None:
+    # 260507-rmj: status was dropped as a filterable facet. 260507-s5c:
+    # AP Model added back so the listing has 6 facets again. Use customer
     # (a surviving facet) to exercise the same filter-options-from-full-set
     # contract: filter_options is built from ALL rows so the picker keeps
     # showing every possible value even after a filter is applied.
@@ -110,14 +111,16 @@ def test_title_fallback_to_page_id_when_h1_missing(tmp_path: Path) -> None:
 def test_active_filter_counts_match_input(tmp_path: Path) -> None:
     # 260507-rmj: status removed from FILTERABLE_COLUMNS — use customer
     # (multi-value) and ap_company (single-value) to exercise the same
-    # accumulator. active_filter_counts now has 5 keys (was 6).
+    # accumulator. 260507-s5c: ap_model re-added so active_filter_counts
+    # now has 6 keys (was 5 post-260507-rmj; was 6 pre-260507-rmj with
+    # status; net delta vs pre-260507-rmj is status→ap_model swap).
     _write_jv(tmp_path, "1", title="A", customer="A")
     vm = build_joint_validation_grid_view_model(
         tmp_path,
         filters={"customer": ["A", "B"], "ap_company": ["X"]},
     )
     assert vm.active_filter_counts == {
-        "customer": 2, "ap_company": 1,
+        "customer": 2, "ap_company": 1, "ap_model": 0,
         "device": 0, "controller": 0, "application": 0,
     }
 
