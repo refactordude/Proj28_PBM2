@@ -108,3 +108,79 @@ def test_parse_returns_plain_str_not_navigablestring(primary_html_bytes: bytes) 
                   "assignee", "start", "end", "link"):
         value = getattr(parsed, field)
         assert type(value) is str, f"{field} is {type(value).__name__}, expected str"
+
+
+def test_parse_page_properties_with_wrapped_value() -> None:
+    # Real Confluence Page Properties macro shape: <strong> wrapped in
+    # <p> inside <td>; value lives in next-sibling <td> wrapped in
+    # <div class="content-wrapper"><p>...</p></div>.
+    html = (
+        b"<table><tbody>"
+        b"<tr><td><p><strong>Status</strong></p></td>"
+        b'<td><div class="content-wrapper"><p>Planned</p></div></td></tr>'
+        b"<tr><td><p><strong>Customer</strong></p></td>"
+        b"<td><p>Acme Corp</p></td></tr>"
+        b"<tr><td><strong>Device</strong></td>"
+        b"<td>UFS 4.0</td></tr>"
+        b"</tbody></table>"
+    )
+    parsed = parse_index_html(html)
+    assert parsed.status == "Planned"
+    assert parsed.customer == "Acme Corp"
+    assert parsed.device == "UFS 4.0"
+
+
+def test_parse_prefers_page_properties_over_heading_for_duplicate_label() -> None:
+    # Same field label in BOTH a standalone heading (no value beside it)
+    # AND a Page Properties row. The table row MUST win.
+    html = (
+        b"<html><body>"
+        b"<h1><strong>Status</strong></h1>"   # heading-only — no usable value
+        b"<table><tbody>"
+        b"<tr><td><p><strong>Status</strong></p></td>"
+        b"<td><p>Planned</p></td></tr>"
+        b"</tbody></table>"
+        b"</body></html>"
+    )
+    assert parse_index_html(html).status == "Planned"
+
+
+def test_parse_strips_parens_from_start_and_end_only() -> None:
+    # Start/End: leading "(" + trailing ")" → strip; idempotent on bare value.
+    # Inline-paragraph shape:
+    html_inline = (
+        b"<html><body>"
+        b"<h1>X</h1>"
+        b"<p><strong>Start</strong>: (2024-03-01)</p>"
+        b"<p><strong>End</strong>: 2024-09-30</p>"   # bare — must stay bare
+        b"</body></html>"
+    )
+    parsed = parse_index_html(html_inline)
+    assert parsed.start == "2024-03-01"
+    assert parsed.end == "2024-09-30"
+
+    # Page-Properties shape with parens:
+    html_pp = (
+        b"<table><tbody>"
+        b"<tr><td><p><strong>Start</strong></p></td>"
+        b"<td><p>(2024-03-01)</p></td></tr>"
+        b"<tr><td><p><strong>End</strong></p></td>"
+        b"<td><p>(2024-09-30)</p></td></tr>"
+        b"</tbody></table>"
+    )
+    parsed_pp = parse_index_html(html_pp)
+    assert parsed_pp.start == "2024-03-01"
+    assert parsed_pp.end == "2024-09-30"
+
+
+def test_parse_paren_strip_does_not_apply_to_other_fields() -> None:
+    # Customer: "Acme (lead)" is a legitimate value — parens MUST stay.
+    html = (
+        b"<table><tbody>"
+        b"<tr><th><strong>Customer</strong></th><td>Acme (lead)</td></tr>"
+        b"<tr><th><strong>AP Model</strong></th><td>(SM8650)</td></tr>"
+        b"</tbody></table>"
+    )
+    parsed = parse_index_html(html)
+    assert parsed.customer == "Acme (lead)"
+    assert parsed.ap_model == "(SM8650)"   # parens preserved on non-Start/End fields

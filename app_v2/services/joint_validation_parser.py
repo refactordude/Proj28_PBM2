@@ -50,58 +50,108 @@ _FIELD_LABELS: Final[dict[str, str]] = {
 }
 
 
+def _strip_parens(value: str) -> str:
+    """Strip a single matching pair of leading "(" + trailing ")".
+
+    Safe-by-design: only strips when BOTH endpoints are present and the
+    parens are at the very edges of the (already-trimmed) string.
+    Idempotent on values without parens. Used ONLY for Start/End fields
+    — applying it elsewhere would corrupt legitimate values like
+    "Acme (lead)".
+    """
+    if len(value) >= 2 and value.startswith("(") and value.endswith(")"):
+        return value[1:-1].strip()
+    return value
+
+
 def _extract_label_value(soup: BeautifulSoup, label: str) -> str:
     """Return trimmed text of the cell adjacent to <strong>label</strong>.
 
-    Handles BOTH the Page Properties shape and the <p><strong>...</strong>: ...</p>
-    fallback. First match wins. Missing → "".
+    Resolution order:
+      1. Page Properties shape (preferred): <strong> sits inside a <th>/<td>
+         cell (possibly wrapped in <p>, <a>, etc.). Walk up to the nearest
+         <th>/<td> ancestor; the value lives in the next-sibling <th>/<td>.
+         Tolerates wrappers in the value cell (<div class="content-wrapper">,
+         <p>, nested combos) — full-text-strip is sufficient.
+      2. Inline-paragraph fallback: <p><strong>label</strong>: value</p>.
+         Same paragraph carries label and value separated by ":".
+
+    Disambiguation: when the same <strong>label</strong> appears in
+    MULTIPLE places (e.g. <h1> AND a Page Properties row), prefer the
+    first match that produces a non-empty Page-Properties value over any
+    heading-only match. Falls through to the inline-paragraph shape only
+    if no Page-Properties match anywhere yields a non-empty value.
     """
-    strong = soup.find(
+    matches = soup.find_all(
         "strong",
         string=lambda s: s is not None and s.strip() == label,
     )
-    if strong is None:
+    if not matches:
         return ""
-    cell = strong.find_parent(["th", "td", "p"])
-    if cell is None:
-        return ""
-    if cell.name in ("th", "td"):
-        sibling = cell.find_next_sibling(["td", "th"])
-        if sibling is None:
-            return ""
-        return str(sibling.get_text(strip=True))
-    # cell.name == 'p' — fallback shape
-    full = cell.get_text(strip=True)
-    if full.startswith(label):
-        rest = full[len(label):].lstrip()
-        if rest.startswith(":"):
-            rest = rest[1:].lstrip()
-        return str(rest)
-    return str(full)
+    inline_fallback = ""
+    for strong in matches:
+        # Pass 1: prefer the Page-Properties shape — find the nearest
+        # <th>/<td> ancestor and read its next-sibling cell's full text.
+        cell = strong.find_parent(["th", "td"])
+        if cell is not None:
+            sibling = cell.find_next_sibling(["td", "th"])
+            if sibling is not None:
+                value = str(sibling.get_text(strip=True))
+                if value:
+                    return value
+                # Empty value cell — preserved by existing
+                # test_parse_empty_value_cell_returns_blank. Honour the
+                # "first match wins on duplicate labels" rule WITHIN the
+                # Page-Properties shape: stop scanning further matches.
+                return ""
+            # No sibling — keep scanning later matches.
+            continue
+        # Pass 2 candidate: <p><strong>label</strong>: value</p> shape.
+        # Record the FIRST inline-paragraph candidate but keep scanning
+        # — a later Page-Properties match should still win.
+        if not inline_fallback:
+            p_parent = strong.find_parent("p")
+            if p_parent is not None:
+                full = p_parent.get_text(strip=True)
+                if full.startswith(label):
+                    rest = full[len(label):].lstrip()
+                    if rest.startswith(":"):
+                        rest = rest[1:].lstrip()
+                    inline_fallback = str(rest)
+                else:
+                    inline_fallback = str(full)
+    return inline_fallback
 
 
 def _extract_link(soup: BeautifulSoup) -> str:
     """First <a href=...> inside the cell adjacent to <strong>Report Link</strong>.
 
-    Returns raw href; sanitization happens later in grid_service via _sanitize_link.
+    Walks up to the nearest <th>/<td> ancestor of the matching <strong>
+    (mirrors _extract_label_value Pass 1). Inline-paragraph fallback:
+    if the strong sits directly in a <p>, search that <p> for an <a>.
+    Returns raw href; sanitization happens later in grid_service.
     """
-    strong = soup.find(
+    matches = soup.find_all(
         "strong",
         string=lambda s: s is not None and s.strip() == "Report Link",
     )
-    if strong is None:
-        return ""
-    parent = strong.find_parent(["th", "td", "p"])
-    if parent is None:
-        return ""
-    if parent.name in ("th", "td"):
-        sibling = parent.find_next_sibling(["td", "th"])
-    else:
-        sibling = parent
-    if sibling is None:
-        return ""
-    a = sibling.find("a", href=True)
-    return str(a["href"]).strip() if a else ""
+    for strong in matches:
+        cell = strong.find_parent(["th", "td"])
+        if cell is not None:
+            sibling = cell.find_next_sibling(["td", "th"])
+            if sibling is None:
+                continue
+            a = sibling.find("a", href=True)
+            if a is not None:
+                return str(a["href"]).strip()
+            continue
+        # Inline-paragraph fallback.
+        p_parent = strong.find_parent("p")
+        if p_parent is not None:
+            a = p_parent.find("a", href=True)
+            if a is not None:
+                return str(a["href"]).strip()
+    return ""
 
 
 def parse_index_html(html_bytes: bytes) -> ParsedJV:
@@ -128,7 +178,7 @@ def parse_index_html(html_bytes: bytes) -> ParsedJV:
         controller=_extract_label_value(soup, "Controller"),
         application=_extract_label_value(soup, "Application"),
         assignee=_extract_label_value(soup, "담당자"),
-        start=_extract_label_value(soup, "Start"),
-        end=_extract_label_value(soup, "End"),
+        start=_strip_parens(_extract_label_value(soup, "Start")),
+        end=_strip_parens(_extract_label_value(soup, "End")),
         link=_extract_link(soup),
     )
