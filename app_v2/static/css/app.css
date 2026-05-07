@@ -238,6 +238,15 @@ main.container-fluid {
   color: var(--ink-2);
 }
 
+/* 260507-w7h — Highlight toggle: soft-yellow background on minority cells.
+   Mode-based per-parameter-axis rule (see _compute_minority_cells in
+   app_v2/services/browse_service.py). Render-layer only — no token
+   promotion (single-use, single-color). Subtle enough that
+   table-striped row banding still reads through. */
+.pivot-table td.cell-highlight {
+  background: #fff8c5;
+}
+
 /* ============================================================
    Phase 05 — Overview Tab Redesign (D-OV-05, OVERVIEW-V2-01)
    Mirrors Phase 04 Browse pivot-grid styling for visual consistency.
@@ -579,7 +588,8 @@ main.container-fluid {
 
 /* Tool-call pill (D-CHAT-13; UI-SPEC §D) */
 .chat-pill-tool-call {
-  display: inline-block;
+  display: block;
+  width: fit-content;
   padding: 6px 12px;
   margin: 6px 0;
   background: var(--violet-soft);
@@ -594,6 +604,7 @@ main.container-fluid {
 .chat-pill-tool-call summary::-webkit-details-marker { display: none; }
 .chat-pill-tool-call[open] {
   display: block;
+  width: auto;
   border-radius: var(--radius-card);
   background: #f7f4ff;
   padding: 12px 16px;
@@ -613,7 +624,8 @@ main.container-fluid {
 /* Tool-result pill (D-CHAT-13; UI-SPEC §E) */
 .chat-pill-tool-result-ok,
 .chat-pill-tool-result-rejected {
-  display: inline-block;
+  display: block;
+  width: fit-content;
   padding: 6px 12px;
   margin: 6px 0;
   border-radius: var(--radius-pill);
@@ -629,6 +641,7 @@ main.container-fluid {
 .chat-pill-tool-result-ok[open],
 .chat-pill-tool-result-rejected[open] {
   display: block;
+  width: auto;
   border-radius: var(--radius-card);
   padding: 12px 16px;
 }
