@@ -159,10 +159,13 @@ main.container-fluid {
    Phase 04 — Browse Tab (UI-SPEC §Components, D-26..D-28)
    ============================================================ */
 
-/* Filter bar spacing above pivot grid */
+/* Filter bar spacing above pivot grid. The border-bottom was dropped to
+   mirror JV's clean treatment — the divider now lives on .ff-preset-row
+   (or, when active-filter chips appear, migrates further down via :has()
+   rules) so the line is always below the bottom-most chip row instead of
+   between the filter row and the presets/chips. */
 .browse-filter-bar {
   padding: 12px 26px 0;
-  border-bottom: 1px solid var(--line);
 }
 
 /* Allow Bootstrap dropdown popovers (Browse Platforms/Parameters pickers AND
@@ -253,6 +256,17 @@ main.container-fluid {
   overflow-y: auto;
 }
 .overview-grid-body .alert { margin: 16px; }
+
+/* table-layout: fixed makes width declarations on cells authoritative —
+   under the default `auto`, browsers treat td width as a hint and expand
+   columns to absorb extra horizontal space, which is why earlier Actions
+   caps weren't sticking. Combined with min-width on the table itself, the
+   columns hold their declared widths and the table simply scrolls
+   horizontally inside .overview-grid-body when the viewport is narrower. */
+.overview-grid {
+  table-layout: fixed;
+  min-width: 1400px;
+}
 
 /* Sticky first (Title) + last (Actions) columns — quick task 260507-rvx.
    Background must be opaque so scrolling sibling cells don't bleed through;
