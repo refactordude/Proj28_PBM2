@@ -89,7 +89,7 @@
                into #summary-modal-body. Reuses Phase 3's _success.html /
                _error.html partials (parameterized in Plan 01 Task 2). #}
             <button type="button"
-                    class="btn btn-sm btn-outline-primary ms-1 jv-action-btn"
+                    class="btn btn-sm btn-outline-primary ms-1 jv-action-btn fw-bold"
                     data-bs-toggle="modal"
                     data-bs-target="#summary-modal"
                     hx-post="/joint_validation/{{ row.confluence_page_id | e }}/summary"
@@ -97,7 +97,7 @@
                     hx-swap="innerHTML"
                     hx-headers='{"HX-Target": "summary-modal-body"}'
                     aria-label="Generate AI summary for {{ row.title | e }}">
-              AI
+              <i class="bi bi-stars"></i> AI
             </button>
           </td>
         </tr>
