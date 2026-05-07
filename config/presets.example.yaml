@@ -4,11 +4,12 @@
 # Each entry:
 #   name:    machine id used in /overview/preset/<name> (slug, [a-z0-9_-])
 #   label:   chip text shown to the user (<= 40 chars recommended)
-#   filters: dict keyed by FILTERABLE_COLUMNS (customer, ap_company, device,
-#            controller, application). Each value is a list of strings —
+#   filters: dict keyed by FILTERABLE_COLUMNS (customer, ap_company, ap_model,
+#            device, controller, application). Each value is a list of strings —
 #            UNION within a facet, INTERSECTION across facets, same
 #            semantics as the picker popovers.
 # (260507-rmj — Status was dropped as a filterable facet on the JV listing.)
+# (260507-s5c — AP Model re-added between AP Company and Device — listing has 6 facets again.)
 # Unknown facet keys, non-list values, or missing name/label cause the
 # entry to be silently skipped at load time.
 

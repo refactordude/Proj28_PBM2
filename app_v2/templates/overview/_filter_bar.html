@@ -2,13 +2,14 @@
    D-UI2-07: wrapper div is .overview-filter-bar (NO .panel class) — nested
    inside the outer .panel in overview/index.html.
    D-UI2-08: <form> is the flex container (d-flex gap-2 flex-wrap w-100) so
-   the 5 picker dropdowns lay out horizontally in a single row.
+   the 6 picker dropdowns lay out horizontally in a single row.
    D-UI2-09: picker_popover macro imported byte-stable from browse/.
    D-UI2-10: "Clear all" gets ms-auto so it floats to the far right within
    the flex row, matching Browse convention.
-   The 5 picker macro calls are byte-stable (D-JV-11 + D-15b auto-commit
+   The 6 picker macro calls are byte-stable (D-JV-11 + D-15b auto-commit
    + form-association + OOB filter-badge swap contracts unchanged from
-   Phase 01 Plan 05; 260507-rmj dropped the Status picker). #}
+   Phase 01 Plan 05; 260507-rmj dropped the Status picker; 260507-s5c
+   re-added the AP Model picker between AP Company and Device). #}
 {% from "browse/_picker_popover.html" import picker_popover %}
 
 <div class="overview-filter-bar" id="overview-filter-bar">
@@ -45,6 +46,18 @@
         hx_target="#overview-grid",
         disable_auto_commit=False,
         disabled=(vm.total_count == 0 and (vm.filter_options["ap_company"] | length) == 0),
+    ) }}
+
+    {{ picker_popover(
+        name="ap_model",
+        label="AP Model",
+        options=vm.filter_options["ap_model"],
+        selected=selected_filters["ap_model"],
+        form_id="overview-filter-form",
+        hx_post="/overview/grid",
+        hx_target="#overview-grid",
+        disable_auto_commit=False,
+        disabled=(vm.total_count == 0 and (vm.filter_options["ap_model"] | length) == 0),
     ) }}
 
     {{ picker_popover(

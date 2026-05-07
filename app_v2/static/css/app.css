@@ -1193,9 +1193,10 @@ main.container-fluid {
   color: var(--ink-2);
 }
 /* 6 deterministic palette slots — one per FILTERABLE_COLUMNS entry.
-   c-1 status, c-2 customer, c-3 ap_company, c-4 device, c-5 controller,
-   c-6 application. Mapping is done in the template via a Jinja dict so
-   both color and slot stay byte-stable. */
+   Post-260507-s5c (and post-260507-rmj which dropped Status):
+   c-1 customer, c-2 ap_company, c-3 ap_model, c-4 device,
+   c-5 controller, c-6 application. Mapping is done in the template
+   via a Jinja dict so both color and slot stay byte-stable. */
 .ff-chip.c-1 { background: var(--accent-soft); color: var(--accent-ink); }
 .ff-chip.c-2 { background: var(--green-soft);  color: var(--green); }
 .ff-chip.c-3 { background: var(--violet-soft); color: var(--violet); }
