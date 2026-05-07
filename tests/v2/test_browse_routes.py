@@ -3,7 +3,7 @@
 Exercises GET /browse + POST /browse/grid through the FastAPI TestClient
 with stubbed cache layer (no real MySQL). Verifies:
   - URL round-trip (BROWSE-V2-05) — query params survive a GET → render → form-submit cycle
-  - Empty state copy (D-25) — verbatim 'Select platforms and parameters above…'
+  - Empty state copy (D-25) — verbatim '비교할 Platforms의 Parameters를 선택해 주세요...'
   - Cap warnings (D-24) — verbatim row-cap + col-cap copy
   - HX-Push-Url response header (D-32, Pitfall 2) — points at /browse, not /browse/grid
   - OOB count caption swap (D-06, Pattern 6)
@@ -116,7 +116,7 @@ def test_get_browse_empty_state(client, monkeypatch):
     r = client.get("/browse")
     assert r.status_code == 200
     # D-25 verbatim empty-state copy
-    assert "Select platforms and parameters above to build the pivot grid." in r.text
+    assert "비교할 Platforms의 Parameters를 선택해 주세요..." in r.text
     # MUST NOT contain v1.0 wording
     assert "in the sidebar" not in r.text
     # Pickers render but no platform checkbox is checked.
@@ -235,7 +235,7 @@ def test_post_browse_grid_empty_form_returns_empty_state(client, monkeypatch):
     ], fetch=_no_call)
     r = _post_form_pairs(client, "/browse/grid", [])
     assert r.status_code == 200
-    assert "Select platforms and parameters above to build the pivot grid." in r.text
+    assert "비교할 Platforms의 Parameters를 선택해 주세요..." in r.text
     # Empty-state HX-Push-Url is plain /browse (no query string)
     assert r.headers.get("HX-Push-Url") == "/browse"
 
@@ -414,7 +414,7 @@ def test_get_browse_with_garbage_params_returns_empty_grid(client, monkeypatch):
     # Empty-state alert renders (the catalog intersection wiped the garbage
     # label, so selected_param_labels effectively becomes empty).
     assert (
-        "Select platforms and parameters above" in r.text
+        "비교할 Platforms의 Parameters를 선택해 주세요" in r.text
         or "<tbody></tbody>" in r.text
         or "<tbody>\n            </tbody>" in r.text
         or "<tbody>" in r.text  # whitespace-only tbody from Jinja whitespace control
@@ -581,7 +581,7 @@ def test_post_browse_grid_with_populated_payload_renders_grid(client, monkeypatc
     assert r.status_code == 200
 
     # The populated grid renders — NOT the empty-state alert.
-    assert "Select platforms and parameters above to build the pivot grid." not in r.text, (
+    assert "비교할 Platforms의 Parameters를 선택해 주세요..." not in r.text, (
         "gap-2 still open: Apply payload produced the empty-state alert. "
         "Either the form-association fix in _picker_popover.html was reverted, "
         "or the route handler regressed."
@@ -729,7 +729,7 @@ def test_post_browse_grid_picker_badge_zero_count_renders_hidden(client, monkeyp
 
     # Empty-selection branch confirmed (sanity — empties the grid).
     assert (
-        "Select platforms and parameters above to build the pivot grid."
+        "비교할 Platforms의 Parameters를 선택해 주세요..."
         in r.text
     )
 
