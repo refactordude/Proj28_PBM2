@@ -46,6 +46,10 @@ class AppConfig(BaseModel):
     query_row_limit: int = 1000
     recent_query_history: int = 20
     agent: AgentConfig = Field(default_factory=AgentConfig)
+    # 260507-lox: base URL for Confluence "컨플" link button in JV grid.
+    # Empty string = disabled state (button renders disabled). Edited
+    # directly in config/settings.yaml — no Settings UI surface.
+    conf_url: str = ""
 
 
 class Settings(BaseModel):

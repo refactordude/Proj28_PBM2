@@ -275,3 +275,56 @@ def test_browse_and_ask_tabs_unaffected(client: TestClient) -> None:
     assert r_browse.status_code == 200, f"Browse regression: {r_browse.status_code}"
     r_ask = client.get("/ask")
     assert r_ask.status_code == 200, f"Ask regression: {r_ask.status_code}"
+
+
+# ---------------------------------------------------------------------------
+# 260507-lox: conf_url + 컨플 button wiring
+# ---------------------------------------------------------------------------
+
+
+def test_grid_renders_disabled_confluence_button_when_conf_url_empty(
+    jv_dir_with_one: Path, client: TestClient
+) -> None:
+    """Default empty conf_url → 컨플 button renders disabled (no anchor href)."""
+    # Force empty conf_url on app.state.settings (the `client` fixture
+    # does NOT set settings; depending on test order, app.state.settings
+    # may be populated from a prior test — set it explicitly to be safe).
+    app.state.settings = Settings(
+        databases=[],
+        llms=[],
+        app=AppConfig(conf_url=""),
+    )
+    r = client.get("/overview")
+    assert r.status_code == 200
+    body = r.text
+    # 컨플 label rendered
+    assert "컨플" in body
+    # Disabled-branch markers
+    assert 'aria-label="No Confluence URL configured"' in body
+    # Active-branch markers MUST be absent
+    assert 'aria-label="Open Confluence page for' not in body
+
+
+def test_grid_renders_active_confluence_anchor_when_conf_url_set(
+    jv_dir_with_one: Path, client: TestClient
+) -> None:
+    """Configured conf_url with trailing slash → active 컨플 anchor with
+    single-slash-joined href; trailing slash is rstripped in the route."""
+    app.state.settings = Settings(
+        databases=[],
+        llms=[],
+        app=AppConfig(conf_url="https://example.com/"),
+    )
+    r = client.get("/overview")
+    assert r.status_code == 200
+    body = r.text
+    # Active anchor markers
+    assert "컨플" in body
+    # SAMPLE_HTML's <h1> resolves to "Test Joint Validation" — used in aria-label
+    assert 'aria-label="Open Confluence page for Test Joint Validation"' in body
+    # Single-slash join: trailing "/" on conf_url stripped, page_id "3193868109"
+    # appended after a single "/". The fixture in jv_dir_with_one uses page id
+    # 3193868109 (folder name).
+    assert 'href="https://example.com/3193868109"' in body
+    # Disabled-branch marker MUST be absent (the row has a page_id)
+    assert 'aria-label="No Confluence URL configured"' not in body

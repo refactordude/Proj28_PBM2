@@ -184,3 +184,38 @@ def test_parse_paren_strip_does_not_apply_to_other_fields() -> None:
     parsed = parse_index_html(html)
     assert parsed.customer == "Acme (lead)"
     assert parsed.ap_model == "(SM8650)"   # parens preserved on non-Start/End fields
+
+
+def test_parse_skips_strong_inside_h1_for_status() -> None:
+    # Real-export bug class: <strong>Status</strong> appears inside an
+    # <h1> heading (page title or section header) AND the canonical metadata
+    # lives in a Page-Properties row below. The heading-nested <strong>
+    # MUST be skipped so the Page-Properties row wins.
+    # 260507-lox: skip generalized to all fields (not Status-specific) —
+    # a label inside a heading is never the canonical metadata source.
+    html = (
+        b"<html><body>"
+        b"<h1><strong>Status</strong>: leaked-from-heading</h1>"
+        b"<table><tbody>"
+        b"<tr><td><p><strong>Status</strong></p></td>"
+        b"<td><p>Planned</p></td></tr>"
+        b"</tbody></table>"
+        b"</body></html>"
+    )
+    assert parse_index_html(html).status == "Planned"
+
+
+def test_parse_skips_strong_inside_h2_for_customer_generalization() -> None:
+    # Generalization proof: the same h1-h6 skip applies to other fields
+    # (here Customer in <h2>), NOT just Status. Confirms the bug-class fix
+    # is universal — see 260507-lox plan rationale.
+    html = (
+        b"<html><body>"
+        b"<h2><strong>Customer</strong>: Acme HQ</h2>"
+        b"<table><tbody>"
+        b"<tr><td><strong>Customer</strong></td>"
+        b"<td>Beta Inc.</td></tr>"
+        b"</tbody></table>"
+        b"</body></html>"
+    )
+    assert parse_index_html(html).customer == "Beta Inc."

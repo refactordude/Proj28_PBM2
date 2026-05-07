@@ -90,6 +90,13 @@ def _extract_label_value(soup: BeautifulSoup, label: str) -> str:
         return ""
     inline_fallback = ""
     for strong in matches:
+        # 260507-lox: skip <strong> whose nearest ancestor is <h1>..<h6>.
+        # A label inside a heading is never the canonical metadata source —
+        # it is a section title or page heading. Generalized skip (not
+        # Status-specific): the bug class is universal — Customer / AP
+        # Company / etc. would suffer the same shape in different exports.
+        if strong.find_parent(["h1", "h2", "h3", "h4", "h5", "h6"]) is not None:
+            continue
         # Pass 1: prefer the Page-Properties shape — find the nearest
         # <th>/<td> ancestor and read its next-sibling cell's full text.
         cell = strong.find_parent(["th", "td"])
@@ -136,6 +143,11 @@ def _extract_link(soup: BeautifulSoup) -> str:
         string=lambda s: s is not None and s.strip() == "Report Link",
     )
     for strong in matches:
+        # 260507-lox: skip <strong> whose nearest ancestor is <h1>..<h6>.
+        # Mirror parity with _extract_label_value — a Report Link nested
+        # inside a heading is not the canonical link source.
+        if strong.find_parent(["h1", "h2", "h3", "h4", "h5", "h6"]) is not None:
+            continue
         cell = strong.find_parent(["th", "td"])
         if cell is not None:
             sibling = cell.find_next_sibling(["td", "th"])

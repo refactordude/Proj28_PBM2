@@ -70,6 +70,26 @@
               </button>
             {% endif %}
 
+            {# Confluence link button (260507-lox) — disabled when conf_url is
+               empty OR row.confluence_page_id is missing. Mirrors edm-button
+               two-branch shape from 260507-l5w (text-dark on active anchor;
+               bare outline-secondary on disabled button) for visual contrast. #}
+            {% if conf_url and row.confluence_page_id %}
+              <a href="{{ (conf_url ~ '/' ~ row.confluence_page_id) | e }}"
+                 class="btn btn-sm btn-outline-secondary text-dark ms-1"
+                 target="_blank" rel="noopener noreferrer"
+                 aria-label="Open Confluence page for {{ row.title | e }}">
+                컨플
+              </a>
+            {% else %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary ms-1"
+                      disabled
+                      aria-label="No Confluence URL configured">
+                컨플
+              </button>
+            {% endif %}
+
             {# AI Summary button (D-JV-15) — opens modal; HTMX-fetches summary
                into #summary-modal-body. Reuses Phase 3's _success.html /
                _error.html partials (parameterized in Plan 01 Task 2). #}

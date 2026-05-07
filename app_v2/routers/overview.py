@@ -144,6 +144,12 @@ def get_overview(
         sort_order=order,  # type: ignore[arg-type]
         page=page,
     )
+    # 260507-lox: thread Confluence base URL into the JV grid template
+    # context. rstrip a single trailing "/" in Python so the template can
+    # do a simple "{conf_url}/{page_id}" join (no Jinja-level rstrip used
+    # elsewhere in this project — keep the cleanup in route code).
+    settings_obj = getattr(request.app.state, "settings", None)
+    conf_url = (settings_obj.app.conf_url.rstrip("/") if settings_obj else "")
     ctx = {
         "vm": vm,
         "selected_filters": filters,
@@ -159,6 +165,7 @@ def get_overview(
         # Plan 05; for now an empty list keeps the for-loop a no-op so the
         # template renders without 500.
         "all_platform_ids": [],
+        "conf_url": conf_url,
     }
     return templates.TemplateResponse(request, "overview/index.html", ctx)
 
@@ -202,6 +209,12 @@ def post_overview_grid(
         sort_order=order,  # type: ignore[arg-type]
         page=page,
     )
+    # 260507-lox: same conf_url threading on the OOB re-render path —
+    # the grid block also references {{ conf_url }} in the 컨플 button
+    # template. Without this the OOB-swapped grid would render disabled
+    # buttons even when conf_url is configured.
+    settings_obj = getattr(request.app.state, "settings", None)
+    conf_url = (settings_obj.app.conf_url.rstrip("/") if settings_obj else "")
     ctx = {
         "vm": vm,
         "selected_filters": filters,
@@ -209,6 +222,7 @@ def post_overview_grid(
         # Same transitional aliases as GET — see comment above.
         "active_filter_counts": vm.active_filter_counts,
         "all_platform_ids": [],
+        "conf_url": conf_url,
     }
     response = templates.TemplateResponse(
         request,
