@@ -559,7 +559,7 @@ main.container-fluid {
 .chat-text-delta {
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink);
   line-height: 1.6;
 }
@@ -678,7 +678,7 @@ main.container-fluid {
   border-radius: var(--radius-card);
   margin-bottom: 18px;
   line-height: 1.6;
-  font-size: 15px;
+  font-size: 16px;
 }
 .chat-plotly { margin-top: 18px; min-height: 320px; }
 
