@@ -288,13 +288,37 @@ main.container-fluid {
    width keeps the sticky-left edge predictable regardless of row content. */
 .overview-grid > thead > tr > th:first-child,
 .overview-grid > tbody > tr > td:first-child {
-  width: 280px;
-  max-width: 280px;
+  width: 350px;
+  max-width: 350px;
 }
 .overview-grid > tbody > tr > td:first-child {
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+/* Cap Model Name column (3rd) — same wrap-in-cell pattern as Title.
+   Some SKU strings (e.g. "Galaxy S25 Ultra (Global, 16GB/1TB SKU)") are
+   long enough to push neighboring columns; 250px holds 2 lines comfortably. */
+.overview-grid > thead > tr > th:nth-child(3),
+.overview-grid > tbody > tr > td:nth-child(3) {
+  width: 250px;
+  max-width: 250px;
+}
+.overview-grid > tbody > tr > td:nth-child(3) {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Start column (9th) — values are always ISO dates (YYYY-MM-DD, 10 chars).
+   Shrink to a tight fixed width so the column doesn't waste horizontal space.
+   nowrap prevents the date itself from breaking across two lines. */
+.overview-grid > thead > tr > th:nth-child(9),
+.overview-grid > tbody > tr > td:nth-child(9) {
+  width: 100px;
+  max-width: 100px;
+  white-space: nowrap;
 }
 
 /* Phase 02 — Overview filter bar layout (D-UI2-07/08/10).
